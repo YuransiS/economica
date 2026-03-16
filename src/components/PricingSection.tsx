@@ -16,7 +16,7 @@ export default function PricingSection({ onOpenLeadAction }: { onOpenLeadAction:
         "Перевірка домашнього завдання",
       ],
       missing: [
-        "Без індивідуального зідзвону з Софією (20-40 хв)"
+        "Без індивідуального zoom з Софією або її командою"
       ],
       color: "bg-white/5 text-white backdrop-blur-md",
       buttonColor: "bg-[#81D8D0] text-[#4E0000]",
@@ -31,7 +31,7 @@ export default function PricingSection({ onOpenLeadAction }: { onOpenLeadAction:
         "3 прямі ефіри",
         "Зворотній зв'язок",
         "Перевірка домашнього завдання",
-        "Індивідуальний зідзвон з Софією (20-30 хв)"
+        "Індивідуальний zoom з Софією або її командою"
       ],
       missing: [],
       color: "bg-[#4E0000] text-white backdrop-blur-md",
