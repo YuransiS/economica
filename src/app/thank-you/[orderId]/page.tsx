@@ -37,8 +37,14 @@ export default function ThankYouPage({ params }: { params: { orderId: string } }
         </div>
 
         <Link 
+          href="https://t.me/Minikurspracticum_bot?start=69b1774f3d25c210e50895a6" 
+          className="mt-8 inline-block rounded-full bg-[#81D8D0] px-12 py-5 text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] w-full"
+        >
+          Перейти до чат-бота
+        </Link>
+        <Link 
           href="/" 
-          className="mt-8 inline-block rounded-xl bg-[#4E0000] px-8 py-4 px-full font-bold uppercase tracking-wider text-white transition-transform hover:scale-105"
+          className="mt-6 inline-block text-gray-400 hover:text-gray-600 transition-colors font-medium border-b border-gray-200 hover:border-gray-400"
         >
           Повернутися на головну
         </Link>

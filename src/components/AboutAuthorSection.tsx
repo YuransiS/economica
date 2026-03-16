@@ -38,36 +38,7 @@ export default function AboutAuthorSection({ onOpenLeadAction }: { onOpenLeadAct
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="group relative overflow-hidden rounded-3xl bg-white/5 border border-white/10 aspect-video shadow-lg"
-          >
-             <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-arimo p-4 text-center">
-                [Фото Софі на роботі в наймі]
-              </div>
-              <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl font-bold uppercase text-sm tracking-widest text-[#FBCBDA]">
-                Точка А
-              </div>
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="group relative overflow-hidden rounded-3xl bg-white/5 border border-[#81D8D0]/20 aspect-video shadow-lg"
-          >
-             <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-arimo p-4 text-center">
-                [Фото Софії з якоїсь подорожі]
-              </div>
-              <div className="absolute bottom-4 left-4 bg-[#81D8D0]/20 backdrop-blur-md border border-[#81D8D0]/30 px-4 py-2 rounded-xl font-bold uppercase text-sm tracking-widest text-[#81D8D0]">
-                Точка Б
-              </div>
-          </motion.div>
-        </div>
+
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
