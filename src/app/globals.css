@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-tiffany: #81D8D0;
+  --color-brand-maroon: #4E0000;
+  --color-brand-pink: #FBCBDA;
+  --color-brand-breeze: #B7D1EA;
+  
+  --font-montserrat: var(--font-montserrat);
+  --font-arimo: var(--font-arimo);
+  --font-script: var(--font-script);
+  --font-narrow: var(--font-narrow);
+}
+
+@layer base {
+  body {
+    @apply bg-[#FCFAF8] text-gray-900 font-montserrat antialiased;
+  }
+}
