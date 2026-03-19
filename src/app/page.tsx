@@ -59,13 +59,13 @@ export default function Home() {
       
       <TariffSelectionModal
         isOpen={isTariffModalOpen}
-        onCloseAction={() => setIsTariffModalOpen(false)}
-        onSelectTariffAction={handleSelectTariff}
+        onClose={() => setIsTariffModalOpen(false)}
+        onSelectTariff={handleSelectTariff}
       />
 
       <LeadModal 
         isOpen={isModalOpen} 
-        onCloseAction={closeLeadModal} 
+        onClose={closeLeadModal} 
         selectedTariff={selectedTariff}
         selectedPrice={selectedPrice}
       />

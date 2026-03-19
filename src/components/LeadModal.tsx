@@ -8,12 +8,12 @@ import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 
 export default function LeadModal({
   isOpen,
-  onCloseAction,
+  onClose,
   selectedTariff = 'PRO',
   selectedPrice = 19
 }: {
   isOpen: boolean;
-  onCloseAction: () => void;
+  onClose: () => void;
   selectedTariff?: string;
   selectedPrice?: number;
 }) {
@@ -115,7 +115,7 @@ export default function LeadModal({
               className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-8 shadow-2xl"
             >
               <button
-                onClick={onCloseAction}
+                onClick={onClose}
                 className="absolute right-4 top-4 rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />

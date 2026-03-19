@@ -5,12 +5,12 @@ import { X, CheckCircle2 } from 'lucide-react';
 
 export default function TariffSelectionModal({
   isOpen,
-  onCloseAction,
-  onSelectTariffAction
+  onClose,
+  onSelectTariff
 }: {
   isOpen: boolean;
-  onCloseAction: () => void;
-  onSelectTariffAction: (tariff: string, price: number) => void;
+  onClose: () => void;
+  onSelectTariff: (tariff: string, price: number) => void;
 }) {
   const tariffs = [
     {
@@ -49,7 +49,7 @@ export default function TariffSelectionModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onCloseAction}
+            onClick={onClose}
             className="absolute inset-0 bg-black/70 backdrop-blur-md"
           />
 
@@ -69,7 +69,7 @@ export default function TariffSelectionModal({
             className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-[#1A0000] border border-white/10 p-6 md:p-10 shadow-2xl"
           >
             <button
-              onClick={onCloseAction}
+              onClick={onClose}
               className="absolute right-4 top-4 z-10 rounded-full p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
             >
               <X className="h-6 w-6" />
@@ -126,7 +126,7 @@ export default function TariffSelectionModal({
                     </div>
 
                     <button
-                      onClick={() => onSelectTariffAction(tariff.name, tariff.price)}
+                      onClick={() => onSelectTariff(tariff.name, tariff.price)}
                       className={`w-full rounded-xl py-4 text-base md:text-lg font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-[0_4px_20px_rgba(0,0,0,0.3)] ${tariff.buttonColor}`}
                     >
                       Обрати {tariff.name}
