@@ -27,25 +27,38 @@ export default function ReviewsSection() {
           Відгуки
         </motion.h2>
 
-        {/* Carousel */}
-        <div className="flex space-x-6 overflow-x-auto pb-8 snap-x scrollbar-thin scrollbar-thumb-[#FBCBDA]/30 scrollbar-track-transparent">
-          {reviews.map((src, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="snap-center shrink-0 h-[400px] md:h-[500px] rounded-xl overflow-hidden shadow-2xl relative border border-white/10"
-            >
-              <img 
-                src={src} 
-                alt={`Відгук ${index + 1}`} 
-                className="h-full w-auto object-contain"
-                loading="lazy"
-              />
-            </motion.div>
-          ))}
+        {/* Infinite Carousel */}
+        <div className="relative overflow-hidden w-full py-4 -mx-4 px-4 lg:mx-0 lg:px-0">
+          <motion.div 
+            className="flex items-center gap-4 md:gap-8"
+            animate={{
+              x: [0, "-50%"],
+            }}
+            transition={{
+              duration: 30,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{ width: "max-content" }}
+          >
+            {[...reviews, ...reviews].map((src, index) => (
+              <div
+                key={index}
+                className="shrink-0 h-[320px] md:h-[500px] w-auto rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-white/5"
+              >
+                <img 
+                  src={src} 
+                  alt={`Відгук ${index + 1}`} 
+                  className="h-full w-auto object-contain pointer-events-none"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Gradient Overlays for smooth edges */}
+          <div className="absolute top-0 left-0 h-full w-12 md:w-32 bg-gradient-to-r from-[#2D0000] to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute top-0 right-0 h-full w-12 md:w-32 bg-gradient-to-l from-[#2D0000] to-transparent z-10 pointer-events-none"></div>
         </div>
       </div>
     </section>
