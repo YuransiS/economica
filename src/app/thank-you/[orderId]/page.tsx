@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
-export default function ThankYouPage({ params }: { params: { orderId: string } }) {
-  // We can securely hide this page from crawlers or only show it if orderId starts with 'ORDER_' as rudimentary verification
-  const isValidOrder = params.orderId.startsWith('ORDER_');
+export default async function ThankYouPage({ params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await params;
+  const isValidOrder = orderId.startsWith('ORDER_');
 
   if (!isValidOrder) {
     return (
@@ -32,7 +32,7 @@ export default function ThankYouPage({ params }: { params: { orderId: string } }
         </p>
 
         <div className="rounded-xl bg-gray-50 p-4 text-left text-sm text-gray-500 font-narrow">
-          <p><strong>Номер замовлення:</strong> {params.orderId}</p>
+          <p><strong>Номер замовлення:</strong> {orderId}</p>
           <p className="mt-1">Будь ласка, збережіть цю сторінку або зробіть скріншот.</p>
         </div>
 
