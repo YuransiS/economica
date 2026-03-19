@@ -1,8 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 export default function ReviewsSection() {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   const reviews = [
     '/images/otziv_1.jpg',
     '/images/otziv_2.jpg',
@@ -42,9 +45,11 @@ export default function ReviewsSection() {
             style={{ width: "max-content" }}
           >
             {[...reviews, ...reviews].map((src, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="shrink-0 h-[320px] md:h-[500px] w-auto rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-white/5"
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setSelectedImage(src)}
+                className="shrink-0 h-[320px] md:h-[500px] w-auto max-w-[85vw] md:max-w-none rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-white/5 cursor-pointer"
               >
                 <img 
                   src={src} 
@@ -52,7 +57,7 @@ export default function ReviewsSection() {
                   className="h-full w-auto object-contain pointer-events-none"
                   loading="lazy"
                 />
-              </div>
+              </motion.div>
             ))}
           </motion.div>
 
@@ -60,6 +65,40 @@ export default function ReviewsSection() {
           <div className="absolute top-0 left-0 h-full w-12 md:w-32 bg-gradient-to-r from-[#2D0000] to-transparent z-10 pointer-events-none"></div>
           <div className="absolute top-0 right-0 h-full w-12 md:w-32 bg-gradient-to-l from-[#2D0000] to-transparent z-10 pointer-events-none"></div>
         </div>
+
+        {/* Lightbox Modal */}
+        <AnimatePresence>
+          {selectedImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImage(null)}
+              className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-full max-h-full"
+              >
+                <img 
+                  src={selectedImage} 
+                  alt="Збільшений відгук" 
+                  className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+                />
+                <button 
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute -top-12 right-0 text-white hover:text-[#FBCBDA] transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );
