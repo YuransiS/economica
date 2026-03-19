@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import AnimatedTarget from './icons/AnimatedTarget';
 
-export default function ResultsSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function ResultsSection({ onOpenLead }: { onOpenLead: () => void }) {
   const results = [
     "ЧІТКО РОЗУМІЄТЕ ЩО ВІДБУВАЄТЬСЯ У СВІТІ ТА ЯК ВАМ ДІЯТИ АБО ВБЕРЕГТИ ВАШ КАПІТАЛ",
     "ЯК НЕ ДОПУСКАТИ ПОМИЛОК В ІНВЕСТУВАННІ, ЯКІ ДУЖЕ ДОРОГО КОШТУЮТЬ",
@@ -50,7 +50,7 @@ export default function ResultsSection({ onOpenLeadAction }: { onOpenLeadAction:
 
         <div className="text-center">
           <button
-            onClick={onOpenLeadAction}
+            onClick={onOpenLead}
             className="font-montserrat inline-block rounded-2xl bg-[#81D8D0] px-16 py-6 text-xl font-bold uppercase tracking-widest text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.4)]"
           >
             Оплатити

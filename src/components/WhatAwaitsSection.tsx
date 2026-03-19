@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import AnimatedCheck from './icons/AnimatedCheck';
 
-export default function WhatAwaitsSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function WhatAwaitsSection({ onOpenLead }: { onOpenLead: () => void }) {
   const items = [
     "Щоденні прямі ефіри",
     "Перевірка Д\\З зі зворотнім зв'язком",
@@ -47,7 +47,7 @@ export default function WhatAwaitsSection({ onOpenLeadAction }: { onOpenLeadActi
 
         <div>
           <button
-            onClick={onOpenLeadAction}
+            onClick={onOpenLead}
             className="font-montserrat inline-block rounded-full bg-[#81D8D0] px-12 py-5 text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)]"
           >
             Дізнатися умови

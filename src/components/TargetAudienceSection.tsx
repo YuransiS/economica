@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import AnimatedAlert from './icons/AnimatedAlert';
 
-export default function TargetAudienceSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function TargetAudienceSection({ onOpenLead }: { onOpenLead: () => void }) {
   const points = [
     "Ще жодного разу не інвестували",
     "Маєте накопичення, але не знаєте, як змусити їх працювати на вас",
@@ -49,7 +49,7 @@ export default function TargetAudienceSection({ onOpenLeadAction }: { onOpenLead
 
         <div className="text-center">
           <button
-            onClick={onOpenLeadAction}
+            onClick={onOpenLead}
             className="font-montserrat inline-block rounded-full bg-[#81D8D0] px-12 py-5 text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)]"
           >
             Дізнатися умови

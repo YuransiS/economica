@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
-export default function AboutAuthorSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function AboutAuthorSection({ onOpenLead }: { onOpenLead: () => void }) {
   return (
     <section className="bg-[#1A0000] py-24 text-white relative overflow-hidden">
       {/* Glow Effects */}
@@ -54,7 +54,7 @@ export default function AboutAuthorSection({ onOpenLeadAction }: { onOpenLeadAct
           </p>
 
           <button
-            onClick={onOpenLeadAction}
+            onClick={onOpenLead}
             className="font-montserrat inline-flex flex-col items-center group"
           >
             <span className="rounded-full bg-[#81D8D0] px-12 py-5 text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-transform group-hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] mb-4">

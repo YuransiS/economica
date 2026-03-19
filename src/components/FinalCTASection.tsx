@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-export default function FinalCTASection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function FinalCTASection({ onOpenLead }: { onOpenLead: () => void }) {
   return (
     <section className="bg-[#4E0000] py-32 relative text-center text-white overflow-hidden">
       {/* Decorative Blur and Textures */}
@@ -23,7 +23,7 @@ export default function FinalCTASection({ onOpenLeadAction }: { onOpenLeadAction
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          onClick={onOpenLeadAction}
+          onClick={onOpenLead}
           className="font-montserrat relative inline-block overflow-hidden rounded-2xl bg-[#81D8D0] px-16 py-6 text-xl font-bold uppercase tracking-widest text-[#4E0000] shadow-[0_0_40px_rgba(129,216,208,0.3)] transition-transform hover:scale-105"
         >
           <span className="relative z-10">Оплатити</span>

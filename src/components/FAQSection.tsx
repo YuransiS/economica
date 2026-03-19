@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus } from 'lucide-react';
 
-export default function FAQSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function FAQSection({ onOpenLead }: { onOpenLead: () => void }) {
   const faqs = [
     {
       question: "Чи підійде мені якщо я зараз не маю відкладених коштів?",
@@ -82,7 +82,7 @@ export default function FAQSection({ onOpenLeadAction }: { onOpenLeadAction: () 
 
         <div className="text-center">
           <button
-            onClick={onOpenLeadAction}
+            onClick={onOpenLead}
             className="font-montserrat inline-block rounded-2xl bg-[#81D8D0] px-16 py-6 text-xl font-bold uppercase tracking-widest text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.4)]"
           >
             Оплатити

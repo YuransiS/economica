@@ -45,17 +45,17 @@ export default function Home() {
 
   return (
     <main className="w-full relative overflow-x-hidden">
-      <HeroSection onOpenLeadAction={scrollToProgram} />
+      <HeroSection onOpenLead={scrollToProgram} />
       <BonusSection />
-      <TargetAudienceSection onOpenLeadAction={scrollToProgram} />
-      <WhatAwaitsSection onOpenLeadAction={scrollToProgram} />
-      <AboutAuthorSection onOpenLeadAction={scrollToProgram} />
+      <TargetAudienceSection onOpenLead={scrollToProgram} />
+      <WhatAwaitsSection onOpenLead={scrollToProgram} />
+      <AboutAuthorSection onOpenLead={scrollToProgram} />
       <ProgramSection />
-      <PricingSection onOpenLeadAction={openLeadModal} />
+      <PricingSection onOpenLead={openLeadModal} />
       <ReviewsSection />
-      <ResultsSection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
-      <FinalCTASection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
-      <FAQSection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
+      <ResultsSection onOpenLead={() => setIsTariffModalOpen(true)} />
+      <FinalCTASection onOpenLead={() => setIsTariffModalOpen(true)} />
+      <FAQSection onOpenLead={() => setIsTariffModalOpen(true)} />
       
       <TariffSelectionModal
         isOpen={isTariffModalOpen}

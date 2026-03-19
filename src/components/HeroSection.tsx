@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
-export default function HeroSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
+export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) {
   return (
     <section className="relative w-full overflow-hidden bg-[#4E0000] text-white pt-32 pb-40">
       {/* Background Image Setup */}
@@ -64,7 +64,7 @@ export default function HeroSection({ onOpenLeadAction }: { onOpenLeadAction: ()
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            onClick={onOpenLeadAction}
+            onClick={onOpenLead}
             className="font-montserrat relative overflow-hidden rounded-r-[40px] rounded-l-[4px] bg-[#81D8D0] px-12 py-5 text-xl font-bold uppercase tracking-wide text-[#4E0000] shadow-[0_0_40px_rgba(129,216,208,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(129,216,208,0.6)]"
           >
             <span className="relative z-10">Дізнатись умови зараз</span>
