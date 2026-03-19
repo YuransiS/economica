@@ -1,9 +1,23 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
-export default async function ThankYouPage({ params }: { params: Promise<{ orderId: string }> }) {
+export default async function ThankYouPage({ 
+  params,
+  searchParams
+}: { 
+  params: Promise<{ orderId: string }>,
+  searchParams: Promise<{ tariff?: string }>
+}) {
   const { orderId } = await params;
+  const { tariff } = await searchParams;
   const isValidOrder = orderId.startsWith('ORDER_');
+
+  const telegramLinks: Record<string, string> = {
+    'VIP': 'https://t.me/Minikurspracticum_bot?start=69bbd4ed939274036b0d7da9',
+    'PRO': 'https://t.me/Minikurspracticum_bot?start=69b1774f3d25c210e50895a6',
+  };
+
+  const currentTelegramLink = telegramLinks[tariff as string] || telegramLinks['PRO'];
 
   if (!isValidOrder) {
     return (
@@ -33,11 +47,12 @@ export default async function ThankYouPage({ params }: { params: Promise<{ order
 
         <div className="rounded-xl bg-gray-50 p-4 text-left text-sm text-gray-500 font-narrow">
           <p><strong>Номер замовлення:</strong> {orderId}</p>
+          <p className="mt-1"><strong>Тариф:</strong> {tariff || 'PRO'}</p>
           <p className="mt-1">Будь ласка, збережіть цю сторінку або зробіть скріншот.</p>
         </div>
 
         <Link 
-          href="https://t.me/Minikurspracticum_bot?start=69b1774f3d25c210e50895a6" 
+          href={currentTelegramLink}
           className="mt-8 inline-block rounded-full bg-[#81D8D0] px-12 py-5 text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] w-full"
         >
           Перейти до чат-бота
