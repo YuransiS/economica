@@ -55,8 +55,40 @@ export default function LeadModal({
   // When wayForPayData is set, automatically submit the form
   useEffect(() => {
     if (wayForPayData) {
-      const form = document.getElementById('wayforpay-form') as HTMLFormElement;
-      if (form) form.submit();
+      // Create a form dynamically to bypass Next.js 15+ interception of the <form action="..."> attribute
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://secure.wayforpay.com/pay';
+      form.style.display = 'none';
+
+      // Map our properties to hidden inputs
+      const fields = {
+        merchantAccount: wayForPayData.merchantAccount,
+        merchantDomainName: wayForPayData.merchantDomainName,
+        orderReference: wayForPayData.orderReference,
+        orderDate: wayForPayData.orderDate,
+        amount: wayForPayData.amount,
+        currency: wayForPayData.currency,
+        "productName[]": wayForPayData.productName[0],
+        "productCount[]": wayForPayData.productCount[0],
+        "productPrice[]": wayForPayData.productPrice[0],
+        clientFirstName: wayForPayData.clientName,
+        clientPhone: wayForPayData.clientPhone,
+        merchantSignature: wayForPayData.merchantSignature,
+        returnUrl: wayForPayData.returnUrl,
+        serviceUrl: wayForPayData.serviceUrl
+      };
+
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value as string;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
     }
   }, [wayForPayData]);
 
@@ -183,30 +215,6 @@ export default function LeadModal({
         )}
       </AnimatePresence>
 
-      {/* Hidden Form for WayForPay Portal Validation & Redirection */}
-      {wayForPayData && (
-        <form
-          id="wayforpay-form"
-          method="POST"
-          action="https://secure.wayforpay.com/pay"
-          className="hidden"
-        >
-          <input type="hidden" name="merchantAccount" value={wayForPayData.merchantAccount} />
-          <input type="hidden" name="merchantDomainName" value={wayForPayData.merchantDomainName} />
-          <input type="hidden" name="orderReference" value={wayForPayData.orderReference} />
-          <input type="hidden" name="orderDate" value={wayForPayData.orderDate} />
-          <input type="hidden" name="amount" value={wayForPayData.amount} />
-          <input type="hidden" name="currency" value={wayForPayData.currency} />
-          <input type="hidden" name="productName[]" value={wayForPayData.productName[0]} />
-          <input type="hidden" name="productCount[]" value={wayForPayData.productCount[0]} />
-          <input type="hidden" name="productPrice[]" value={wayForPayData.productPrice[0]} />
-          <input type="hidden" name="clientFirstName" value={wayForPayData.clientName} />
-          <input type="hidden" name="clientPhone" value={wayForPayData.clientPhone} />
-          <input type="hidden" name="merchantSignature" value={wayForPayData.merchantSignature} />
-          <input type="hidden" name="returnUrl" value={wayForPayData.returnUrl} />
-          <input type="hidden" name="serviceUrl" value={wayForPayData.serviceUrl} />
-        </form>
-      )}
     </>
   );
 }
