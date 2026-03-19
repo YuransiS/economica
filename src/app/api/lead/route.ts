@@ -80,7 +80,7 @@ export async function POST(req: Request) {
         clientName: name,
         clientPhone: phone,
         merchantSignature: signature,
-        returnUrl: `${MERCHANT_DOMAIN_NAME}/thank-you/${orderReference}`,
+        returnUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}`,
         serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook` // For the S2S callback
       }
     });
