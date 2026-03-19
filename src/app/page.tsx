@@ -13,9 +13,11 @@ import ResultsSection from "@/components/ResultsSection";
 import FinalCTASection from "@/components/FinalCTASection";
 import FAQSection from "@/components/FAQSection";
 import LeadModal from "@/components/LeadModal";
+import TariffSelectionModal from "@/components/TariffSelectionModal";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
   const [selectedTariff, setSelectedTariff] = useState('PRO');
   const [selectedPrice, setSelectedPrice] = useState(19);
 
@@ -29,20 +31,38 @@ export default function Home() {
     setIsModalOpen(false);
   };
 
+  const handleSelectTariff = (tariff: string, price: number) => {
+    setIsTariffModalOpen(false);
+    openLeadModal(tariff, price);
+  };
+
+  const scrollToProgram = () => {
+    const programElement = document.getElementById('program');
+    if (programElement) {
+      programElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <main className="w-full relative overflow-x-hidden">
-      <HeroSection onOpenLeadAction={() => openLeadModal()} />
+      <HeroSection onOpenLeadAction={scrollToProgram} />
       <BonusSection />
-      <TargetAudienceSection onOpenLeadAction={() => openLeadModal()} />
-      <WhatAwaitsSection onOpenLeadAction={() => openLeadModal()} />
-      <AboutAuthorSection onOpenLeadAction={() => openLeadModal()} />
+      <TargetAudienceSection onOpenLeadAction={scrollToProgram} />
+      <WhatAwaitsSection onOpenLeadAction={scrollToProgram} />
+      <AboutAuthorSection onOpenLeadAction={scrollToProgram} />
       <ProgramSection />
       <PricingSection onOpenLeadAction={openLeadModal} />
       <ReviewsSection />
-      <ResultsSection onOpenLeadAction={() => openLeadModal()} />
-      <FinalCTASection onOpenLeadAction={() => openLeadModal()} />
-      <FAQSection onOpenLeadAction={() => openLeadModal()} />
+      <ResultsSection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
+      <FinalCTASection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
+      <FAQSection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
       
+      <TariffSelectionModal
+        isOpen={isTariffModalOpen}
+        onCloseAction={() => setIsTariffModalOpen(false)}
+        onSelectTariffAction={handleSelectTariff}
+      />
+
       <LeadModal 
         isOpen={isModalOpen} 
         onCloseAction={closeLeadModal} 

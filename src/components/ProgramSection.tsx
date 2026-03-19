@@ -46,7 +46,7 @@ export default function ProgramSection() {
   ];
 
   return (
-    <section className="bg-[#2D0000] py-24 text-white relative overflow-hidden">
+    <section id="program" className="bg-[#2D0000] py-24 text-white relative overflow-hidden">
       {/* Glow Effects */}
       <div className="absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[#81D8D0] opacity-5 blur-[120px] pointer-events-none"></div>
 

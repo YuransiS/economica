@@ -8,6 +8,32 @@ function doPost(e) {
 
     // 3. Перевіряємо, з якого лендінгу прийшла заявка
     
+    // ЛОГІКА ДНОВЛЕННЯ СТАТУСУ ОПЛАТИ
+    if (data.action === 'update_status' && data.orderId) {
+      var sheetName = data.targetSheet || "Заявки на практикум";
+      var sheetId = 1109800626;
+      
+      var sheet = ss.getSheets().filter(function(s) { return s.getSheetId() == sheetId; })[0];
+      if (!sheet) sheet = ss.getSheetByName(sheetName);
+
+      if (sheet) {
+        var dataRange = sheet.getDataRange();
+        var numRows = dataRange.getNumRows();
+        var values = dataRange.getValues();
+        
+        // Знаходимо рядок з відповідним orderId (стовпець E - індекс 4)
+        for (var i = 1; i < numRows; i++) {
+          if (values[i][4] == data.orderId) { 
+            // Оновлюємо статус в стовпці K (стовпець 11)
+            sheet.getRange(i + 1, 11).setValue(data.status);
+            break;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ЛОГІКА ДЛЯ ПРАКТИКУМУ (новий запит)
     if (data.action === 'create_lead' || data.targetSheet === "Заявки на практикум") {
       var sheetName = "Заявки на практикум";
@@ -30,9 +56,10 @@ function doPost(e) {
           "utm_medium",
           "utm_campaign",
           "utm_content",
-          "utm_term"
+          "utm_term",
+          "Статус оплати"
         ]);
-        sheet.getRange("A1:J1").setFontWeight("bold");
+        sheet.getRange("A1:K1").setFontWeight("bold");
       }
 
       var rowData = [
@@ -45,7 +72,8 @@ function doPost(e) {
         data.utm_medium || data.medium || "",
         data.utm_campaign || data.campaign || "",
         data.utm_content || data.content || "",
-        data.utm_term || data.term || ""
+        data.utm_term || data.term || "",
+        "Не оплачено"
       ];
 
       sheet.appendRow(rowData);

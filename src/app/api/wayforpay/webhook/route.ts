@@ -46,8 +46,9 @@ export async function POST(req: Request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'update_status',
+            targetSheet: 'Заявки на практикум',
             orderId: orderReference,
-            status: 'paid'
+            status: 'Оплачено'
           })
         });
       }
