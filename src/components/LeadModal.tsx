@@ -22,6 +22,20 @@ export default function LeadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [wayForPayData, setWayForPayData] = useState<any>(null);
+  
+  // Test Mode Logic (Hidden)
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+
+  const handleTitleClick = () => {
+    setClickCount(prev => prev + 1);
+    if (clickCount >= 4) { // 5th click
+      setIsTestMode(!isTestMode);
+      setClickCount(0);
+    }
+    // Reset click count after 2.5 seconds
+    setTimeout(() => setClickCount(0), 2500);
+  };
 
   // Parse UTMs
   const [utms, setUtms] = useState({});
@@ -70,7 +84,8 @@ export default function LeadModal({
           phone,
           tariff: selectedTariff,
           price: selectedPrice,
-          utms
+          utms,
+          isTest: isTestMode
         })
       });
 
@@ -107,11 +122,15 @@ export default function LeadModal({
               </button>
 
               <div className="mb-6 text-center">
-                <h3 className="font-montserrat text-2xl font-bold uppercase text-[#4E0000]">
+                <h3 
+                  onClick={handleTitleClick}
+                  className="cursor-pointer font-montserrat text-2xl font-bold uppercase text-[#4E0000] select-none"
+                >
                   Реєстрація
+                  {isTestMode && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-red-400 animate-pulse" title="Test Mode Active" />}
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Тариф {selectedTariff} — ${selectedPrice}
+                  Тариф {selectedTariff} — {isTestMode ? '1 грн' : `$${selectedPrice}`}
                 </p>
               </div>
 

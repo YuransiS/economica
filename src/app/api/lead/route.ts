@@ -11,13 +11,22 @@ const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, phone, tariff, price, utms } = body;
+    const { name, phone, tariff, price, utms, isTest } = body;
 
     // Generate a unique order ID
     const orderReference = `ORDER_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const orderDate = Math.floor(Date.now() / 1000); // Unix timestamp
-    const currency = 'USD';
-    const amount = Number(price).toFixed(2);
+    
+    // Support for 1 UAH test payment
+    let currency = 'USD';
+    let amount = Number(price).toFixed(2);
+    let productName = `Практикум: Тариф ${tariff}`;
+
+    if (isTest) {
+      currency = 'UAH';
+      amount = '1.00';
+      productName = `[TEST] ${productName}`;
+    }
     
     // 1. Send to Google Sheets (if URL configured)
     if (GOOGLE_SHEET_WEBHOOK_URL) {
@@ -27,6 +36,7 @@ export async function POST(req: Request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'create_lead',
+            targetSheet: 'Заявки на практикум', // Identifier for Apps Script
             name,
             phone,
             tariff,
@@ -40,14 +50,10 @@ export async function POST(req: Request) {
         });
       } catch (err) {
         console.error("Failed to send lead to Google Sheets:", err);
-        // Continue to WayForPay even if sheet fails
       }
     }
 
     // 2. Prepare WayForPay Signature
-    // Format: merchantAccount;merchantDomainName;orderReference;orderDate;amount;currency;productName;productCount;productPrice
-    // Note: productCount and productPrice map to Arrays in WayForPay
-    const productName = `Практикум: Тариф ${tariff}`;
     const productCount = "1";
     const productPrice = amount;
 
