@@ -1,10 +1,22 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 export default function ReviewsSection() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const controls = useAnimation();
+
+  useEffect(() => {
+    controls.start({
+      x: [0, "-50%"],
+      transition: {
+        duration: 35,
+        repeat: Infinity,
+        ease: "linear",
+      }
+    });
+  }, [controls]);
 
   const reviews = [
     '/images/otziv_1.jpg',
@@ -25,30 +37,42 @@ export default function ReviewsSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="font-montserrat text-4xl md:text-5xl font-black text-center text-[#FBCBDA] uppercase mb-16"
+          className="font-montserrat text-4xl md:text-5xl font-black text-center text-[#FBCBDA] uppercase mb-4"
         >
           Відгуки
         </motion.h2>
 
-        {/* Infinite Carousel */}
-        <div className="relative overflow-hidden w-full py-4 -mx-4 px-4 lg:mx-0 lg:px-0">
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center text-[#FBCBDA]/60 font-montserrat text-sm uppercase tracking-widest mb-12"
+        >
+          Натисніть на відгук, щоб розглянути
+        </motion.p>
+
+        <div 
+          className="relative overflow-hidden w-full py-4 -mx-4 px-4 lg:mx-0 lg:px-0"
+          onMouseEnter={() => controls.stop()}
+          onMouseLeave={() => controls.start({
+            x: [0, "-50%"],
+            transition: { duration: 35, repeat: Infinity, ease: "linear" }
+          })}
+        >
           <motion.div 
             className="flex items-center gap-4 md:gap-8"
-            animate={{
-              x: [0, "-50%"],
-            }}
-            transition={{
-              duration: 30,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            animate={controls}
             style={{ width: "max-content" }}
           >
             {[...reviews, ...reviews].map((src, index) => (
               <motion.div
                 key={index}
                 whileHover={{ scale: 1.05 }}
-                onClick={() => setSelectedImage(src)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImage(src);
+                  controls.stop();
+                }}
                 className="shrink-0 h-[320px] md:h-[500px] w-auto max-w-[85vw] md:max-w-none rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-white/5 cursor-pointer"
               >
                 <img 
@@ -73,13 +97,21 @@ export default function ReviewsSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setSelectedImage(null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedImage(null);
+                controls.start({
+                  x: [0, "-50%"],
+                  transition: { duration: 35, repeat: Infinity, ease: "linear" }
+                });
+              }}
               className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
                 className="relative max-w-full max-h-full"
               >
                 <img 
