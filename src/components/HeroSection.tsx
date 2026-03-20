@@ -30,7 +30,7 @@ export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) 
             className="text-left"
           >
             <p className="font-narrow text-sm md:text-base tracking-widest uppercase mb-4 text-[#81D8D0]">
-              3-денний онлайн-практикум • 26.03 - 28.03
+              3-денний онлайн-практикум • 09.04 - 11.04
             </p>
 
             <h1 className="font-montserrat text-4xl md:text-6xl lg:text-7xl font-black uppercase leading-tight mb-8">
