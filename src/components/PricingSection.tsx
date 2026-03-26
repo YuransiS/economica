@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import AnimatedCheck from './icons/AnimatedCheck';
+import CountdownTimer from './CountdownTimer';
 
 export default function PricingSection({ onOpenLead }: { onOpenLead: (tariff: string, price: number) => void }) {
   const tariffs = [
@@ -24,8 +25,8 @@ export default function PricingSection({ onOpenLead }: { onOpenLead: (tariff: st
     },
     {
       name: "VIP",
-      oldPrice: 59,
-      price: 39,
+      oldPrice: 69,
+      price: 49,
       features: [
         "Доступ до чату",
         "3 прямі ефіри",
@@ -104,6 +105,10 @@ export default function PricingSection({ onOpenLead }: { onOpenLead: (tariff: st
                   ${tariff.price}
                 </span>
               </div>
+
+              {tariff.name === 'VIP' && (
+                <CountdownTimer />
+              )}
 
               <button
                 onClick={() => onOpenLead(tariff.name, tariff.price)}

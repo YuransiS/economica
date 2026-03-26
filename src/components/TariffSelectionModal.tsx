@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2 } from 'lucide-react';
+import CountdownTimer from './CountdownTimer';
 
 export default function TariffSelectionModal({
   isOpen,
@@ -28,8 +29,8 @@ export default function TariffSelectionModal({
     },
     {
       name: "VIP",
-      price: 39,
-      oldPrice: 59,
+      price: 49,
+      oldPrice: 69,
       features: [
         "Все з PRO",
         "Індивідуальний zoom",
@@ -124,6 +125,10 @@ export default function TariffSelectionModal({
                         ${tariff.price}
                       </span>
                     </div>
+
+                    {tariff.name === 'VIP' && (
+                      <CountdownTimer />
+                    )}
 
                     <button
                       onClick={() => onSelectTariff(tariff.name, tariff.price)}
