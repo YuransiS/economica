@@ -11,7 +11,7 @@ const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, phone, tariff, price, utms, isTest } = body;
+    const { name, phone, telegram, tariff, price, utms, isTest } = body;
 
     // Generate a unique order ID
     const orderReference = `ORDER_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -39,6 +39,7 @@ export async function POST(req: Request) {
             targetSheet: 'Заявки на практикум', // Identifier for Apps Script
             name,
             phone,
+            telegram,
             tariff,
             orderId: orderReference,
             utm_source: utms?.utm_source,

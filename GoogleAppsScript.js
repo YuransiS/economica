@@ -7,26 +7,31 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // 3. Перевіряємо, з якого лендінгу прийшла заявка
-    
+
     // ЛОГІКА ДНОВЛЕННЯ СТАТУСУ ОПЛАТИ
     if (data.action === 'update_status' && data.orderId) {
       var sheetName = data.targetSheet || "Заявки на практикум";
       var sheetId = 1109800626;
-      
-      var sheet = ss.getSheets().filter(function(s) { return s.getSheetId() == sheetId; })[0];
+
+      var sheet = ss.getSheets().filter(function (s) { return s.getSheetId() == sheetId; })[0];
       if (!sheet) sheet = ss.getSheetByName(sheetName);
 
       if (sheet) {
         var dataRange = sheet.getDataRange();
         var numRows = dataRange.getNumRows();
         var values = dataRange.getValues();
-        
-        // Знаходимо рядок з відповідним orderId (стовпець E - індекс 4)
-        for (var i = 1; i < numRows; i++) {
-          if (values[i][4] == data.orderId) { 
-            // Оновлюємо статус в стовпці K (стовпець 11)
-            sheet.getRange(i + 1, 11).setValue(data.status);
-            break;
+
+        var headers = values[0];
+        var orderIdColIdx = headers.indexOf("Номер замовлення");
+        var statusColIdx = headers.indexOf("Статус оплати");
+
+        if (orderIdColIdx !== -1 && statusColIdx !== -1) {
+          for (var i = 1; i < numRows; i++) {
+            if (values[i][orderIdColIdx] == data.orderId) { 
+              // Оновлюємо статус (column index + 1 for A1 notation)
+              sheet.getRange(i + 1, statusColIdx + 1).setValue(data.status);
+              break;
+            }
           }
         }
       }
@@ -38,9 +43,9 @@ function doPost(e) {
     if (data.action === 'create_lead' || data.targetSheet === "Заявки на практикум") {
       var sheetName = "Заявки на практикум";
       var sheetId = 1109800626;
-      
+
       // Знаходимо лист за ID або назвою
-      var sheet = ss.getSheets().filter(function(s) { return s.getSheetId() == sheetId; })[0];
+      var sheet = ss.getSheets().filter(function (s) { return s.getSheetId() == sheetId; })[0];
       if (!sheet) sheet = ss.getSheetByName(sheetName);
 
       // Створюємо лист, якщо його ще немає
@@ -50,6 +55,7 @@ function doPost(e) {
           "Дата та час",
           "Ім'я",
           "Телефон",
+          "Telegram",
           "Тариф",
           "Номер замовлення",
           "utm_source",
@@ -59,13 +65,14 @@ function doPost(e) {
           "utm_term",
           "Статус оплати"
         ]);
-        sheet.getRange("A1:K1").setFontWeight("bold");
+        sheet.getRange("A1:L1").setFontWeight("bold");
       }
 
       var rowData = [
         new Date(),
         data.name || "",
         data.phone || "",
+        data.telegram || "",
         data.tariff || "",
         data.orderId || "",
         data.utm_source || data.source || "",
@@ -77,7 +84,7 @@ function doPost(e) {
       ];
 
       sheet.appendRow(rowData);
-      
+
       return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
         .setMimeType(ContentService.MimeType.JSON);
     }

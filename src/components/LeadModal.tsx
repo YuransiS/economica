@@ -19,6 +19,7 @@ export default function LeadModal({
 }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState<any>();
+  const [telegram, setTelegram] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [wayForPayData, setWayForPayData] = useState<any>(null);
@@ -104,6 +105,10 @@ export default function LeadModal({
       setError('Введіть коректний номер телефону');
       return;
     }
+    if (!telegram.trim()) {
+      setError('Введіть ваш нік у Telegram');
+      return;
+    }
 
     setIsLoading(true);
 
@@ -114,6 +119,7 @@ export default function LeadModal({
         body: JSON.stringify({
           name,
           phone,
+          telegram,
           tariff: selectedTariff,
           price: selectedPrice,
           utms,
@@ -189,6 +195,17 @@ export default function LeadModal({
                       className="PhoneInput-custom w-full bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Нік у Telegram</label>
+                  <input
+                    type="text"
+                    value={telegram}
+                    onChange={(e) => setTelegram(e.target.value)}
+                    placeholder="@username"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#81D8D0] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#81D8D0]"
+                  />
                 </div>
 
                 {error && (
