@@ -26,7 +26,7 @@ export default function PricingSection({ onOpenLead }: { onOpenLead: (tariff: st
     {
       name: "VIP",
       oldPrice: 69,
-      price: 49,
+      price: 39,
       features: [
         "Доступ до чату",
         "3 прямі ефіри",

@@ -29,7 +29,7 @@ export default function TariffSelectionModal({
     },
     {
       name: "VIP",
-      price: 49,
+      price: 39,
       oldPrice: 69,
       features: [
         "Все з PRO",

@@ -29,7 +29,7 @@ export default async function ThankYouPage({
     );
   }
 
-  const purchaseValue = tariff === 'VIP' ? 49 : 19;
+  const purchaseValue = tariff === 'VIP' ? 39 : 19;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FCFAF8] p-6 text-center">
