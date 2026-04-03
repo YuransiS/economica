@@ -11,61 +11,57 @@ export async function POST(req: Request) {
     // Support URL-encoded form data or JSON
     let data;
     try {
-      data = JSON.parse(rawBody);
+      data = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
     } catch {
       const params = new URLSearchParams(rawBody);
       data = Object.fromEntries(params.entries());
     }
 
-    if (!data || !data.orderReference) {
+    if (!data) {
       return NextResponse.json({ success: false, message: 'Invalid payload' }, { status: 400 });
     }
 
-    // Verify signature from WayForPay
-    // For callback format is: merchantAccount;orderReference;amount;currency;authCode;cardPan;transactionStatus;reasonCode
-    const { 
-      merchantAccount, orderReference, amount, currency, 
-      authCode, cardPan, transactionStatus, reasonCode, merchantSignature 
-    } = data;
+    // WayForPay keys can sometimes be case-sensitive or different depending on the integration type
+    const status = data.transactionStatus || data.transaction_status;
+    const orderId = data.orderReference || data.order_reference;
+    const amount = data.amount;
+    const currency = data.currency;
 
-    // Depending on what WFP sends. If they send a signature, verify it.
-    const expectedSignatureString = `${merchantAccount};${orderReference};${amount};${currency};${authCode || ''};${cardPan || ''};${transactionStatus};${reasonCode}`;
-    const calculatedSignature = crypto
-      .createHmac('md5', MERCHANT_SECRET_KEY)
-      .update(expectedSignatureString)
-      .digest('hex');
+    if (!orderId) {
+      return NextResponse.json({ success: false, message: 'Missing order reference' }, { status: 400 });
+    }
 
-    // Note: WayForPay documentation sometimes differs on exact S2S callback signature construction, 
-    // It's always safest to check if the transaction is Approved.
-
-    if (transactionStatus === 'Approved') {
+    // Verify if the transaction is Approved
+    if (status?.toLowerCase() === 'approved') {
       // Send webhook to Google Sheets
       if (GOOGLE_SHEET_WEBHOOK_URL) {
-        await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'update_status',
-            targetSheet: 'Заявки на практикум',
-            orderId: orderReference,
-            status: 'Оплачено'
-          })
-        });
+        try {
+          await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update_status',
+              targetSheet: 'Заявки на практикум',
+              orderId: orderId,
+              status: 'Оплачено'
+            })
+          });
+        } catch (fetchErr) {
+          console.error("Google Sheets update failed:", fetchErr);
+        }
       }
     }
 
     // Acknowledge WayForPay Request
-    // Wayforpay requires responding with their own signature format as ACK
-    // orderReference;status;time
     const time = Math.floor(Date.now() / 1000);
-    const ackSignatureStr = `${orderReference};accept;${time}`;
+    const ackSignatureStr = `${orderId};accept;${time}`;
     const ackSignature = crypto
       .createHmac('md5', MERCHANT_SECRET_KEY)
       .update(ackSignatureStr)
       .digest('hex');
 
     return NextResponse.json({
-      orderReference,
+      orderReference: orderId,
       status: 'accept',
       time,
       signature: ackSignature

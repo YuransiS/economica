@@ -4,12 +4,12 @@ import crypto from 'crypto';
 // Replace with your actual merchant credentials or map to process.env
 const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'www_instagram_com_c1b32';
 const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY || 'a8bfe52b32514b1b541bcb56b522b33de86c7970';
-const MERCHANT_DOMAIN_NAME = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-
 const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
 
 export async function POST(req: Request) {
   try {
+    const origin = new URL(req.url).origin;
+    const MERCHANT_DOMAIN_NAME = process.env.NEXT_PUBLIC_SITE_URL || origin;
     const body = await req.json();
     const { name, phone, telegram, tariff, price, utms, isTest } = body;
 
