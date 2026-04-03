@@ -4,7 +4,7 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     // ==========================================
-    // 1. ЛОГІКА ОНОВЛЕННЯ СТАТУСУ (Надстійка)
+    // 1. ЛОГІКА ОНОВЛЕННЯ СТАТУСУ (Супер-стійка + Пошук з кінця)
     // ==========================================
     if (data.action === 'update_status' || (data.orderId && !data.name)) {
       var sheetName = data.targetSheet || "Заявки на практикум";
@@ -18,22 +18,33 @@ function doPost(e) {
         if (values.length > 0) {
           var headers = values[0];
           
-          // Шукаємо стовпець статусу за вхожденням слова (case-insensitive)
+          // Шукаємо стовпець статусу З КІНЦЯ (щоб не зачепити старі колонки)
           var statusColIdx = -1;
-          for (var k = 0; k < headers.length; k++) {
-            var h = headers[k].toString().toLowerCase();
-            if (h.indexOf("статус") !== -1 || h.indexOf("status") !== -1) {
+          for (var k = headers.length - 1; k >= 0; k--) {
+            var h = headers[k].toString().toLowerCase().trim();
+            // Шукаємо поєднання "статус" + "оплат" або просто точний збіг
+            if ((h.indexOf("статус") !== -1 && h.indexOf("оплат") !== -1) || h === "статус оплати" || h === "status") {
               statusColIdx = k;
               break;
             }
           }
 
-          // Шукаємо рядок, де є наш Order ID (у будь-якому стовпці!)
+          // Якщо не знайшли по суворому збігу, шукаємо просто "статус" теж з кінця
+          if (statusColIdx === -1) {
+            for (var k = headers.length - 1; k >= 0; k--) {
+              var h = headers[k].toString().toLowerCase().trim();
+              if (h.indexOf("статус") !== -1 || h.indexOf("status") !== -1) {
+                statusColIdx = k;
+                break;
+              }
+            }
+          }
+
+          // Пошук рядка по всьому листу
           for (var i = 1; i < values.length; i++) {
             var row = values[i];
             for (var j = 0; j < row.length; j++) {
               if (row[j].toString().trim() === targetOrderId) {
-                // Знайшли! Тепер оновлюємо статус, якщо знайшли стовпець
                 if (statusColIdx !== -1) {
                   sheet.getRange(i + 1, statusColIdx + 1).setValue(newStatus);
                   found = true;
@@ -45,16 +56,11 @@ function doPost(e) {
           }
           
           if (!found) {
-            var headerStr = headers.join(" | ");
-            logError(ss, "Order not found: " + targetOrderId + ". Headers seen: " + headerStr);
+            logError(ss, "Order not found: " + targetOrderId + ". StatCol: " + statusColIdx);
           }
         }
-      } else {
-        logError(ss, "Sheet not found: " + sheetName);
       }
-      
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success", "found": found }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({ "result": "success", "found": found })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ==========================================
@@ -92,8 +98,7 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({ "result": "unknown_action" })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    logError(ss, "Global Error: " + error.message);
+    logError(SpreadsheetApp.getActiveSpreadsheet(), "Global Error: " + error.message);
     return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": error.message })).setMimeType(ContentService.MimeType.JSON);
   }
 }
