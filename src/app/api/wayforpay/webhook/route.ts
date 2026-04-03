@@ -22,37 +22,47 @@ export async function POST(req: Request) {
     }
 
     // WayForPay keys can sometimes be case-sensitive or different depending on the integration type
-    const status = data.transactionStatus || data.transaction_status;
-    const orderId = data.orderReference || data.order_reference;
-    const amount = data.amount;
-    const currency = data.currency;
+    const status = (data.transactionStatus || data.transaction_status || data.status || '') + '';
+    const orderId = (data.orderReference || data.order_reference || data.orderReference || '') + '';
+    const merchantAccount = data.merchantAccount || '';
 
     if (!orderId) {
+      console.warn("Webhook missing orderId:", data);
       return NextResponse.json({ success: false, message: 'Missing order reference' }, { status: 400 });
     }
 
-    // Verify if the transaction is Approved
-    if (status?.toLowerCase() === 'approved') {
-      // Send webhook to Google Sheets
-      if (GOOGLE_SHEET_WEBHOOK_URL) {
-        try {
-          await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'update_status',
-              targetSheet: 'Заявки на практикум',
-              orderId: orderId,
-              status: 'Оплачено'
-            })
-          });
-        } catch (fetchErr) {
-          console.error("Google Sheets update failed:", fetchErr);
-        }
+    // Map statuses
+    let finalStatus = 'Невідомий';
+    const sLower = status.toLowerCase();
+    
+    if (sLower === 'approved' || sLower === 'settled') {
+      finalStatus = 'Оплачено';
+    } else if (sLower === 'declined') {
+      finalStatus = 'Відхилено';
+    } else if (sLower) {
+      finalStatus = `WFP: ${status}`;
+    }
+
+    // Send webhook to Google Sheets (always log for debugging)
+    if (GOOGLE_SHEET_WEBHOOK_URL) {
+      try {
+        await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update_status',
+            targetSheet: 'Заявки на практикум',
+            orderId: orderId,
+            status: finalStatus
+          })
+        });
+      } catch (fetchErr) {
+        console.error("Google Sheets update failed:", fetchErr);
       }
     }
 
     // Acknowledge WayForPay Request
+    // It's important to use the orderId from the payload
     const time = Math.floor(Date.now() / 1000);
     const ackSignatureStr = `${orderId};accept;${time}`;
     const ackSignature = crypto

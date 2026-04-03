@@ -8,8 +8,8 @@ const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https:
 
 export async function POST(req: Request) {
   try {
-    const origin = new URL(req.url).origin;
-    const MERCHANT_DOMAIN_NAME = process.env.NEXT_PUBLIC_SITE_URL || origin;
+    const origin = new URL(req.url).origin.replace('http://', 'https://');
+    const MERCHANT_DOMAIN_NAME = process.env.NEXT_PUBLIC_SITE_URL?.replace('http://', 'https://') || origin;
     const body = await req.json();
     const { name, phone, telegram, tariff, price, utms, isTest } = body;
 
