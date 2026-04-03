@@ -2,32 +2,31 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'www_instagram_com_c1b32';
-const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY || 'a8bfe52b32514b1b541bcb56b522b33de86c7970';
+const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || 'a8bfe52b32514b1b541bcb56b522b33de86c7970').trim();
 const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
 
 export async function POST(req: Request) {
   try {
+    const url = new URL(req.url);
+    const urlOrderId = url.searchParams.get('orderId');
     const rawBody = await req.text();
+
     // Support URL-encoded form data or JSON
-    let data;
+    let data: any = {};
     try {
-      data = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+      data = JSON.parse(rawBody);
     } catch {
       const params = new URLSearchParams(rawBody);
       data = Object.fromEntries(params.entries());
     }
 
-    if (!data) {
-      return NextResponse.json({ success: false, message: 'Invalid payload' }, { status: 400 });
-    }
-
-    // WayForPay keys can sometimes be case-sensitive or different depending on the integration type
+    // WayForPay keys can sometimes be case-sensitive or different
     const status = (data.transactionStatus || data.transaction_status || data.status || '') + '';
-    const orderId = (data.orderReference || data.order_reference || data.orderReference || '') + '';
-    const merchantAccount = data.merchantAccount || '';
+    let orderId = urlOrderId || data.orderReference || data.order_reference || '';
+    orderId = (orderId + '').trim();
 
     if (!orderId) {
-      console.warn("Webhook missing orderId:", data);
+      console.warn("Webhook missing orderId:", { urlOrderId, body: data });
       return NextResponse.json({ success: false, message: 'Missing order reference' }, { status: 400 });
     }
 
