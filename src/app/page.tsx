@@ -12,6 +12,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 import ResultsSection from "@/components/ResultsSection";
 import FinalCTASection from "@/components/FinalCTASection";
 import FAQSection from "@/components/FAQSection";
+import Footer from "@/components/Footer";
 import LeadModal from "@/components/LeadModal";
 import TariffSelectionModal from "@/components/TariffSelectionModal";
 
@@ -69,6 +70,8 @@ export default function Home() {
         selectedTariff={selectedTariff}
         selectedPrice={selectedPrice}
       />
+
+      <Footer />
     </main>
   );
 }
