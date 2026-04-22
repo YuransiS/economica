@@ -2,7 +2,7 @@ function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
+
     // ==========================================
     // 1. ЛОГІКА ОНОВЛЕННЯ СТАТУСУ (Супер-стійка + Пошук з кінця)
     // ==========================================
@@ -11,13 +11,13 @@ function doPost(e) {
       var targetOrderId = (data.orderId || "").toString().trim();
       var newStatus = data.status || "Оплачено";
       var found = false;
-      
+
       var sheet = ss.getSheetByName(sheetName);
       if (sheet) {
         var values = sheet.getDataRange().getValues();
         if (values.length > 0) {
           var headers = values[0];
-          
+
           // Шукаємо стовпець статусу З КІНЦЯ (щоб не зачепити старі колонки)
           var statusColIdx = -1;
           for (var k = headers.length - 1; k >= 0; k--) {
@@ -54,7 +54,7 @@ function doPost(e) {
             }
             if (found) break;
           }
-          
+
           if (!found) {
             logError(ss, "Order not found: " + targetOrderId + ". StatCol: " + statusColIdx);
           }
@@ -67,29 +67,63 @@ function doPost(e) {
     // 2. ЛОГІКА СТВОРЕННЯ ЛІДА
     // ==========================================
     if (data.action === 'create_lead' || data.targetSheet === "Заявки на практикум") {
-      var sheetName = "Заявки на практикум";
-      var sheet = ss.getSheetByName(sheetName);
+      var sheet;
+      var isWebinar = data.targetSheet === "Заявки Вебінар";
 
-      if (!sheet) {
-        sheet = ss.insertSheet(sheetName);
-        sheet.appendRow(["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус оплати"]);
-        sheet.getRange(1, 1, 1, 12).setFontWeight("bold");
+      // Якщо заявка з нового лендінгу, шукаємо аркуш за вказаним ID
+      if (isWebinar) {
+        var sheets = ss.getSheets();
+        for (var i = 0; i < sheets.length; i++) {
+          if (sheets[i].getSheetId() == 325595402) {
+            sheet = sheets[i];
+            break;
+          }
+        }
       }
 
-      var rowData = [
-        new Date(),
-        data.name || "",
-        data.phone || "",
-        data.telegram || "",
-        data.tariff || "",
-        (data.orderId || "").toString().trim(),
-        data.utm_source || "",
-        data.utm_medium || "",
-        data.utm_campaign || "",
-        data.utm_content || "",
-        data.utm_term || "",
-        "Не оплачено"
-      ];
+      if (!sheet) {
+        var sheetName = data.targetSheet || "Заявки на практикум";
+        sheet = ss.getSheetByName(sheetName);
+
+        if (!sheet) {
+          sheet = ss.insertSheet(sheetName);
+          sheet.appendRow(["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус оплати"]);
+          sheet.getRange(1, 1, 1, 12).setFontWeight("bold");
+        }
+      }
+
+      var rowData;
+
+      if (isWebinar) {
+        // Для вебінару зберігаємо лише необхідні поля без тарифів, ордерів та статусів
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || ""
+        ];
+      } else {
+        // Стандартна логіка для основного сайту (практикум)
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.tariff || "",
+          (data.orderId || "").toString().trim(),
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || "",
+          "Не оплачено"
+        ];
+      }
 
       sheet.appendRow(rowData);
       return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
@@ -111,5 +145,5 @@ function logError(ss, message) {
       logSheet.appendRow(["Time", "Error Message"]);
     }
     logSheet.appendRow([new Date(), message]);
-  } catch(e) {}
+  } catch (e) { }
 }
