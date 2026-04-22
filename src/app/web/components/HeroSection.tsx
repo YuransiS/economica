@@ -5,7 +5,8 @@ import Image from 'next/image';
 
 export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) {
   return (
-    <section className="relative w-full overflow-hidden bg-[#4E0000] text-white pt-32 pb-20 md:pb-40">
+    <section className="relative w-full min-h-screen overflow-hidden bg-[#4E0000] text-white flex flex-col justify-center pt-20 pb-16 md:pt-40 md:pb-52">
+      {/* Background Image Setup */}
       <div className="absolute inset-0 z-0">
         <Image 
           src="/images/hero.JPG"
@@ -13,35 +14,44 @@ export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) 
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_30%] opacity-40 mix-blend-luminosity"
+          className="object-cover object-[center_35%] md:object-center opacity-30 md:opacity-40 mix-blend-luminosity scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#4E0000] via-[#4E0000]/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#4E0000] via-transparent to-transparent"></div>
+        {/* Multilayered Gradients for Premium Feel */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#4E0000] via-transparent to-[#4E0000]/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#4E0000]/20 via-transparent to-[#4E0000] lg:hidden"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4E0000] via-[#4E0000]/40 to-transparent hidden lg:block"></div>
       </div>
 
-      <div className="container mx-auto px-4 lg:px-8 max-w-6xl relative z-10 flex flex-col md:flex-row items-center">
-        <div className="w-full md:w-3/5">
+      <div className="container mx-auto px-4 lg:px-8 max-w-6xl relative z-10 flex flex-col items-start">
+        
+        <div className="w-full lg:w-3/5">
           <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="text-left"
           >
-            <p className="font-narrow text-sm md:text-base tracking-widest uppercase mb-4 text-[#81D8D0]">
-              28.04 в 19:00 за українським часом
-            </p>
+            <div className="inline-block px-3 py-1 bg-[#81D8D0]/10 backdrop-blur-sm border border-[#81D8D0]/20 rounded-full mb-6">
+              <p className="font-narrow text-[10px] md:text-sm tracking-[0.2em] uppercase text-[#81D8D0] font-bold">
+                28.04 в 19:00 за українським часом
+              </p>
+            </div>
 
-            <h1 className="font-montserrat text-4xl md:text-6xl lg:text-7xl font-black uppercase leading-tight mb-8">
-              Як розбагатіти назавжди? <br /> 
-              <span className="text-[#81D8D0] text-2xl md:text-4xl mt-4 block">Система інвестицій для накопичення перших 100 000$ капіталу у 2026 році</span>
+            <h1 className="font-montserrat text-[2.5rem] leading-[1.1] sm:text-5xl md:text-7xl font-black uppercase mb-6 text-balance">
+              Як розбагатіти <br className="hidden sm:block" /> 
+              <span className="text-[#81D8D0]">назавжди?</span>
             </h1>
+            
+            <p className="font-montserrat text-lg sm:text-xl md:text-3xl font-medium mb-8 text-[#81D8D0]/90 leading-tight max-w-2xl text-balance">
+              Система інвестицій для накопичення перших 100 000$ капіталу у 2026 році
+            </p>
           </motion.div>
 
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col gap-4 mb-12 w-full max-w-xl"
+            className="flex flex-col gap-3 mb-12 w-full max-w-lg"
           >
             {[
               "навіть під час кризи",
@@ -50,24 +60,37 @@ export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) 
             ].map((item, index) => (
               <div 
                  key={index} 
-                 className="flex items-center space-x-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 transform transition-all hover:translate-x-2 hover:bg-white/15"
+                 className="flex items-center space-x-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 transform transition-all hover:bg-white/10"
               >
-                <div className="w-2 h-2 rounded-full bg-[#81D8D0]"></div>
-                <h3 className="font-arimo text-lg md:text-xl font-bold uppercase">{item}</h3>
+                <div className="w-2 h-2 rounded-full bg-[#81D8D0] shadow-[0_0_10px_#81D8D0]"></div>
+                <h3 className="font-arimo text-sm md:text-lg font-bold uppercase tracking-wide">{item}</h3>
               </div>
             ))}
           </motion.div>
 
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            onClick={onOpenLead}
-            className="font-montserrat relative overflow-hidden rounded-r-[40px] rounded-l-[4px] bg-[#81D8D0] px-12 py-5 text-xl font-bold uppercase tracking-wide text-[#4E0000] shadow-[0_0_40px_rgba(129,216,208,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(129,216,208,0.6)]"
+            className="w-full sm:w-auto"
           >
-            <span className="relative z-10">Зареєструватись безкоштовно</span>
-          </motion.button>
+            <button
+              onClick={onOpenLead}
+              className="font-montserrat w-full sm:w-auto relative overflow-hidden group rounded-full bg-[#81D8D0] px-10 py-5 text-lg md:text-xl font-black uppercase tracking-widest text-[#4E0000] shadow-[0_20px_40px_rgba(129,216,208,0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_25px_50px_rgba(129,216,208,0.5)] active:scale-[0.98]"
+            >
+              <span className="relative z-10">Зареєструватись</span>
+              <div className="absolute inset-0 bg-white translate-y-full transition-transform group-hover:translate-y-0 opacity-20"></div>
+            </button>
+            <p className="mt-4 text-center sm:text-left text-xs uppercase tracking-widest text-white/40 font-bold">
+              Вхід безкоштовний • Реєстрація відкрита
+            </p>
+          </motion.div>
         </div>
+      </div>
+      
+      {/* Decorative Elements */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30 animate-bounce">
+        <div className="w-1 h-12 bg-gradient-to-b from-[#81D8D0] to-transparent rounded-full"></div>
       </div>
     </section>
   );

@@ -23,20 +23,20 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
   ];
 
   return (
-    <section className="py-20 bg-white text-[#4E0000]">
+    <section className="py-16 md:py-24 bg-white text-[#4E0000]">
       <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-12 md:mb-16"
         >
-          <h2 className="font-montserrat text-3xl md:text-5xl font-black uppercase leading-tight max-w-4xl mx-auto">
-            Закладіть фундамент для формування свого 100.000$ капіталу вже в 2026 році, починаючи всього з 30$
+          <h2 className="font-montserrat text-2xl sm:text-3xl md:text-5xl font-black uppercase leading-tight max-w-4xl mx-auto text-balance">
+            Закладіть фундамент для формування свого <span className="text-[#81D8D0]">100.000$</span> капіталу вже в 2026 році, починаючи всього з 30$
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-12 md:mb-16">
           {items.map((item, index) => (
             <motion.div
               key={index}
@@ -44,10 +44,10 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl transition-shadow"
+              className="bg-gray-50 rounded-2xl md:rounded-3xl p-6 md:p-8 border border-gray-100 hover:shadow-xl transition-shadow"
             >
-              <h3 className="font-montserrat text-2xl font-bold uppercase mb-4 text-[#81D8D0]">{item.title}</h3>
-              <p className="font-arimo text-lg text-gray-700">{item.description}</p>
+              <h3 className="font-montserrat text-lg md:text-2xl font-bold uppercase mb-2 md:mb-4 text-[#81D8D0]">{item.title}</h3>
+              <p className="font-arimo text-base md:text-lg text-gray-700 leading-relaxed">{item.description}</p>
             </motion.div>
           ))}
         </div>
@@ -58,7 +58,7 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             onClick={onOpenLead}
-            className="font-montserrat relative overflow-hidden rounded-full bg-[#4E0000] px-12 py-5 text-xl font-bold uppercase tracking-wide text-white shadow-[0_0_40px_rgba(78,0,0,0.4)] transition-all hover:scale-105 hover:bg-[#3a0000]"
+            className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#4E0000] px-10 py-4 md:px-12 md:py-5 text-lg md:text-xl font-bold uppercase tracking-wide text-white shadow-[0_15px_30px_rgba(78,0,0,0.2)] transition-all hover:scale-105 hover:bg-[#3a0000] active:scale-[0.98]"
           >
             Зареєструватись
           </motion.button>
