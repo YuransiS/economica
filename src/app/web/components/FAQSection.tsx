@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus } from 'lucide-react';
 
-export default function FAQSection({ onOpenLead }: { onOpenLead: () => void }) {
+export default function FAQSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
   const faqs = [
     {
       q: "З якої суми треба починати інвестувати?",
@@ -83,8 +83,8 @@ export default function FAQSection({ onOpenLead }: { onOpenLead: () => void }) {
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            onClick={onOpenLead}
-            className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#4E0000] px-10 py-4 md:px-12 md:py-5 text-lg md:text-xl font-bold uppercase tracking-wide text-white shadow-[0_15px_30px_rgba(78,0,0,0.2)] transition-all hover:scale-105 hover:bg-[#3a0000] active:scale-[0.98]"
+            onClick={onOpenLeadAction}
+            className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#4E0000] px-12 py-5 text-xl font-bold uppercase tracking-wide text-white shadow-[0_15px_30px_rgba(78,0,0,0.2)] transition-all hover:scale-105 hover:bg-[#3a0000] active:scale-[0.98]"
           >
             Зареєструватись
           </motion.button>

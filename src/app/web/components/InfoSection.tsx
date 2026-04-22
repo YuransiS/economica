@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) {
+export default function InfoSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
   const items = [
     {
       title: "Чітка інвестиційна стратегія",
@@ -62,7 +62,7 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            onClick={onOpenLead}
+            onClick={onOpenLeadAction}
             className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#81D8D0] px-10 py-4 md:px-12 md:py-5 text-lg md:text-xl font-bold uppercase tracking-wide text-[#4E0000] shadow-[0_15px_30px_rgba(129,216,208,0.2)] transition-all hover:scale-105 hover:bg-white active:scale-[0.98]"
           >
             Зареєструватись

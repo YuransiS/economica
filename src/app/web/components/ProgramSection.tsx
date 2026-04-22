@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Plus, Minus, ChevronDown } from 'lucide-react';
 
-export default function ProgramSection({ onOpenLead }: { onOpenLead: () => void }) {
+export default function ProgramSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const modules = [
@@ -139,7 +139,7 @@ export default function ProgramSection({ onOpenLead }: { onOpenLead: () => void 
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            onClick={onOpenLead}
+            onClick={onOpenLeadAction}
             className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#4E0000] px-12 py-5 text-xl font-bold uppercase tracking-wide text-white shadow-[0_15px_30px_rgba(78,0,0,0.2)] transition-all hover:scale-105 hover:bg-[#3a0000] active:scale-[0.98]"
           >
             Зареєструватись

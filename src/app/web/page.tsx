@@ -23,12 +23,12 @@ export default function WebLandingPage() {
 
   return (
     <main className="w-full relative overflow-x-hidden bg-[#1A0000]">
-      <HeroSection onOpenLead={openLeadModal} />
-      <InfoSection onOpenLead={openLeadModal} />
-      <TargetAudienceSection onOpenLead={openLeadModal} />
-      <ProgramSection onOpenLead={openLeadModal} />
+      <HeroSection onOpenLeadAction={openLeadModal} />
+      <InfoSection onOpenLeadAction={openLeadModal} />
+      <TargetAudienceSection onOpenLeadAction={openLeadModal} />
+      <ProgramSection onOpenLeadAction={openLeadModal} />
       <AboutAuthorSection />
-      <FAQSection onOpenLead={openLeadModal} />
+      <FAQSection onOpenLeadAction={openLeadModal} />
       
       <WebLeadModal 
         isOpen={isModalOpen} 

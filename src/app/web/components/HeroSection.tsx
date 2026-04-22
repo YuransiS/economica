@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
-export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) {
+export default function HeroSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
   return (
     <section className="relative w-full min-h-screen overflow-hidden bg-[#4E0000] text-white flex flex-col justify-end md:justify-center pt-20 pb-12 md:pb-52">
       {/* Background Image Setup */}
@@ -75,7 +75,7 @@ export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) 
             className="w-full sm:w-auto"
           >
             <button
-              onClick={onOpenLead}
+              onClick={onOpenLeadAction}
               className="font-montserrat w-full sm:w-auto relative overflow-hidden group rounded-full bg-[#81D8D0] px-10 py-4 md:py-5 text-base md:text-xl font-black uppercase tracking-widest text-[#4E0000] shadow-[0_20px_40px_rgba(129,216,208,0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_25px_50px_rgba(129,216,208,0.5)] active:scale-[0.98]"
             >
               <span className="relative z-10">Зареєструватись</span>
@@ -91,9 +91,6 @@ export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) 
       {/* Decorative Elements */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-20 animate-bounce hidden md:flex">
         <div className="w-0.5 h-10 bg-gradient-to-b from-[#81D8D0] to-transparent rounded-full"></div>
-      </div>
-    </section>x-1/2 flex flex-col items-center gap-2 opacity-30 animate-bounce">
-        <div className="w-1 h-12 bg-gradient-to-b from-[#81D8D0] to-transparent rounded-full"></div>
       </div>
     </section>
   );
