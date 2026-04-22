@@ -23,8 +23,13 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-white text-[#4E0000]">
-      <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
+    <section className="py-16 md:py-24 bg-[#4E0000] text-white overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#81D8D0] rounded-full blur-[120px] opacity-10"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#81D8D0] rounded-full blur-[120px] opacity-10"></div>
+      </div>
+
+      <div className="container mx-auto px-4 lg:px-8 max-w-6xl relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -44,10 +49,10 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-gray-50 rounded-2xl md:rounded-3xl p-6 md:p-8 border border-gray-100 hover:shadow-xl transition-shadow"
+              className="bg-white/5 backdrop-blur-sm rounded-2xl md:rounded-3xl p-6 md:p-8 border border-white/10 hover:bg-white/10 transition-all hover:translate-y-[-4px]"
             >
               <h3 className="font-montserrat text-lg md:text-2xl font-bold uppercase mb-2 md:mb-4 text-[#81D8D0]">{item.title}</h3>
-              <p className="font-arimo text-base md:text-lg text-gray-700 leading-relaxed">{item.description}</p>
+              <p className="font-arimo text-base md:text-lg text-gray-200 leading-relaxed">{item.description}</p>
             </motion.div>
           ))}
         </div>
@@ -58,7 +63,7 @@ export default function InfoSection({ onOpenLead }: { onOpenLead: () => void }) 
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             onClick={onOpenLead}
-            className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#4E0000] px-10 py-4 md:px-12 md:py-5 text-lg md:text-xl font-bold uppercase tracking-wide text-white shadow-[0_15px_30px_rgba(78,0,0,0.2)] transition-all hover:scale-105 hover:bg-[#3a0000] active:scale-[0.98]"
+            className="font-montserrat w-full sm:w-auto relative overflow-hidden rounded-full bg-[#81D8D0] px-10 py-4 md:px-12 md:py-5 text-lg md:text-xl font-bold uppercase tracking-wide text-[#4E0000] shadow-[0_15px_30px_rgba(129,216,208,0.2)] transition-all hover:scale-105 hover:bg-white active:scale-[0.98]"
           >
             Зареєструватись
           </motion.button>
