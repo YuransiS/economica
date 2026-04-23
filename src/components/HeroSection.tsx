@@ -29,7 +29,7 @@ export default function HeroSection({ onOpenLead }: { onOpenLead: () => void }) 
             transition={{ duration: 0.8 }}
             className="text-left"
           >
-            <p className="font-narrow text-sm md:text-base tracking-widest uppercase mb-4 text-[#81D8D0]">
+            <p className="font-narrow text-xl md:text-3xl tracking-widest uppercase mb-6 text-[#81D8D0] font-bold">
               3-денний онлайн-практикум • 09.04 - 11.04
             </p>
 

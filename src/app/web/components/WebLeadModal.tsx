@@ -76,7 +76,13 @@ export default function WebLeadModal({
       const result = await response.json();
 
       if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+          (window as any).fbq('track', 'Lead');
+        }
+        
+        setTimeout(() => {
+          window.location.href = result.redirectUrl;
+        }, 500);
       } else {
         setError('Помилка при реєстрації. Спробуйте пізніше.');
         setIsLoading(false);

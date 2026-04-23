@@ -89,7 +89,11 @@ export default function LeadModal({
       });
 
       document.body.appendChild(form);
-      form.submit();
+      
+      // Small delay to ensure pixel event is sent
+      setTimeout(() => {
+        form.submit();
+      }, 500);
     }
   }, [wayForPayData]);
 
@@ -138,6 +142,11 @@ export default function LeadModal({
       const result = await response.json();
 
       if (result.success) {
+        // Track Facebook Lead Event
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+          (window as any).fbq('track', 'Lead');
+        }
+        
         setWayForPayData(result.data);
       } else {
         setError('Помилка при створенні замовлення. Спробуйте пізніше.');

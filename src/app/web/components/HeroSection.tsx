@@ -31,8 +31,8 @@ export default function HeroSection({ onOpenLeadAction }: { onOpenLeadAction: ()
             transition={{ duration: 0.8 }}
             className="text-left"
           >
-            <div className="inline-block px-3 py-1 bg-[#81D8D0]/10 backdrop-blur-sm border border-[#81D8D0]/20 rounded-full mb-6">
-              <p className="font-narrow text-[10px] md:text-sm tracking-[0.2em] uppercase text-[#81D8D0] font-bold">
+            <div className="inline-block px-6 py-3 bg-[#81D8D0]/10 backdrop-blur-sm border border-[#81D8D0]/20 rounded-full mb-10 shadow-[0_0_20px_rgba(129,216,208,0.1)]">
+              <p className="font-narrow text-lg md:text-2xl tracking-[0.2em] uppercase text-[#81D8D0] font-bold">
                 28.04 в 19:00 за українським часом
               </p>
             </div>
