@@ -6,26 +6,35 @@ export async function POST(req: Request) {
     const order = url.searchParams.get('order');
     const tariff = url.searchParams.get('tariff') || 'PRO';
     
-    // Parse the form data to check the transaction status
-    const rawBody = await req.text();
-    let status = 'Approved'; // Default to Approved just in case
+    // 1. Check query parameters first (WayForPay can sometimes append these)
+    let status = url.searchParams.get('transactionStatus') || 
+                 url.searchParams.get('transaction_status') || 
+                 url.searchParams.get('status') || 
+                 url.searchParams.get('result') || '';
     
-    try {
-      if (rawBody) {
-        if (rawBody.startsWith('{')) {
-          const json = JSON.parse(rawBody);
-          status = json.transactionStatus || json.transaction_status || json.status || 'Approved';
-        } else {
-          const params = new URLSearchParams(rawBody);
-          status = params.get('transactionStatus') || params.get('transaction_status') || params.get('status') || 'Approved';
+    // 2. If not in query, check the body (WayForPay usually sends POST to returnUrl)
+    if (!status) {
+      try {
+        const rawBody = await req.text();
+        if (rawBody) {
+          // Log rawBody for debugging if needed (internally)
+          if (rawBody.trim().startsWith('{')) {
+            const json = JSON.parse(rawBody);
+            status = json.transactionStatus || json.transaction_status || json.status || json.result || '';
+          } else {
+            const params = new URLSearchParams(rawBody);
+            status = params.get('transactionStatus') || params.get('transaction_status') || params.get('status') || params.get('result') || '';
+          }
         }
+      } catch (e) {
+        // Ignored
       }
-    } catch (e) {
-      // Ignored
     }
 
-    const sLower = status.toLowerCase();
-    const isDeclined = sLower === 'declined' || sLower === 'fail';
+    // WayForPay statuses: Approved, Declined, Expired, Processing, Voided, Refunded, etc.
+    // We only want to show Thank You if it's explicitly Approved or if we REALLY don't know (fallback)
+    const sLower = status ? status.toLowerCase() : 'approved'; 
+    const isSuccess = sLower === 'approved';
 
     // WayForPay returns via POST. We must use a 303 Redirect to force the browser 
     // to switch to a GET request when loading the thank-you or failure page.
@@ -33,7 +42,7 @@ export async function POST(req: Request) {
       const isReservation = tariff === 'Invest Baby' || tariff === 'Business Baby' || tariff === 'Finance Baby';
       const basePath = isReservation ? '/price' : '';
 
-      if (isDeclined) {
+      if (!isSuccess) {
         return NextResponse.redirect(new URL(`${basePath}/failure/${order}?tariff=${tariff}`, req.url), 303);
       }
       return NextResponse.redirect(new URL(`${basePath}/thank-you/${order}?tariff=${tariff}`, req.url), 303);
