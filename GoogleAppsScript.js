@@ -12,7 +12,19 @@ function doPost(e) {
       var newStatus = data.status || "Оплачено";
       var found = false;
 
-      var sheet = ss.getSheetByName(sheetName);
+      var sheet;
+      if (sheetName === "Броні Предзапис") {
+        var sheets = ss.getSheets();
+        for (var idx = 0; idx < sheets.length; idx++) {
+          if (sheets[idx].getSheetId() == 1053957371) {
+            sheet = sheets[idx];
+            break;
+          }
+        }
+      } else {
+        sheet = ss.getSheetByName(sheetName);
+      }
+
       if (sheet) {
         var values = sheet.getDataRange().getValues();
         if (values.length > 0) {
@@ -69,12 +81,21 @@ function doPost(e) {
     if (data.action === 'create_lead' || data.targetSheet === "Заявки на практикум") {
       var sheet;
       var isWebinar = data.targetSheet === "Заявки Вебінар";
+      var isPricePage = data.targetSheet === "Броні Предзапис";
 
       // Якщо заявка з нового лендінгу, шукаємо аркуш за вказаним ID
       if (isWebinar) {
         var sheets = ss.getSheets();
         for (var i = 0; i < sheets.length; i++) {
           if (sheets[i].getSheetId() == 325595402) {
+            sheet = sheets[i];
+            break;
+          }
+        }
+      } else if (isPricePage) {
+        var sheets = ss.getSheets();
+        for (var i = 0; i < sheets.length; i++) {
+          if (sheets[i].getSheetId() == 1053957371) {
             sheet = sheets[i];
             break;
           }

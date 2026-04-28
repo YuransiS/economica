@@ -2,25 +2,26 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 // Replace with your actual merchant credentials or map to process.env
-const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'www_instagram_com_c1b32';
-const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY || 'a8bfe52b32514b1b541bcb56b522b33de86c7970';
+const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight';
+const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e';
 const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
 
 export async function POST(req: Request) {
   try {
     const origin = new URL(req.url).origin.replace('http://', 'https://');
     const MERCHANT_DOMAIN_NAME = process.env.NEXT_PUBLIC_SITE_URL?.replace('http://', 'https://') || origin;
-    const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'www_instagram_com_c1b32').trim();
-    const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || 'a8bfe52b32514b1b541bcb56b522b33de86c7970').trim();
+    const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight').trim();
+    const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
     const body = await req.json();
-    const { name, phone, telegram, tariff, price, utms, isTest } = body;
+    const { name, phone, telegram, tariff, price, utms, isTest, targetSheet, currency: inputCurrency } = body;
+    const sheetName = targetSheet || 'Заявки на практикум';
 
     // Generate a unique order ID
     const orderReference = `ORDER_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const orderDate = Math.floor(Date.now() / 1000); // Unix timestamp
 
-    // Support for 1 UAH test payment
-    let currency = 'USD';
+    // Support for 1 UAH test payment or custom currency
+    let currency = inputCurrency || 'USD';
     let amount = Number(price).toFixed(2);
     let productName = `Практикум: Тариф ${tariff}`;
 
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'create_lead',
-            targetSheet: 'Заявки на практикум', // Identifier for Apps Script
+            targetSheet: sheetName, // Identifier for Apps Script
             name,
             phone,
             telegram,
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
         clientPhone: phone,
         merchantSignature: signature,
         returnUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook?orderId=${orderReference}` // For the S2S callback with fallback param
+        serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook?orderId=${orderReference}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
       }
     });
 
