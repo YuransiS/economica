@@ -1,17 +1,14 @@
 'use client';
 
-import { useEffect, useState, use } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-export default function CheckingPaymentPage({ 
-  params 
-}: { 
-  params: Promise<{ orderId: string }> 
-}) {
+export default function CheckingPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { orderId } = use(params);
+  const params = useParams();
+  const orderId = params.orderId as string;
   const tariff = searchParams.get('tariff') || 'Invest Baby';
   const [error, setError] = useState<string | null>(null);
 

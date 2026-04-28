@@ -84,9 +84,9 @@ export async function POST(req: Request) {
         clientName: name,
         clientPhone: phone,
         merchantSignature: signature,
-        returnUrl: `${MERCHANT_DOMAIN_NAME}/checking-payment/${orderReference}?tariff=${tariff}`,
-        approveUrl: `${MERCHANT_DOMAIN_NAME}/checking-payment/${orderReference}?tariff=${tariff}`,
-        declineUrl: `${MERCHANT_DOMAIN_NAME}/checking-payment/${orderReference}?tariff=${tariff}`,
+        returnUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
+        approveUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
+        declineUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
         serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook?orderId=${orderReference}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
       }
     });
