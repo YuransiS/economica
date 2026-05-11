@@ -4,12 +4,13 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // ==========================================
-    // 1. ЛОГІКА ОНОВЛЕННЯ СТАТУСУ
+    // 1. ЛОГІКА ОНОВЛЕННЯ ПОЛІВ (Статус, Коментар)
     // ==========================================
-    if (data.action === 'update_status' || (data.orderId && !data.name)) {
+    if (data.action === 'update_status' || data.action === 'update_comment' || (data.orderId && !data.name)) {
       var sheetName = data.targetSheet || "Заявки на практикум";
       var targetOrderId = (data.orderId || "").toString().trim();
-      var newStatus = data.status || "Оплачено";
+      var fieldName = data.action === 'update_comment' ? "Коментар" : "Статус";
+      var newValue = data.action === 'update_comment' ? data.comment : (data.status || "Оплачено");
       var found = false;
 
       // 1. Update in the specific sheet
@@ -42,13 +43,13 @@ function doPost(e) {
       }
 
       if (sheet) {
-        found = updateStatusInSheet(sheet, targetOrderId, newStatus);
+        found = updateFieldInSheet(sheet, targetOrderId, fieldName, newValue);
       }
 
       // 2. ALSO update in the Global Analytics sheet
       var globalSheet = ss.getSheetByName("Аналітика Ліди");
       if (globalSheet) {
-        updateStatusInSheet(globalSheet, targetOrderId, newStatus);
+        updateFieldInSheet(globalSheet, targetOrderId, fieldName, newValue);
       }
 
       return ContentService.createTextOutput(JSON.stringify({ "result": "success", "found": found })).setMimeType(ContentService.MimeType.JSON);
@@ -353,24 +354,29 @@ function logError(ss, message) {
 // 4. ДОПОМІЖНІ ФУНКЦІЇ (НОВА СИСТЕМА)
 // ==========================================
 
-function updateStatusInSheet(sheet, targetOrderId, newStatus) {
+function updateFieldInSheet(sheet, targetOrderId, fieldName, newValue) {
   var values = sheet.getDataRange().getValues();
   if (values.length === 0) return false;
   
   var headers = values[0];
-  var statusColIdx = -1;
+  var targetColIdx = -1;
   var orderColIdx = -1;
 
   for (var k = 0; k < headers.length; k++) {
     var h = headers[k].toString().toLowerCase().trim();
-    if (h.indexOf("статус") !== -1) statusColIdx = k;
+    if (h.indexOf(fieldName.toLowerCase()) !== -1) targetColIdx = k;
     if (h.indexOf("замовлення") !== -1 || h.indexOf("order") !== -1) orderColIdx = k;
   }
 
-  if (statusColIdx === -1) return false;
+  // If column doesn't exist, try to add it (only for comments)
+  if (targetColIdx === -1 && fieldName.toLowerCase().indexOf("коментар") !== -1) {
+    targetColIdx = headers.length;
+    sheet.getRange(1, targetColIdx + 1).setValue("Коментар");
+  }
+
+  if (targetColIdx === -1) return false;
 
   for (var i = 1; i < values.length; i++) {
-    // Check in order ID column or any column (fallback)
     var match = false;
     if (orderColIdx !== -1) {
       if (values[i][orderColIdx].toString().trim() === targetOrderId) match = true;
@@ -381,7 +387,7 @@ function updateStatusInSheet(sheet, targetOrderId, newStatus) {
     }
 
     if (match) {
-      sheet.getRange(i + 1, statusColIdx + 1).setValue(newStatus);
+      sheet.getRange(i + 1, targetColIdx + 1).setValue(newValue);
       return true;
     }
   }
@@ -392,13 +398,21 @@ function recordGlobalLead(ss, data, sourceSheetName) {
   var sheet = ss.getSheetByName("Аналітика Ліди");
   if (!sheet) {
     sheet = ss.insertSheet("Аналітика Ліди");
-    var headers = ["Дата", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус", "Джерело", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+    var headers = ["Дата", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус", "Джерело", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Коментар"];
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
   }
 
   var values = sheet.getDataRange().getValues();
   var headers = values[0];
+  
+  // Ensure Коментар column exists in Global sheet
+  if (headers.indexOf("Коментар") === -1) {
+    sheet.getRange(1, headers.length + 1).setValue("Коментар");
+    headers.push("Коментар");
+    values[0].push("Коментар");
+  }
+
   var phoneCol = headers.indexOf("Телефон");
   var tgCol = headers.indexOf("Telegram");
   var journeyCol = headers.indexOf("Customer Journey");

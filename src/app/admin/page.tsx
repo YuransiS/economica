@@ -71,6 +71,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
+  const [localComment, setLocalComment] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -215,16 +217,14 @@ export default function AdminDashboard() {
     if (!selectedLead) return;
     setUpdating(true);
     try {
-      // Find the original column name for status
-      const statusKey = Object.keys(selectedLead._originalData || {}).find(k => k.toLowerCase().includes('статус')) || 'Статус оплати';
-      
       const res = await fetch('/api/admin/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          _sheet: selectedLead._sheet,
-          identifier: selectedLead.orderId || selectedLead["Номер замовлення"] || selectedLead.visitorId,
-          updates: { [statusKey]: newStatus }
+          action: 'update_status',
+          targetSheet: selectedLead._sheet,
+          orderId: selectedLead.orderId || selectedLead["Номер замовлення"] || selectedLead.visitorId,
+          status: newStatus
         })
       });
       const result = await res.json();
@@ -241,6 +241,41 @@ export default function AdminDashboard() {
       setUpdating(false);
     }
   };
+
+  const saveComment = async () => {
+    if (!selectedLead) return;
+    setSavingComment(true);
+    try {
+      const res = await fetch('/api/admin/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_comment',
+          targetSheet: selectedLead._sheet,
+          orderId: selectedLead.orderId || selectedLead["Номер замовлення"] || selectedLead.visitorId,
+          comment: localComment
+        })
+      });
+      const result = await res.json();
+      if (result.result === 'success') {
+        setLeads(prev => prev.map(l => 
+          (l.orderId === selectedLead.orderId && l.orderId) || (l.visitorId === selectedLead.visitorId)
+            ? { ...l, comment: localComment, "Коментар": localComment } 
+            : l
+        ));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingComment(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedLead) {
+      setLocalComment(selectedLead.comment || selectedLead["Коментар"] || '');
+    }
+  }, [selectedVisitorId]);
 
   const [filterSource, setFilterSource] = useState('all');
   const [filterPlan, setFilterPlan] = useState('all');
@@ -598,6 +633,11 @@ export default function AdminDashboard() {
                             ))}
                           </div>
                           <span className="block text-[9px] text-white/10 font-mono">#{lead.orderId || lead["Номер замовлення"] || 'N/A'}</span>
+                          {(lead.comment || lead["Коментар"]) && (
+                            <span title="Є коментар">
+                              <Activity size={10} className="text-[#81D8D0] mt-1" />
+                            </span>
+                          )}
                         </div>
                         <button className="h-8 w-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#81D8D0] group-hover:text-black transition-all">
                           <ChevronRight size={18} />
@@ -702,6 +742,25 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       )}
+
+                      <div className="pt-4">
+                        <p className="text-[10px] uppercase font-bold text-white/30 mb-3 tracking-widest">Нотатки менеджера</p>
+                        <div className="relative group">
+                          <textarea 
+                            value={localComment}
+                            onChange={(e) => setLocalComment(e.target.value)}
+                            placeholder="Додайте коментар по клієнту..."
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white/80 focus:outline-none focus:border-[#81D8D0]/50 min-h-[100px] resize-none transition-all"
+                          />
+                          <button 
+                            onClick={saveComment}
+                            disabled={savingComment || localComment === (selectedLead?.comment || selectedLead?.["Коментар"] || '')}
+                            className="absolute bottom-3 right-3 px-4 py-2 bg-[#81D8D0] text-black text-[10px] font-bold rounded-xl opacity-0 group-focus-within:opacity-100 disabled:opacity-0 transition-all hover:scale-105 active:scale-95"
+                          >
+                            {savingComment ? 'Збереження...' : 'Зберегти'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
