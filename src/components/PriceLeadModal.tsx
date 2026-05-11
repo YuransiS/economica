@@ -8,12 +8,12 @@ import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 
 export default function PriceLeadModal({
   isOpen,
-  onClose,
+  onCloseAction,
   selectedTariff = 'PRO',
   selectedPrice = 1000
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
   selectedTariff?: string;
   selectedPrice?: number;
 }) {
@@ -23,6 +23,7 @@ export default function PriceLeadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [wayForPayData, setWayForPayData] = useState<any>(null);
+  const [alreadyPaidInfo, setAlreadyPaidInfo] = useState<{ tariff: string, amount: number } | null>(null);
   
   // Test Mode Logic (Hidden)
   const [isTestMode, setIsTestMode] = useState(false);
@@ -144,6 +145,12 @@ export default function PriceLeadModal({
       const result = await response.json();
 
       if (result.success) {
+        if (result.alreadyPaid) {
+          setAlreadyPaidInfo({ tariff: result.paidTariff, amount: result.paidAmount });
+          setIsLoading(false);
+          return;
+        }
+
         // Track Facebook Lead Event
         if (typeof window !== 'undefined' && (window as any).fbq) {
           (window as any).fbq('track', 'Lead');
@@ -172,7 +179,7 @@ export default function PriceLeadModal({
               className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-8 shadow-2xl"
             >
               <button
-                onClick={onClose}
+                onClick={onCloseAction}
                 className="absolute right-4 top-4 rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
@@ -187,11 +194,35 @@ export default function PriceLeadModal({
                   {isTestMode && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-red-400 animate-pulse" title="Test Mode Active" />}
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Тариф {selectedTariff} — {isTestMode ? '1 грн' : `${selectedPrice} грн`}
+                  {alreadyPaidInfo 
+                    ? "Місце вже заброньовано" 
+                    : `Тариф ${selectedTariff} — ${isTestMode ? '1 грн' : `${selectedPrice} грн`}`}
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {alreadyPaidInfo ? (
+                <div className="space-y-6">
+                  <div className="rounded-2xl bg-green-50 p-8 text-center border border-green-100">
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h4 className="text-xl font-bold text-green-800 mb-2">Дякуємо за оплату!</h4>
+                    <p className="text-green-700">
+                      Ви вже забронювали місце за тарифом <span className="font-bold">{alreadyPaidInfo.tariff}</span>. 
+                      Очікуйте на повідомлення від нашої команди.
+                    </p>
+                  </div>
+                  <button
+                    onClick={onCloseAction}
+                    className="w-full rounded-xl bg-[#4E0000] py-4 text-center font-bold uppercase tracking-wider text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Зрозуміло
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Ім'я</label>
                   <input
@@ -297,6 +328,7 @@ export default function PriceLeadModal({
                   )}
                 </button>
               </form>
+              )}
             </motion.div>
           </div>
         )}

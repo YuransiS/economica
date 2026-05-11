@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import AnimatedCheck from './icons/AnimatedCheck';
 import CountdownTimer from './CountdownTimer';
 
-export default function PricingSection({ onOpenLead }: { onOpenLead: (tariff: string, price: number) => void }) {
+export default function PricingSection({ onOpenLeadAction }: { onOpenLeadAction: (tariff: string, price: number) => void }) {
   const tariffs = [
     {
       name: "PRO",
@@ -111,7 +111,7 @@ export default function PricingSection({ onOpenLead }: { onOpenLead: (tariff: st
               )}
 
               <button
-                onClick={() => onOpenLead(tariff.name, tariff.price)}
+                onClick={() => onOpenLeadAction(tariff.name, tariff.price)}
                 className={`w-full rounded-2xl py-5 text-xl font-bold uppercase tracking-widest transition-transform hover:scale-105 shadow-xl ${tariff.buttonColor}`}
               >
                 Оплатити

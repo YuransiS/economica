@@ -158,6 +158,7 @@ function doPost(e) {
           data.phone || "",
           data.telegram || "",
           data.tariff || "",
+          data.amount || "0",
           (data.orderId || "").toString().trim(),
           "Не оплачено",
           data.visitorId || "",
@@ -186,6 +187,73 @@ function doPost(e) {
           data.utm_term || "",
           "Не оплачено"
         ];
+      }
+
+      // ==========================================
+      // 2.1. УНІВЕРСАЛЬНА ДЕДУПЛІКАЦІЯ ТА ПЕРЕВІРКА ОПЛАТИ
+      // ==========================================
+      var cleanInputPhone = (data.phone || "").toString().replace(/\D/g, '');
+      if (cleanInputPhone.length >= 9) {
+        var values = sheet.getDataRange().getValues();
+        if (values.length > 0) {
+          var headers = values[0];
+          var phoneColIdx = -1;
+          var statusColIdx = -1;
+          var tariffColIdx = -1;
+          var amountColIdx = -1;
+          var attemptsColIdx = -1;
+
+          for (var k = 0; k < headers.length; k++) {
+            var h = headers[k].toString().toLowerCase();
+            if (h.indexOf("телефон") !== -1) phoneColIdx = k;
+            if (h.indexOf("статус") !== -1) statusColIdx = k;
+            if (h.indexOf("тариф") !== -1) tariffColIdx = k;
+            if (h.indexOf("сума") !== -1) amountColIdx = k;
+            if (h.indexOf("спроб") !== -1) attemptsColIdx = k;
+          }
+
+          if (phoneColIdx !== -1) {
+            var suffix = cleanInputPhone.slice(-9);
+            for (var i = 1; i < values.length; i++) {
+              var rowPhone = (values[i][phoneColIdx] || "").toString().replace(/\D/g, '');
+              if (rowPhone.length >= 9 && rowPhone.endsWith(suffix)) {
+                
+                // ПЕРЕВІРКА СТАТУСУ ОПЛАТИ (для не-вебінарів)
+                if (!isWebinar && statusColIdx !== -1) {
+                  var currentStatus = (values[i][statusColIdx] || "").toString().toLowerCase();
+                  if (currentStatus.indexOf("оплачено") !== -1 || currentStatus.indexOf("paid") !== -1) {
+                    return ContentService.createTextOutput(JSON.stringify({ 
+                      "result": "success", 
+                      "status": "already_paid",
+                      "paidTariff": values[i][tariffColIdx] || "",
+                      "paidAmount": values[i][amountColIdx] || 0
+                    })).setMimeType(ContentService.MimeType.JSON);
+                  }
+                }
+
+                // Знайдено дубль (або не оплачено) - оновлюємо дату
+                sheet.getRange(i + 1, 1).setValue(new Date());
+
+                // Якщо це вебінар, інкрементуємо спроби
+                if (isWebinar) {
+                  if (attemptsColIdx === -1) {
+                    attemptsColIdx = headers.length;
+                    sheet.getRange(1, attemptsColIdx + 1).setValue("Кількість спроб");
+                    sheet.getRange(1, attemptsColIdx + 1).setFontWeight("bold");
+                  }
+                  var currentAttempts = values[i][attemptsColIdx];
+                  var nextAttempts = (currentAttempts && !isNaN(currentAttempts)) ? Number(currentAttempts) + 1 : 2;
+                  sheet.getRange(i + 1, attemptsColIdx + 1).setValue(nextAttempts);
+                }
+                
+                return ContentService.createTextOutput(JSON.stringify({ 
+                  "result": "success", 
+                  "status": "duplicate_updated" 
+                })).setMimeType(ContentService.MimeType.JSON);
+              }
+            }
+          }
+        }
       }
 
       sheet.appendRow(rowData);

@@ -257,7 +257,7 @@ export default function PricePage() {
 
       <PriceLeadModal 
         isOpen={isModalOpen}
-        onClose={closeLeadModal}
+        onCloseAction={closeLeadModal}
         selectedTariff={selectedTariff}
         selectedPrice={reservationPrice}
       />

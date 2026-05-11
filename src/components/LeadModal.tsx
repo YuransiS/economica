@@ -8,12 +8,12 @@ import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 
 export default function LeadModal({
   isOpen,
-  onClose,
+  onCloseAction,
   selectedTariff = 'PRO',
   selectedPrice = 19
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
   selectedTariff?: string;
   selectedPrice?: number;
 }) {
@@ -23,6 +23,7 @@ export default function LeadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [wayForPayData, setWayForPayData] = useState<any>(null);
+  const [alreadyPaidInfo, setAlreadyPaidInfo] = useState<{ tariff: string, amount: number } | null>(null);
   
   // Test Mode Logic (Hidden)
   const [isTestMode, setIsTestMode] = useState(false);
@@ -164,6 +165,12 @@ export default function LeadModal({
       const result = await response.json();
 
       if (result.success) {
+        if (result.alreadyPaid) {
+          setAlreadyPaidInfo({ tariff: result.paidTariff, amount: result.paidAmount });
+          setIsLoading(false);
+          return;
+        }
+
         // Save user data to localStorage
         localStorage.setItem('user_name', name);
         localStorage.setItem('user_phone', phone);
@@ -185,6 +192,52 @@ export default function LeadModal({
     }
   };
 
+  const handleUpgrade = async () => {
+    if (!alreadyPaidInfo) return;
+    
+    setIsLoading(true);
+    setError('');
+
+    const upgradeAmount = selectedPrice - alreadyPaidInfo.amount;
+
+    try {
+      const response = await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          phone,
+          telegram,
+          tariff: selectedTariff,
+          price: selectedPrice,
+          isUpgrade: true,
+          upgradeAmount,
+          paidTariff: alreadyPaidInfo.tariff,
+          utms,
+          analytics: {
+            visitorId: localStorage.getItem('visitor_id'),
+            firstUtms: JSON.parse(localStorage.getItem('first_utms') || '{}'),
+            lastUtms: JSON.parse(localStorage.getItem('last_utms') || '{}'),
+            journey: JSON.parse(localStorage.getItem('journey') || '[]'),
+          },
+          isTest: isTestMode
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setWayForPayData(result.data);
+      } else {
+        setError('Помилка при створенні апгрейду.');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError('Сталася помилка при спробі апгрейду.');
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -197,7 +250,7 @@ export default function LeadModal({
               className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-8 shadow-2xl"
             >
               <button
-                onClick={onClose}
+                onClick={onCloseAction}
                 className="absolute right-4 top-4 rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
@@ -212,11 +265,55 @@ export default function LeadModal({
                   {isTestMode && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-red-400 animate-pulse" title="Test Mode Active" />}
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Тариф {selectedTariff} — {isTestMode ? '1 грн' : `$${selectedPrice}`}
+                  {alreadyPaidInfo 
+                    ? `Апгрейд до тарифу ${selectedTariff}` 
+                    : `Тариф ${selectedTariff} — ${isTestMode ? '1 грн' : `$${selectedPrice}`}`}
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {alreadyPaidInfo ? (
+                <div className="space-y-6">
+                  <div className="rounded-2xl bg-blue-50 p-6 text-center border border-blue-100">
+                    <p className="text-gray-700 leading-relaxed">
+                      Ви вже придбали тариф <span className="font-bold text-[#4E0000]">{alreadyPaidInfo.tariff}</span> за <span className="font-bold text-[#4E0000]">${alreadyPaidInfo.amount}</span>.
+                    </p>
+                    {selectedPrice > alreadyPaidInfo.amount ? (
+                      <p className="mt-4 text-gray-800">
+                        Ви можете перейти на тариф <span className="font-bold text-[#4E0000]">{selectedTariff}</span>, доплативши лише різницю:
+                        <span className="block text-3xl font-black text-[#4E0000] mt-2">
+                          ${selectedPrice - alreadyPaidInfo.amount}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="mt-4 font-bold text-green-600">
+                        У вас вже активовано максимально доступний або рівнозначний тариф!
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {selectedPrice > alreadyPaidInfo.amount && (
+                      <button
+                        onClick={handleUpgrade}
+                        disabled={isLoading}
+                        className="flex w-full items-center justify-center rounded-xl bg-[#4E0000] py-4 text-center font-bold uppercase tracking-wider text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Доплатити та оновити'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setAlreadyPaidInfo(null);
+                        onCloseAction();
+                      }}
+                      className="w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors"
+                    >
+                      Закрити
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Ім'я</label>
                   <input
@@ -322,6 +419,7 @@ export default function LeadModal({
                   )}
                 </button>
               </form>
+              )}
             </motion.div>
           </div>
         )}

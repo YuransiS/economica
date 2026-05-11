@@ -32,7 +32,7 @@ export default function WebLandingPage() {
       
       <WebLeadModal 
         isOpen={isModalOpen} 
-        onClose={closeLeadModal} 
+        onCloseAction={closeLeadModal} 
       />
 
       <Footer />

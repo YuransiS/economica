@@ -46,27 +46,27 @@ export default function Home() {
 
   return (
     <main className="w-full relative overflow-x-hidden">
-      <HeroSection onOpenLead={scrollToProgram} />
+      <HeroSection onOpenLeadAction={scrollToProgram} />
       <BonusSection />
-      <TargetAudienceSection onOpenLead={scrollToProgram} />
-      <WhatAwaitsSection onOpenLead={scrollToProgram} />
-      <AboutAuthorSection onOpenLead={scrollToProgram} />
+      <TargetAudienceSection onOpenLeadAction={scrollToProgram} />
+      <WhatAwaitsSection onOpenLeadAction={scrollToProgram} />
+      <AboutAuthorSection onOpenLeadAction={scrollToProgram} />
       <ProgramSection />
-      <PricingSection onOpenLead={openLeadModal} />
+      <PricingSection onOpenLeadAction={openLeadModal} />
       <ReviewsSection />
-      <ResultsSection onOpenLead={() => setIsTariffModalOpen(true)} />
-      <FinalCTASection onOpenLead={() => setIsTariffModalOpen(true)} />
-      <FAQSection onOpenLead={() => setIsTariffModalOpen(true)} />
+      <ResultsSection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
+      <FinalCTASection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
+      <FAQSection onOpenLeadAction={() => setIsTariffModalOpen(true)} />
       
-      <TariffSelectionModal
+      <TariffSelectionModal 
         isOpen={isTariffModalOpen}
-        onClose={() => setIsTariffModalOpen(false)}
-        onSelectTariff={handleSelectTariff}
+        onCloseAction={() => setIsTariffModalOpen(false)}
+        onSelectTariffAction={handleSelectTariff}
       />
 
       <LeadModal 
         isOpen={isModalOpen} 
-        onClose={closeLeadModal} 
+        onCloseAction={closeLeadModal} 
         selectedTariff={selectedTariff}
         selectedPrice={selectedPrice}
       />

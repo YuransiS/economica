@@ -32,9 +32,10 @@ export async function POST(req: Request) {
     }
 
     // 1. Send to Google Sheets (if URL configured)
+    let alreadyPaidData = null;
     if (GOOGLE_SHEET_WEBHOOK_URL) {
       try {
-        await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+        const sheetResponse = await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
             phone,
             telegram,
             tariff,
+            price, // Pass current price for reference
             orderId: orderReference,
             visitorId: analytics?.visitorId,
             journey: analytics?.journey?.join(' -> '),
@@ -57,16 +59,37 @@ export async function POST(req: Request) {
             first_utm_campaign: analytics?.firstUtms?.utm_campaign,
           })
         });
+
+        const sheetResult = await sheetResponse.json();
+        if (sheetResult.status === 'already_paid' && !body.isUpgrade) {
+          return NextResponse.json({
+            success: true,
+            alreadyPaid: true,
+            paidTariff: sheetResult.paidTariff,
+            paidAmount: sheetResult.paidAmount
+          });
+        }
       } catch (err) {
         console.error("Failed to send lead to Google Sheets:", err);
       }
     }
 
     // 2. Prepare WayForPay Signature
-    const productCount = "1";
-    const productPrice = amount;
+    const isUpgrade = body.isUpgrade;
+    const upgradeAmount = body.upgradeAmount;
+    
+    let finalAmount = amount;
+    let finalProductName = productName;
 
-    const signatureString = `${MERCHANT_ACCOUNT};${MERCHANT_DOMAIN_NAME};${orderReference};${orderDate};${amount};${currency};${productName};${productCount};${productPrice}`;
+    if (isUpgrade && upgradeAmount) {
+      finalAmount = Number(upgradeAmount).toFixed(2);
+      finalProductName = `Апгрейд: ${body.paidTariff} -> ${tariff}`;
+    }
+
+    const productCount = "1";
+    const productPrice = finalAmount;
+
+    const signatureString = `${MERCHANT_ACCOUNT};${MERCHANT_DOMAIN_NAME};${orderReference};${orderDate};${finalAmount};${currency};${finalProductName};${productCount};${productPrice}`;
 
     const signature = crypto
       .createHmac('md5', MERCHANT_SECRET_KEY)
@@ -81,9 +104,9 @@ export async function POST(req: Request) {
         merchantDomainName: MERCHANT_DOMAIN_NAME,
         orderReference,
         orderDate,
-        amount,
+        amount: finalAmount,
         currency,
-        productName: [productName],
+        productName: [finalProductName],
         productCount: [productCount],
         productPrice: [productPrice],
         clientName: name,
