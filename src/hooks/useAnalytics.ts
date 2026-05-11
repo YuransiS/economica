@@ -54,13 +54,24 @@ export const useAnalytics = () => {
 
     // 3. Journey
     const journeyRaw = localStorage.getItem('journey');
-    let journey: string[] = journeyRaw ? JSON.parse(journeyRaw) : [];
+    let journey: { path: string; timestamp: string }[] = journeyRaw ? JSON.parse(journeyRaw) : [];
     
-    if (journey[journey.length - 1] !== pathname) {
-      journey.push(pathname);
-      // Limit to 20 elements
-      journey = journey.slice(-20);
-      localStorage.setItem('journey', JSON.stringify(journey));
-    }
+    journey.push({
+      path: pathname,
+      timestamp: new Date().toISOString()
+    });
+    
+    localStorage.setItem('journey', JSON.stringify(journey));
+
+    // 4. Log to Backend (Anonymous & Real-time)
+    fetch('/api/analytics/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitorId,
+        path: pathname,
+        utms
+      })
+    }).catch(() => {});
   }, [searchParams, pathname]);
 };

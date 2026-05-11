@@ -138,6 +138,12 @@ export default function PriceLeadModal({
           currency: 'UAH',
           targetSheet: 'Броні Предзапис',
           utms,
+          analytics: {
+            visitorId: localStorage.getItem('visitor_id'),
+            firstUtms: JSON.parse(localStorage.getItem('first_utms') || '{}'),
+            lastUtms: JSON.parse(localStorage.getItem('last_utms') || '{}'),
+            journey: JSON.parse(localStorage.getItem('journey') || '[]'),
+          },
           isTest: isTestMode
         })
       });
