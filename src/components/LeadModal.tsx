@@ -38,6 +38,19 @@ export default function LeadModal({
     setTimeout(() => setClickCount(0), 2500);
   };
 
+  // Autofill from localStorage
+  useEffect(() => {
+    if (isOpen) {
+      const savedName = localStorage.getItem('user_name');
+      const savedPhone = localStorage.getItem('user_phone');
+      const savedTelegram = localStorage.getItem('user_telegram');
+      
+      if (savedName) setName(savedName);
+      if (savedPhone) setPhone(savedPhone);
+      if (savedTelegram) setTelegram(savedTelegram);
+    }
+  }, [isOpen]);
+
   // Parse UTMs
   const [utms, setUtms] = useState({});
   useEffect(() => {
@@ -124,6 +137,14 @@ export default function LeadModal({
 
     setIsLoading(true);
 
+    // Collect analytics
+    const analytics = {
+      visitorId: localStorage.getItem('visitor_id'),
+      firstUtms: JSON.parse(localStorage.getItem('first_utms') || '{}'),
+      lastUtms: JSON.parse(localStorage.getItem('last_utms') || '{}'),
+      journey: JSON.parse(localStorage.getItem('journey') || '[]'),
+    };
+
     try {
       const response = await fetch('/api/lead', {
         method: 'POST',
@@ -135,6 +156,7 @@ export default function LeadModal({
           tariff: selectedTariff,
           price: selectedPrice,
           utms,
+          analytics,
           isTest: isTestMode
         })
       });
@@ -142,6 +164,11 @@ export default function LeadModal({
       const result = await response.json();
 
       if (result.success) {
+        // Save user data to localStorage
+        localStorage.setItem('user_name', name);
+        localStorage.setItem('user_phone', phone);
+        localStorage.setItem('user_telegram', telegram);
+
         // Track Facebook Lead Event
         if (typeof window !== 'undefined' && (window as any).fbq) {
           (window as any).fbq('track', 'Lead');

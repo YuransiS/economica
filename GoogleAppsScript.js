@@ -4,7 +4,7 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // ==========================================
-    // 1. ЛОГІКА ОНОВЛЕННЯ СТАТУСУ (Супер-стійка + Пошук з кінця)
+    // 1. ЛОГІКА ОНОВЛЕННЯ СТАТУСУ
     // ==========================================
     if (data.action === 'update_status' || (data.orderId && !data.name)) {
       var sheetName = data.targetSheet || "Заявки на практикум";
@@ -13,10 +13,25 @@ function doPost(e) {
       var found = false;
 
       var sheet;
+      var sheets = ss.getSheets();
+      
       if (sheetName === "Броні Предзапис") {
-        var sheets = ss.getSheets();
         for (var idx = 0; idx < sheets.length; idx++) {
           if (sheets[idx].getSheetId() == 1053957371) {
+            sheet = sheets[idx];
+            break;
+          }
+        }
+      } else if (sheetName === "Заявки на практикум" || !data.targetSheet) {
+        for (var idx = 0; idx < sheets.length; idx++) {
+          if (sheets[idx].getSheetId() == 1989033265) {
+            sheet = sheets[idx];
+            break;
+          }
+        }
+      } else if (sheetName === "Заявки Вебінар") {
+        for (var idx = 0; idx < sheets.length; idx++) {
+          if (sheets[idx].getSheetId() == 325595402) {
             sheet = sheets[idx];
             break;
           }
@@ -29,19 +44,16 @@ function doPost(e) {
         var values = sheet.getDataRange().getValues();
         if (values.length > 0) {
           var headers = values[0];
-
-          // Шукаємо стовпець статусу З КІНЦЯ (щоб не зачепити старі колонки)
           var statusColIdx = -1;
+
           for (var k = headers.length - 1; k >= 0; k--) {
             var h = headers[k].toString().toLowerCase().trim();
-            // Шукаємо поєднання "статус" + "оплат" або просто точний збіг
             if ((h.indexOf("статус") !== -1 && h.indexOf("оплат") !== -1) || h === "статус оплати" || h === "status") {
               statusColIdx = k;
               break;
             }
           }
 
-          // Якщо не знайшли по суворому збігу, шукаємо просто "статус" теж з кінця
           if (statusColIdx === -1) {
             for (var k = headers.length - 1; k >= 0; k--) {
               var h = headers[k].toString().toLowerCase().trim();
@@ -52,7 +64,6 @@ function doPost(e) {
             }
           }
 
-          // Пошук рядка по всьому листу
           for (var i = 1; i < values.length; i++) {
             var row = values[i];
             for (var j = 0; j < row.length; j++) {
@@ -80,12 +91,13 @@ function doPost(e) {
     // ==========================================
     if (data.action === 'create_lead' || data.targetSheet === "Заявки на практикум") {
       var sheet;
-      var isWebinar = data.targetSheet === "Заявки Вебінар";
-      var isPricePage = data.targetSheet === "Броні Предзапис";
+      var sheetName = data.targetSheet || "Заявки на практикум";
+      var isWebinar = sheetName === "Заявки Вебінар";
+      var isPricePage = sheetName === "Броні Предзапис";
+      var isPracticum = sheetName === "Заявки на практикум" || !data.targetSheet;
 
-      // Якщо заявка з нового лендінгу, шукаємо аркуш за вказаним ID
+      var sheets = ss.getSheets();
       if (isWebinar) {
-        var sheets = ss.getSheets();
         for (var i = 0; i < sheets.length; i++) {
           if (sheets[i].getSheetId() == 325595402) {
             sheet = sheets[i];
@@ -93,9 +105,15 @@ function doPost(e) {
           }
         }
       } else if (isPricePage) {
-        var sheets = ss.getSheets();
         for (var i = 0; i < sheets.length; i++) {
           if (sheets[i].getSheetId() == 1053957371) {
+            sheet = sheets[i];
+            break;
+          }
+        }
+      } else if (isPracticum) {
+        for (var i = 0; i < sheets.length; i++) {
+          if (sheets[i].getSheetId() == 1989033265) {
             sheet = sheets[i];
             break;
           }
@@ -103,20 +121,25 @@ function doPost(e) {
       }
 
       if (!sheet) {
-        var sheetName = data.targetSheet || "Заявки на практикум";
         sheet = ss.getSheetByName(sheetName);
-
         if (!sheet) {
           sheet = ss.insertSheet(sheetName);
-          sheet.appendRow(["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус оплати"]);
-          sheet.getRange(1, 1, 1, 12).setFontWeight("bold");
         }
       }
 
-      var rowData;
+      // Перевірка на заголовки для основного листа (Практикум)
+      if (isPracticum && sheet.getLastRow() === 0) {
+        var headers = ["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус оплати", "Visitor ID", "Customer Journey", "First UTM Source", "First UTM Medium", "First UTM Campaign", "Last UTM Source", "Last UTM Medium", "Last UTM Campaign", "Last UTM Content", "Last UTM Term"];
+        sheet.appendRow(headers);
+        sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+      } else if (!isWebinar && !isPricePage && sheet.getLastRow() === 0) {
+        // Дефолтні заголовки для інших нових листів
+        sheet.appendRow(["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус оплати"]);
+        sheet.getRange(1, 1, 1, 12).setFontWeight("bold");
+      }
 
+      var rowData;
       if (isWebinar) {
-        // Для вебінару зберігаємо лише необхідні поля без тарифів, ордерів та статусів
         rowData = [
           new Date(),
           data.name || "",
@@ -128,8 +151,27 @@ function doPost(e) {
           data.utm_content || "",
           data.utm_term || ""
         ];
+      } else if (isPracticum) {
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.tariff || "",
+          (data.orderId || "").toString().trim(),
+          "Не оплачено",
+          data.visitorId || "",
+          data.journey || "",
+          data.first_utm_source || "",
+          data.first_utm_medium || "",
+          data.first_utm_campaign || "",
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || ""
+        ];
       } else {
-        // Стандартна логіка для основного сайту (практикум)
         rowData = [
           new Date(),
           data.name || "",

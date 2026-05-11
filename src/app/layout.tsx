@@ -32,6 +32,8 @@ export const metadata: Metadata = {
   description: "3 денний онлайн-практикум. Як почати інвестувати і накопичити перші 100 000$ капіталу у 2026 році навіть під час кризи.",
 };
 
+import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -68,7 +70,9 @@ export default function RootLayout({
       <body
         className={`${fontMontserrat.variable} ${fontArimo.variable} ${fontNarrow.variable} ${fontScript.variable} font-montserrat antialiased bg-[#1A0000] text-gray-100 min-h-screen flex flex-col overflow-x-hidden`}
       >
-        {children}
+        <AnalyticsProvider>
+          {children}
+        </AnalyticsProvider>
       </body>
     </html>
   );

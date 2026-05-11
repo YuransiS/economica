@@ -5,7 +5,7 @@ const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, phone, telegram, utms } = body;
+    const { name, phone, telegram, utms, analytics } = body;
 
     if (GOOGLE_SHEET_WEBHOOK_URL) {
       try {
@@ -19,11 +19,16 @@ export async function POST(req: Request) {
             phone,
             telegram,
             tariff: 'Безкоштовно',
-            utm_source: utms?.utm_source,
-            utm_medium: utms?.utm_medium,
-            utm_campaign: utms?.utm_campaign,
-            utm_content: utms?.utm_content,
-            utm_term: utms?.utm_term,
+            visitorId: analytics?.visitorId,
+            journey: analytics?.journey?.join(' -> '),
+            utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
+            utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
+            utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
+            utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
+            utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
+            first_utm_source: analytics?.firstUtms?.utm_source,
+            first_utm_medium: analytics?.firstUtms?.utm_medium,
+            first_utm_campaign: analytics?.firstUtms?.utm_campaign,
           })
         });
       } catch (err) {

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight').trim();
     const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
     const body = await req.json();
-    const { name, phone, telegram, tariff, price, utms, isTest, targetSheet, currency: inputCurrency } = body;
+    const { name, phone, telegram, tariff, price, utms, analytics, isTest, targetSheet, currency: inputCurrency } = body;
     const sheetName = targetSheet || 'Заявки на практикум';
 
     // Generate a unique order ID
@@ -45,11 +45,16 @@ export async function POST(req: Request) {
             telegram,
             tariff,
             orderId: orderReference,
-            utm_source: utms?.utm_source,
-            utm_medium: utms?.utm_medium,
-            utm_campaign: utms?.utm_campaign,
-            utm_content: utms?.utm_content,
-            utm_term: utms?.utm_term,
+            visitorId: analytics?.visitorId,
+            journey: analytics?.journey?.join(' -> '),
+            utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
+            utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
+            utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
+            utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
+            utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
+            first_utm_source: analytics?.firstUtms?.utm_source,
+            first_utm_medium: analytics?.firstUtms?.utm_medium,
+            first_utm_campaign: analytics?.firstUtms?.utm_campaign,
           })
         });
       } catch (err) {

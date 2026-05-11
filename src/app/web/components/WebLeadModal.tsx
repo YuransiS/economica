@@ -19,6 +19,19 @@ export default function WebLeadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Autofill from localStorage
+  useEffect(() => {
+    if (isOpen) {
+      const savedName = localStorage.getItem('user_name');
+      const savedPhone = localStorage.getItem('user_phone');
+      const savedTelegram = localStorage.getItem('user_telegram');
+      
+      if (savedName) setName(savedName);
+      if (savedPhone) setPhone(savedPhone);
+      if (savedTelegram) setTelegram(savedTelegram);
+    }
+  }, [isOpen]);
+
   // Parse UTMs
   const [utms, setUtms] = useState({});
   useEffect(() => {
@@ -61,6 +74,14 @@ export default function WebLeadModal({
 
     setIsLoading(true);
 
+    // Collect analytics
+    const analytics = {
+      visitorId: localStorage.getItem('visitor_id'),
+      firstUtms: JSON.parse(localStorage.getItem('first_utms') || '{}'),
+      lastUtms: JSON.parse(localStorage.getItem('last_utms') || '{}'),
+      journey: JSON.parse(localStorage.getItem('journey') || '[]'),
+    };
+
     try {
       const response = await fetch('/api/web-lead', {
         method: 'POST',
@@ -70,16 +91,22 @@ export default function WebLeadModal({
           phone,
           telegram,
           utms,
+          analytics
         })
       });
 
       const result = await response.json();
 
       if (result.success && result.redirectUrl) {
+        // Save user data to localStorage
+        localStorage.setItem('user_name', name);
+        localStorage.setItem('user_phone', phone);
+        localStorage.setItem('user_telegram', telegram);
+
         if (typeof window !== 'undefined' && (window as any).fbq) {
           (window as any).fbq('track', 'Lead');
         }
-        
+
         setTimeout(() => {
           window.location.href = result.redirectUrl;
         }, 500);
