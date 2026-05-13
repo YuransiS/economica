@@ -15,11 +15,24 @@ export default function SofiaInvestLessonPage() {
   const [timeline, setTimeline] = useState("");
   const [goal, setGoal] = useState("");
   
+  const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [country, setCountry] = useState("ua");
   const utms = useUTMs();
+
+  // Parallax effect for floating dollar
+  useEffect(() => {
+    const handleScroll = () => {
+      const dollar = document.getElementById('floating-dollar');
+      if (dollar) {
+        dollar.style.transform = `translateY(-${window.scrollY * 1.2}px)`;
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     fetch("https://ipapi.co/json/")
@@ -87,8 +100,17 @@ export default function SofiaInvestLessonPage() {
   };
 
   return (
-    <main className="bg-[#111] text-white min-h-screen font-[sans-serif] scroll-smooth antialiased">
-      <img src="/sofia-invest-lesson/Дизайн без назви (6).webp" id="floating-dollar" alt="Долар" className="fixed top-0 right-0 z-10 w-[220px] min-[380px]:w-[260px] sm:w-[440px] md:w-[760px] lg:w-[960px] drop-shadow-2xl pointer-events-none transition-transform duration-100 ease-out origin-top-right" />
+    <main className="bg-[#111] text-white min-h-screen font-[sans-serif] scroll-smooth antialiased relative">
+      {/* Background image from original design */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none bg-no-repeat bg-cover opacity-100"
+        style={{ 
+          backgroundImage: "url('/sofia-invest-lesson/bg-dollar.png')",
+          backgroundPosition: 'top right'
+        }}
+      ></div>
+
+      <img src="/sofia-invest-lesson/floating-dollar.png" id="floating-dollar" alt="Долар" className="fixed top-0 right-0 z-10 w-[220px] min-[380px]:w-[260px] sm:w-[440px] md:w-[700px] lg:w-[850px] drop-shadow-2xl pointer-events-none transition-transform duration-100 ease-out origin-top-right mix-blend-lighten" />
 
       {/* HERO / VSL SECTION */}
       <section className="relative z-20 pt-16 pb-4 md:pb-10 md:pt-24 px-4">
@@ -104,13 +126,30 @@ export default function SofiaInvestLessonPage() {
           </h1>
 
           {/* Video Container */}
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black/50 border-4 border-white/20 cursor-pointer group" id="video-container">
-            <img src="https://img.youtube.com/vi/d-TCdHfYob4/sddefault.jpg" alt="Video Thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-[pulse_2s_infinite] group-hover:scale-110 transition-transform duration-300">
-                <Play className="w-10 h-10 text-[#4E0000] ml-1 fill-current" />
-              </div>
-            </div>
+          <div 
+            className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl bg-black border-4 border-white/20 cursor-pointer group" 
+            id="video-container"
+            onClick={() => setIsPlaying(true)}
+          >
+            {!isPlaying ? (
+              <>
+                <img src="https://img.youtube.com/vi/d-TCdHfYob4/maxresdefault.jpg" alt="Video Thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-pulse group-hover:scale-110 transition-transform duration-300">
+                    <Play className="w-10 h-10 text-[#4E0000] ml-1 fill-current" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <iframe 
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/d-TCdHfYob4?autoplay=1&rel=0" 
+                title="Sofia Invest Lesson"
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            )}
           </div>
 
           <div className="mt-6 md:mt-10 flex flex-col items-center justify-center text-center animate-bounce">

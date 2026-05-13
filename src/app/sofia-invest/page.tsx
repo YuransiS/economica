@@ -24,11 +24,11 @@ export default function SofiaInvestPage() {
         <div className="max-w-4xl mx-auto relative z-20 text-center w-full flex flex-col items-center pt-[160px] md:pt-32 pb-10">
           <div className="relative mb-5 max-w-3xl w-full animate-on-load" style={{ animationDelay: '0.1s' }}>
             <h1 className="font-heading heading-style text-2xl md:text-4xl lg:text-5xl font-bold leading-tight text-white text-shadow-strong relative z-10">
-              Як накопичити перш
-              <span className="relative inline-block mx-2">
-                <img src="/sofia-invest/IMG_5575.PNG" alt="Бантик із доларів" fetchPriority="high" className="absolute bottom-[60%] left-1/2 -translate-x-1/2 w-20 md:w-24 drop-shadow-2xl z-0 hover:scale-105 transition-transform duration-300 pointer-events-none" style={{ maxWidth: 'unset' }} />
-                <span className="relative z-10">і</span>
-              </span> 100 000$<br />
+              Як накопичити 
+              <span className="relative inline-block ml-2 mr-2">
+                перш<span className="relative z-10">і</span>
+                <img src="/sofia-invest/IMG_5575.PNG" alt="Бантик із доларів" fetchPriority="high" className="absolute bottom-[60%] left-[85%] -translate-x-1/2 w-20 md:w-24 drop-shadow-2xl z-0 hover:scale-105 transition-transform duration-300 pointer-events-none" style={{ maxWidth: 'unset' }} />
+              </span> <span className="whitespace-nowrap">100 000$</span><br />
               <span className="text-xl md:text-3xl mt-2 block font-bold">та стабільно отримувати пасивний дохід завдяки інвестиціям</span>
             </h1>
           </div>
@@ -248,8 +248,8 @@ export default function SofiaInvestPage() {
       </section>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="relative w-full max-w-md animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
             <button 
               onClick={() => setIsModalOpen(false)}
               className="absolute -top-12 right-0 md:-right-12 text-white/50 hover:text-white transition-colors"
