@@ -24,7 +24,7 @@ export default function SofiaInvestPage() {
         <div className="max-w-4xl mx-auto relative z-20 text-center w-full flex flex-col items-center pt-[160px] md:pt-32 pb-10">
           <div className="relative mb-5 max-w-3xl w-full animate-on-load" style={{ animationDelay: '0.1s' }}>
             <h1 className="font-heading heading-style text-2xl md:text-4xl lg:text-5xl font-bold leading-tight text-white text-shadow-strong relative z-10">
-              Як накопичити 
+              Як накопичити
               <span className="relative inline-block ml-2 mr-2">
                 перш<span className="relative z-10">і</span>
                 <img src="/sofia-invest/IMG_5575.PNG" alt="Бантик із доларів" fetchPriority="high" className="absolute bottom-[60%] left-[85%] -translate-x-1/2 w-20 md:w-24 drop-shadow-2xl z-0 hover:scale-105 transition-transform duration-300 pointer-events-none" style={{ maxWidth: 'unset' }} />
@@ -63,11 +63,11 @@ export default function SofiaInvestPage() {
           <h2 className="font-heading heading-style text-3xl md:text-4xl text-center text-white font-bold mb-8 drop-shadow-lg">
             Знайома ситуація?
           </h2>
-          
+
           <p className="text-xl text-center mb-8 font-semibold text-gray-200">
             Ви прекрасно заробляєте, але:
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
             <div className="bg-black/65 backdrop-blur-md border border-white/15 shadow-2xl p-6 rounded-2xl flex gap-4 items-center">
               <div className="p-3 bg-white/5 rounded-full shrink-0 border border-white/10">
@@ -109,7 +109,7 @@ export default function SofiaInvestPage() {
         </div>
       </section>
 
-      {/* 3. RESULTS SECTION */}
+      {/* 3. RESULTS SECTION выка*/}
       <section className="relative py-12 md:py-16 px-5 text-white overflow-hidden">
         <div className="absolute inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: "url('/sofia-invest/zebra.webp')" }}></div>
         <div className="absolute inset-0 bg-black/75 z-10"></div>
@@ -166,11 +166,11 @@ export default function SofiaInvestPage() {
           <div className="w-full md:w-5/12">
             <img src="/sofia-invest/photo_2026-03-03_10-14-10.webp" alt="Софія Фединяк" loading="lazy" className="rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-black/5 w-full object-cover aspect-[3/4]" />
           </div>
-          
+
           <div className="w-full md:w-7/12 text-black">
             <h2 className="font-heading heading-style text-4xl md:text-5xl font-extrabold mb-2">Софія Фединяк</h2>
             <h3 className="text-xl md:text-2xl font-bold text-[#4E0000] mb-8 uppercase tracking-wide">Я — ліцензований фінансовий радник</h3>
-            
+
             <p className="text-xl mb-5 font-bold">і щодня працюю з реальними людьми, які:</p>
             <ul className="space-y-4 mb-10 pl-5 border-l-2 border-black/20 text-lg font-medium">
               <li className="flex items-center gap-3"><div className="w-2.5 h-2.5 rounded-full bg-black shrink-0"></div>не мріяли про 100 000$, а досягли;</li>
@@ -225,7 +225,7 @@ export default function SofiaInvestPage() {
               "photo_2026-03-04_21-36-27 (2).webp", "photo_2026-03-04_21-36-28 (2).webp"
             ].map((img, i) => (
               <SwiperSlide key={i} className="flex justify-center h-auto">
-                <img src={`/sofia-invest/${img}`} loading="lazy" alt={`Відгук ${i+1}`} className="shadow-[0_15px_30px_rgba(0,0,0,0.5)] rounded-xl border border-white/10 max-h-[500px] object-cover" />
+                <img src={`/sofia-invest/${img}`} loading="lazy" alt={`Відгук ${i + 1}`} className="shadow-[0_15px_30px_rgba(0,0,0,0.5)] rounded-xl border border-white/10 max-h-[500px] object-cover" />
               </SwiperSlide>
             ))}
           </Swiper>
@@ -250,18 +250,18 @@ export default function SofiaInvestPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
-            <button 
+            <button
               onClick={() => setIsModalOpen(false)}
               className="absolute -top-12 right-0 md:-right-12 text-white/50 hover:text-white transition-colors"
             >
               <X className="w-8 h-8" />
             </button>
-            <LeadForm 
-              title="Отримайте доступ до уроку" 
+            <LeadForm
+              title="Отримайте доступ до уроку"
               targetSheet="Sofia_Invest"
               pixelEventName="Lead"
               pixelEventContent="Sofia Invest Main"
-              redirectUrl="https://t.me/Sofiyavsim_bot"
+              redirectUrl="https://t.me/SofiaFeduniak_bot?start=69b01a17b0523e81800ee835"
               webhookUrl="https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec"
             />
           </div>
