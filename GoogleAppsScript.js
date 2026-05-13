@@ -441,6 +441,14 @@ function recordGlobalLead(ss, data, sourceSheetName) {
 
   var newJourney = data.journey || "";
   
+  // Prepare extra fields into comment
+  var extraComment = data.comment || "";
+  if (data.income) extraComment += "Дохід: " + data.income + "\n";
+  if (data.debt) extraComment += "Борги: " + data.debt + "\n";
+  if (data.timeline) extraComment += "Термін: " + data.timeline + "\n";
+  if (data.goal) extraComment += "Ціль: " + data.goal + "\n";
+  extraComment = extraComment.trim();
+
   if (foundRow !== -1) {
     // UPDATE EXISTING
     var existingJourney = values[foundRow - 1][journeyCol] || "";
@@ -457,6 +465,14 @@ function recordGlobalLead(ss, data, sourceSheetName) {
     var existingSource = values[foundRow - 1][sourceCol] || "";
     if (existingSource.indexOf(sourceSheetName) === -1) {
       sheet.getRange(foundRow, sourceCol + 1).setValue(existingSource + ", " + sourceSheetName);
+    }
+
+    if (extraComment) {
+      var commentCol = headers.indexOf("Коментар");
+      if (commentCol !== -1) {
+        var existingComment = values[foundRow - 1][commentCol] || "";
+        sheet.getRange(foundRow, commentCol + 1).setValue(existingComment + (existingComment ? "\n" : "") + extraComment);
+      }
     }
   } else {
     // APPEND NEW
@@ -475,7 +491,8 @@ function recordGlobalLead(ss, data, sourceSheetName) {
       data.utm_medium || "",
       data.utm_campaign || "",
       data.utm_content || "",
-      data.utm_term || ""
+      data.utm_term || "",
+      extraComment
     ];
     sheet.appendRow(rowData);
   }
