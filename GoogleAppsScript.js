@@ -7,33 +7,58 @@ function doPost(e) {
     // 1. ЛОГІКА ОНОВЛЕННЯ ПОЛІВ (Статус, Коментар)
     // ==========================================
     if (data.action === 'update_status' || data.action === 'update_comment' || (data.orderId && !data.name)) {
-      var sheetName = data.targetSheet || "Заявки на практикум";
+      var inputSheetName = data.targetSheet || "Заявки на практикум";
+      var sheetName = inputSheetName;
+      
+      // Нормалізуємо назви листів
+      if (inputSheetName === "Sofia_Invest" || inputSheetName === "VSL Трафик") {
+        sheetName = "VSL Трафик";
+      } else if (inputSheetName === "Sofia_Invest_Lesson" || inputSheetName === "VLS Урок") {
+        sheetName = "VLS Урок";
+      } else if (inputSheetName === "Заявки Вебінар" || inputSheetName === "Лиды Вебинар") {
+        sheetName = "Лиды Вебинар";
+      }
+
       var targetOrderId = (data.orderId || "").toString().trim();
       var fieldName = data.action === 'update_comment' ? "Коментар" : "Статус";
       var newValue = data.action === 'update_comment' ? data.comment : (data.status || "Оплачено");
       var found = false;
 
-      // 1. Update in the specific sheet
+      // 1. Оновлення у відповідному листі
       var sheet;
       var sheets = ss.getSheets();
       
       if (sheetName === "Броні Предзапис") {
         for (var idx = 0; idx < sheets.length; idx++) {
-          if (sheets[idx].getSheetId() == 1053957371) {
+          if (sheets[idx].getSheetId() == 139613373) {
             sheet = sheets[idx];
             break;
           }
         }
-      } else if (sheetName === "Заявки на практикум" || !data.targetSheet) {
+      } else if (sheetName === "Заявки на практикум") {
         for (var idx = 0; idx < sheets.length; idx++) {
-          if (sheets[idx].getSheetId() == 1989033265) {
+          if (sheets[idx].getSheetId() == 1109800626) {
             sheet = sheets[idx];
             break;
           }
         }
-      } else if (sheetName === "Заявки Вебінар") {
+      } else if (sheetName === "Лиды Вебинар") {
         for (var idx = 0; idx < sheets.length; idx++) {
           if (sheets[idx].getSheetId() == 325595402) {
+            sheet = sheets[idx];
+            break;
+          }
+        }
+      } else if (sheetName === "VSL Трафик") {
+        for (var idx = 0; idx < sheets.length; idx++) {
+          if (sheets[idx].getSheetId() == 1155232133) {
+            sheet = sheets[idx];
+            break;
+          }
+        }
+      } else if (sheetName === "VLS Урок") {
+        for (var idx = 0; idx < sheets.length; idx++) {
+          if (sheets[idx].getSheetId() == 1865429296) {
             sheet = sheets[idx];
             break;
           }
@@ -46,7 +71,7 @@ function doPost(e) {
         found = updateFieldInSheet(sheet, targetOrderId, fieldName, newValue);
       }
 
-      // 2. ALSO update in the Global Analytics sheet
+      // 2. Також оновлюємо у глобальному листі Аналітики
       var globalSheet = ss.getSheetByName("Аналітика Ліди");
       if (globalSheet) {
         updateFieldInSheet(globalSheet, targetOrderId, fieldName, newValue);
@@ -58,31 +83,54 @@ function doPost(e) {
     // ==========================================
     // 2. ЛОГІКА СТВОРЕННЯ ЛІДА
     // ==========================================
-    if (data.action === 'create_lead' || data.targetSheet === "Заявки на практикум") {
+    if (data.action === 'create_lead' || data.targetSheet) {
       var sheet;
-      var sheetName = data.targetSheet || "Заявки на практикум";
-      var isWebinar = sheetName === "Заявки Вебінар";
-      var isPricePage = sheetName === "Броні Предзапис";
-      var isPracticum = sheetName === "Заявки на практикум" || !data.targetSheet;
+      var inputSheetName = data.targetSheet || "Заявки на практикум";
+      var sheetName = inputSheetName;
+      
+      // Нормалізуємо назви листів
+      if (inputSheetName === "Sofia_Invest" || inputSheetName === "VSL Трафик") {
+        sheetName = "VSL Трафик";
+      } else if (inputSheetName === "Sofia_Invest_Lesson" || inputSheetName === "VLS Урок") {
+        sheetName = "VLS Урок";
+      } else if (inputSheetName === "Заявки Вебінар" || inputSheetName === "Лиды Вебинар") {
+        sheetName = "Лиды Вебинар";
+      }
+
+      var isWebinar = sheetName === "Лиды Вебинар";
 
       var sheets = ss.getSheets();
-      if (isWebinar) {
+      if (sheetName === "Лиды Вебинар") {
         for (var i = 0; i < sheets.length; i++) {
           if (sheets[i].getSheetId() == 325595402) {
             sheet = sheets[i];
             break;
           }
         }
-      } else if (isPricePage) {
+      } else if (sheetName === "Броні Предзапис") {
         for (var i = 0; i < sheets.length; i++) {
-          if (sheets[i].getSheetId() == 1053957371) {
+          if (sheets[i].getSheetId() == 139613373) {
             sheet = sheets[i];
             break;
           }
         }
-      } else if (isPracticum) {
+      } else if (sheetName === "Заявки на практикум") {
         for (var i = 0; i < sheets.length; i++) {
-          if (sheets[i].getSheetId() == 1989033265) {
+          if (sheets[i].getSheetId() == 1109800626) {
+            sheet = sheets[i];
+            break;
+          }
+        }
+      } else if (sheetName === "VSL Трафик") {
+        for (var i = 0; i < sheets.length; i++) {
+          if (sheets[i].getSheetId() == 1155232133) {
+            sheet = sheets[i];
+            break;
+          }
+        }
+      } else if (sheetName === "VLS Урок") {
+        for (var i = 0; i < sheets.length; i++) {
+          if (sheets[i].getSheetId() == 1865429296) {
             sheet = sheets[i];
             break;
           }
@@ -96,47 +144,136 @@ function doPost(e) {
         }
       }
 
-      // Перевірка на заголовки для основного листа (Практикум)
+      // Визначаємо точний порядок колонок та значення відповідно до кожного листа
+      var headers = [];
+      var rowData = [];
+
+      if (sheetName === "Заявки на практикум") {
+        headers = ["Дата", "Ім'я", "Телефон", "Телеграм", "Тариф", "Номер заказу", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус Оплати"];
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.tariff || "",
+          (data.orderId || "").toString().trim(),
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || "",
+          "Не оплачено"
+        ];
+      } else if (sheetName === "Броні Предзапис") {
+        headers = ["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус Броні"];
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.tariff || "",
+          (data.orderId || "").toString().trim(),
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || "",
+          "Не оплачено"
+        ];
+      } else if (sheetName === "Лиды Вебинар") {
+        headers = ["Дата", "Ім'я", "Телефон", "Телеграм", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || ""
+        ];
+      } else if (sheetName === "VSL Трафик") {
+        headers = ["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус оплати", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.tariff || "",
+          (data.orderId || "").toString().trim(),
+          "Не оплачено",
+          data.visitorId || "",
+          data.journey || "",
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || ""
+        ];
+      } else if (sheetName === "VLS Урок") {
+        headers = ["Дата та час", "Ім'я", "Телефон", "Дохід", "Борги", "Термін", "Ціль", "Visitor ID", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.income || "",
+          data.debt || "",
+          data.timeline || "",
+          data.goal || "",
+          data.visitorId || "",
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || ""
+        ];
+      } else {
+        // Fallback за замовчуванням
+        headers = ["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус оплати", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+        rowData = [
+          new Date(),
+          data.name || "",
+          data.phone || "",
+          data.telegram || "",
+          data.tariff || "",
+          (data.orderId || "").toString().trim(),
+          "Не оплачено",
+          data.visitorId || "",
+          data.journey || "",
+          data.utm_source || "",
+          data.utm_medium || "",
+          data.utm_campaign || "",
+          data.utm_content || "",
+          data.utm_term || ""
+        ];
+      }
+
+      // Створення заголовків, якщо лист порожній
       if (sheet.getLastRow() === 0) {
-        var headers = ["Дата та час", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус оплати", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
         sheet.appendRow(headers);
         sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
       }
-
-      var rowData = [
-        new Date(),
-        data.name || "",
-        data.phone || "",
-        data.telegram || "",
-        data.tariff || (isWebinar ? "Вебінар" : ""),
-        (data.orderId || "").toString().trim(),
-        (isWebinar ? "—" : "Не оплачено"),
-        data.visitorId || "",
-        data.journey || "",
-        data.utm_source || "",
-        data.utm_medium || "",
-        data.utm_campaign || "",
-        data.utm_content || "",
-        data.utm_term || ""
-      ];
 
       // ==========================================
       // 2.2. ЗБЕРЕЖЕННЯ В ЛИСТ ТА ГЛОБАЛЬНУ АНАЛІТИКУ
       // ==========================================
       var alreadyProcessed = false;
       var cleanInputPhone = (data.phone || "").toString().replace(/\D/g, '');
-      if (cleanInputPhone.length >= 9) {
+
+      // Відключаємо дедуплікацію для анкети "VLS Урок"
+      if (sheetName !== "VLS Урок" && cleanInputPhone.length >= 9) {
         var values = sheet.getDataRange().getValues();
         if (values.length > 0) {
-          var headers = values[0];
+          var currentHeaders = values[0];
           var phoneColIdx = -1;
           var statusColIdx = -1;
           var tariffColIdx = -1;
           var amountColIdx = -1;
           var attemptsColIdx = -1;
 
-          for (var k = 0; k < headers.length; k++) {
-            var h = headers[k].toString().toLowerCase();
+          for (var k = 0; k < currentHeaders.length; k++) {
+            var h = currentHeaders[k].toString().toLowerCase();
             if (h.indexOf("телефон") !== -1) phoneColIdx = k;
             if (h.indexOf("статус") !== -1) statusColIdx = k;
             if (h.indexOf("тариф") !== -1) tariffColIdx = k;
@@ -150,7 +287,7 @@ function doPost(e) {
               var rowPhone = (values[i][phoneColIdx] || "").toString().replace(/\D/g, '');
               if (rowPhone.length >= 9 && rowPhone.endsWith(suffix)) {
                 
-                // ПЕРЕВІРКА СТАТУСУ ОПЛАТИ
+                // Перевірка статусу оплати
                 if (!isWebinar && statusColIdx !== -1) {
                   var currentStatus = (values[i][statusColIdx] || "").toString().toLowerCase();
                   if (currentStatus.indexOf("оплачено") !== -1 || currentStatus.indexOf("paid") !== -1) {
@@ -163,7 +300,7 @@ function doPost(e) {
 
                 if (isWebinar) {
                   if (attemptsColIdx === -1) {
-                    attemptsColIdx = headers.length;
+                    attemptsColIdx = currentHeaders.length;
                     sheet.getRange(1, attemptsColIdx + 1).setValue("Кількість спроб");
                     sheet.getRange(1, attemptsColIdx + 1).setFontWeight("bold");
                   }
@@ -184,7 +321,7 @@ function doPost(e) {
         sheet.appendRow(rowData);
       }
 
-      // ГЛОБАЛЬНИЙ ЗАПИС (НОВА СИСТЕМА)
+      // Глобальний запис
       recordGlobalLead(ss, data, sheetName);
 
       return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
@@ -221,7 +358,7 @@ function doPost(e) {
     if (data.action === 'update_lead_data') {
       var sheetName = data._sheet;
       var identifier = (data["Номер замовлення"] || data["Visitor ID"] || "").toString().trim();
-      var updates = data.updates || {}; // { "Статус оплати": "Скасовано", "Тариф": "VIP" }
+      var updates = data.updates || {};
       
       var sheet = ss.getSheetByName(sheetName);
       if (sheet) {
@@ -232,7 +369,6 @@ function doPost(e) {
 
           for (var i = 1; i < vals.length; i++) {
             var isTarget = false;
-            // Перевіряємо по всім колонкам на збіг ідентифікатора (Номер замовлення або Visitor ID)
             for (var j = 0; j < vals[i].length; j++) {
               if (vals[i][j].toString().trim() === identifier) {
                 isTarget = true;
@@ -241,7 +377,6 @@ function doPost(e) {
             }
 
             if (isTarget) {
-              // Оновлюємо кожне поле з об'єкту updates
               for (var key in updates) {
                 var colIdx = headers.indexOf(key);
                 if (colIdx !== -1) {
@@ -267,7 +402,6 @@ function doPost(e) {
         summary: {}
       };
       
-      // Мапа для нормалізації заголовків
       var headerMap = {
         "дата": "date", "дата та час": "date",
         "ім'я": "name", "имя": "name", "имя ": "name", "fio": "name", "фіо": "name",
@@ -301,7 +435,6 @@ function doPost(e) {
               obj[normalizedKey] = vals[i][j];
               obj._originalData[headers[j]] = vals[i][j];
             }
-            // Більш вільна перевірка - якщо є хоч якісь контакти або ID
             if (obj.phone || obj.name || obj.telegram || obj.orderId || obj.visitorId) {
               result.leads.push(obj);
             }
@@ -309,7 +442,6 @@ function doPost(e) {
         }
       });
       
-      // 5.2. Збір трафіку
       var ts = ss.getSheetByName("Traffic_Logs");
       if (ts) {
         var tvals = ts.getDataRange().getValues();
@@ -350,10 +482,6 @@ function logError(ss, message) {
   } catch (e) { }
 }
 
-// ==========================================
-// 4. ДОПОМІЖНІ ФУНКЦІЇ (НОВА СИСТЕМА)
-// ==========================================
-
 function updateFieldInSheet(sheet, targetOrderId, fieldName, newValue) {
   var values = sheet.getDataRange().getValues();
   if (values.length === 0) return false;
@@ -365,10 +493,9 @@ function updateFieldInSheet(sheet, targetOrderId, fieldName, newValue) {
   for (var k = 0; k < headers.length; k++) {
     var h = headers[k].toString().toLowerCase().trim();
     if (h.indexOf(fieldName.toLowerCase()) !== -1) targetColIdx = k;
-    if (h.indexOf("замовлення") !== -1 || h.indexOf("order") !== -1) orderColIdx = k;
+    if (h.indexOf("замовлення") !== -1 || h.indexOf("заказу") !== -1 || h.indexOf("order") !== -1) orderColIdx = k;
   }
 
-  // If column doesn't exist, try to add it (only for comments)
   if (targetColIdx === -1 && fieldName.toLowerCase().indexOf("коментар") !== -1) {
     targetColIdx = headers.length;
     sheet.getRange(1, targetColIdx + 1).setValue("Коментар");
@@ -406,7 +533,6 @@ function recordGlobalLead(ss, data, sourceSheetName) {
   var values = sheet.getDataRange().getValues();
   var headers = values[0];
   
-  // Ensure Коментар column exists in Global sheet
   if (headers.indexOf("Коментар") === -1) {
     sheet.getRange(1, headers.length + 1).setValue("Коментар");
     headers.push("Коментар");
@@ -441,7 +567,6 @@ function recordGlobalLead(ss, data, sourceSheetName) {
 
   var newJourney = data.journey || "";
   
-  // Prepare extra fields into comment
   var extraComment = data.comment || "";
   if (data.income) extraComment += "Дохід: " + data.income + "\n";
   if (data.debt) extraComment += "Борги: " + data.debt + "\n";
@@ -450,7 +575,6 @@ function recordGlobalLead(ss, data, sourceSheetName) {
   extraComment = extraComment.trim();
 
   if (foundRow !== -1) {
-    // UPDATE EXISTING
     var existingJourney = values[foundRow - 1][journeyCol] || "";
     var updatedJourney = existingJourney;
     
@@ -461,7 +585,6 @@ function recordGlobalLead(ss, data, sourceSheetName) {
     sheet.getRange(foundRow, dateCol + 1).setValue(new Date());
     sheet.getRange(foundRow, journeyCol + 1).setValue(updatedJourney);
     
-    // Add source to the source list if not already there
     var existingSource = values[foundRow - 1][sourceCol] || "";
     if (existingSource.indexOf(sourceSheetName) === -1) {
       sheet.getRange(foundRow, sourceCol + 1).setValue(existingSource + ", " + sourceSheetName);
@@ -475,15 +598,14 @@ function recordGlobalLead(ss, data, sourceSheetName) {
       }
     }
   } else {
-    // APPEND NEW
     var rowData = [
       new Date(),
       data.name || "",
       data.phone || "",
       data.telegram || "",
-      data.tariff || (sourceSheetName === "Заявки Вебінар" ? "Вебінар" : ""),
+      data.tariff || (sourceSheetName === "Лиды Вебинар" ? "Вебінар" : ""),
       (data.orderId || "").toString().trim(),
-      (sourceSheetName === "Заявки Вебінар" ? "—" : "Не оплачено"),
+      (sourceSheetName === "Лиды Вебинар" ? "—" : "Не оплачено"),
       sourceSheetName,
       data.visitorId || "",
       newJourney,

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'create_lead',
-            targetSheet: 'Заявки Вебінар', // Identifier for Apps Script
+            targetSheet: 'Лиды Вебинар', // Identifier for Apps Script
             name,
             phone,
             telegram,

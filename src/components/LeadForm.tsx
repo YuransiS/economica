@@ -68,6 +68,16 @@ export default function LeadForm({
       return;
     }
 
+    if (!telegram.trim()) {
+      setError("Будь ласка, введіть ваш нік у Telegram");
+      return;
+    }
+
+    if (telegram.includes("@") && telegram.includes(".") && !telegram.startsWith("@")) {
+      setError("Будь ласка, введіть ваш нік у Telegram (наприклад, @username), а не Email");
+      return;
+    }
+
     setLoading(true);
 
     const payload = {
@@ -167,7 +177,7 @@ export default function LeadForm({
           <div className="relative">
             <input
               type="text"
-              placeholder="@telegram або Email"
+              placeholder="Нік у Telegram (н-р: @username)"
               required
               value={telegram}
               onChange={(e) => setTelegram(e.target.value)}

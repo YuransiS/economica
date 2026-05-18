@@ -61,7 +61,7 @@ export default function SofiaInvestLessonPage() {
     const payload = {
       name,
       phone: "+" + phone,
-      targetSheet: "Sofia_Invest_Lesson",
+      targetSheet: "VLS Урок",
       isFree: true,
       income,
       debt,

@@ -252,13 +252,14 @@ export default function SofiaInvestPage() {
           <div className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute -top-12 right-0 md:-right-12 text-white/50 hover:text-white transition-colors"
+              className="absolute top-6 right-6 z-10 text-[#4E0000]/60 hover:text-[#4E0000] hover:bg-[#4E0000]/5 transition-all rounded-full p-2"
+              aria-label="Закрити"
             >
-              <X className="w-8 h-8" />
+              <X className="w-6 h-6" />
             </button>
             <LeadForm
               title="Отримайте доступ до уроку"
-              targetSheet="Sofia_Invest"
+              targetSheet="VSL Трафик"
               pixelEventName="Lead"
               pixelEventContent="Sofia Invest Main"
               redirectUrl="https://t.me/SofiaFeduniak_bot?start=69b01a17b0523e81800ee835"
