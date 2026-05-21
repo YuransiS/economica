@@ -1,0 +1,580 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '../../useAuth';
+import { updateProgress, getLessonsConfig } from '../../supabase';
+import { HomeworkStatus, MinicourseLessonConfig } from '../../types';
+import { motion } from 'framer-motion';
+import { 
+  ArrowLeft, Clock, AlertCircle, FileText, Download, 
+  Send, HelpCircle, CheckCircle, ChevronRight, Play, BookOpen, AlertTriangle, Award
+} from 'lucide-react';
+import Link from 'next/link';
+
+export default function LessonPage() {
+  const params = useParams();
+  const router = useRouter();
+  const lessonId = Number(params.id) as 1 | 2 | 3;
+  
+  const { user, progress, loading, refreshProgress } = useAuth();
+  
+  const [hwUrlInput, setHwUrlInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [lessonConfigs, setLessonConfigs] = useState<MinicourseLessonConfig[]>([]);
+
+  // Fetch lesson configurations dynamically
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        const configs = await getLessonsConfig();
+        setLessonConfigs(configs);
+      } catch (err) {
+        console.error("Failed to load lesson configs:", err);
+      }
+    };
+    fetchConfigs();
+  }, []);
+
+  // Timer state
+  const [timeLeftStr, setTimeLeftStr] = useState('');
+  const [timerWarning, setTimerWarning] = useState(false);
+
+  const lessonProgress = progress?.lessons[lessonId];
+
+  // Auto-record "Opened At" timestamp if not set
+  useEffect(() => {
+    const recordOpenTime = async () => {
+      if (user && progress && lessonProgress && !lessonProgress.openedAt) {
+        try {
+          await updateProgress(user.id, lessonId, {
+            openedAt: new Date().toISOString()
+          });
+          refreshProgress();
+        } catch (err) {
+          console.error("Failed to update lesson opened timestamp:", err);
+        }
+      }
+    };
+
+    if (!loading && user && progress) {
+      if (!lessonProgress || !lessonProgress.unlocked) {
+        // Redirect if trying to access a locked lesson
+        router.push('/minicourse');
+      } else {
+        recordOpenTime();
+      }
+    }
+  }, [loading, user, progress, lessonProgress, lessonId, router, refreshProgress]);
+
+  // Handle countdown timer
+  useEffect(() => {
+    if (!lessonProgress || !lessonProgress.openedAt || lessonProgress.hwStatus === 'accepted' || lessonProgress.hwSubmitted) {
+      setTimeLeftStr('');
+      setTimerWarning(false);
+      return;
+    }
+
+    const openedTime = new Date(lessonProgress.openedAt).getTime();
+    const deadline = openedTime + 24 * 3600 * 1000; // + 24 hours
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = deadline - now;
+
+      if (diff <= 0) {
+        setTimeLeftStr("Час вичерпано ⏰");
+        setTimerWarning(true);
+        return;
+      }
+
+      const hours = Math.floor(diff / (3600 * 1000));
+      const mins = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
+      const secs = Math.floor((diff % (60 * 1000)) / 1000);
+
+      const hoursStr = hours.toString().padStart(2, '0');
+      const minsStr = mins.toString().padStart(2, '0');
+      const secsStr = secs.toString().padStart(2, '0');
+
+      setTimeLeftStr(`${hoursStr}:${minsStr}:${secsStr}`);
+
+      // Warning when less than 3 hours left (3 * 3600 * 1000)
+      if (diff < 3 * 3600 * 1000) {
+        setTimerWarning(true);
+      } else {
+        setTimerWarning(false);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [lessonProgress]);
+
+  // Sync input value with already submitted URL
+  useEffect(() => {
+    if (lessonProgress?.hwUrl) {
+      setHwUrlInput(lessonProgress.hwUrl);
+    }
+  }, [lessonProgress]);
+
+  if (loading || !user || !progress || !lessonProgress) {
+    return (
+      <div className="min-h-screen bg-[#1A0000] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[#81D8D0] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="font-narrow text-[#81D8D0] uppercase tracking-widest text-sm">Завантаження уроку...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Lesson Metadata Config loaded dynamically
+  const currentConfig = lessonConfigs.find(c => c.lesson_id === lessonId);
+  
+  const currentLesson = currentConfig ? {
+    title: currentConfig.title,
+    description: currentConfig.description,
+    youtubeId: currentConfig.youtube_id,
+    mindmapUrl: currentConfig.mindmap_url,
+    hwSpreadsheetUrl: currentConfig.hw_spreadsheet_url,
+    notionUrl: currentConfig.notion_url,
+    hwInstructions: currentConfig.hw_instructions
+  } : {
+    // Fallback if not loaded yet
+    title: lessonId === 1 ? "Перший ефір" : lessonId === 2 ? "Другий ефір" : "Третій ефір",
+    description: lessonId === 1 ? "Створення першого інвестиційного плану" : lessonId === 2 ? "Робота з капіталом та брокерськими рахунками" : "Купівля першої акції та диверсифікація",
+    youtubeId: lessonId === 1 ? "SnyxALmvvnE" : lessonId === 2 ? "l4p1F9oy3ko" : "-p6u77YkyCw",
+    mindmapUrl: lessonId === 1 ? "https://mm.tt/map/3978357799?t=cIsPiI7Jsq" : lessonId === 2 ? "https://mm.tt/map/3979303280?t=HfkclCi41H" : "https://mm.tt/map/3663819169?t=B79jLpx0HT",
+    hwSpreadsheetUrl: lessonId === 1 ? "https://docs.google.com/spreadsheets/d/1xptWzJrSQ8aW2pOyuWpSH7P-4_tOJ6i04iB2-roF9kw/edit?usp=sharing" : lessonId === 2 ? "https://docs.google.com/spreadsheets/d/1UhFeWJyezb4W_t5jkesOvjiAe6l5SNDf/edit?gid=1880085387#gid=1880085387" : undefined,
+    notionUrl: lessonId === 3 ? "https://soapy-floss-c69.notion.site/33f9215c3f2180cf93e7e4f3bc7527d4" : undefined,
+    hwInstructions: lessonId === 1 ? `ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці❗️
+      
+1. Зробіть копію таблиці за посиланням нижче.
+2. Заповніть її по відповідним критеріям відповідно до ефіру.
+3. Після заповнення таблиці відкрийте доступ «всім у кого є посилання».
+4. Надішліть посилання у вікно праворуч для перевірки.` : lessonId === 2 ? `❗️ ВАЖЛИВО! Працюємо лише в скопійованій таблиці.
+    
+1. Зробіть копію таблиці за посиланням нижче.
+2. Ваше завдання — заповнити таблицю відповідно до критеріїв.
+3. Після виконання відкрийте доступ «всім, у кого є посилання».
+4. Надішліть посилання на перевірку.` : `Виконайте фінальні кроки для завершення курсу:
+
+1. Пройдіть тест і визначте свій ризик-профіль в інвестиціях.
+2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
+3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
+4. Купіть свою першу акцію.
+5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`
+  };
+
+  const notionUrl = currentLesson.notionUrl;
+  const hwSpreadsheetUrl = currentLesson.hwSpreadsheetUrl;
+
+  const handleHwSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!hwUrlInput.trim()) {
+      setErrorMsg("Будь ласка, введіть посилання на вашу таблицю/звіт");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await updateProgress(user.id, lessonId, {
+        hwSubmitted: true,
+        hwUrl: hwUrlInput.trim(),
+        hwStatus: 'pending',
+        hwSubmittedAt: new Date().toISOString()
+      });
+      setSuccessMsg("Домашнє завдання успішно надіслано на перевірку! 🎉");
+      refreshProgress();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg("Помилка надсилання. Спробуйте ще раз.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1A0000] text-white font-montserrat flex flex-col pb-16">
+      {/* Background Neon Glows */}
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[#81D8D0]/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+      {/* Header */}
+      <header className="border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-30">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/minicourse" className="flex items-center space-x-2 text-gray-400 hover:text-white transition-all font-narrow text-xs font-bold uppercase tracking-wider">
+            <ArrowLeft className="w-4 h-4 text-[#81D8D0]" />
+            <span>Назад на панель</span>
+          </Link>
+          <span className="font-bold text-xs uppercase tracking-widest text-[#81D8D0] bg-[#81D8D0]/10 px-3 py-1.5 rounded-lg border border-[#81D8D0]/20">
+            {currentLesson.title}
+          </span>
+        </div>
+      </header>
+
+      {/* Main Grid Layout */}
+      <main className="max-w-6xl mx-auto px-4 py-8 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10 flex-1">
+        
+        {/* Left Column - Video Player & Materials (Width 2/3) */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Cinema YouTube Container */}
+          <section className="bg-black/40 border border-white/10 rounded-3xl overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
+            <div className="relative aspect-video w-full bg-black">
+              <iframe
+                src={`https://www.youtube.com/embed/${currentLesson.youtubeId}?autoplay=0&rel=0&modestbranding=1`}
+                title={currentLesson.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full border-0"
+              ></iframe>
+            </div>
+            <div className="p-6 sm:p-8">
+              <h2 className="text-2xl font-black uppercase text-white">{currentLesson.title}</h2>
+              <p className="text-sm text-[#81D8D0] font-narrow uppercase tracking-widest mt-1">{currentLesson.description}</p>
+            </div>
+          </section>
+
+          {/* Download & Notion Guides Section */}
+          <section className="space-y-4">
+            <h3 className="text-lg font-black uppercase tracking-wider text-white flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-[#81D8D0]" />
+              <span>Корисні матеріали</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Mindmap Card */}
+              {currentLesson.mindmapUrl && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between backdrop-blur-sm">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-xl bg-purple-950/20 border border-purple-500/20 flex items-center justify-center text-purple-300">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Майндкарта ефіру</h4>
+                      <p className="text-[10px] text-gray-400">Інтерактивна схема у MindMeister</p>
+                    </div>
+                  </div>
+                  <a 
+                    href={currentLesson.mindmapUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#81D8D0]/30 hover:bg-[#81D8D0] hover:text-[#1A0000] text-gray-300 transition-all"
+                  >
+                    <Download className="w-5 h-5" />
+                  </a>
+                </div>
+              )}
+
+              {/* Notion Guide (Lesson 3 only) */}
+              {lessonId === 3 && notionUrl && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between backdrop-blur-sm">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-950/20 border border-blue-500/20 flex items-center justify-center text-blue-300">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Інструкції в Notion</h4>
+                      <p className="text-[10px] text-gray-400">Покроковий гайд на notion.site</p>
+                    </div>
+                  </div>
+                  <a 
+                    href={notionUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#81D8D0]/30 hover:bg-[#81D8D0] hover:text-[#1A0000] text-gray-300 transition-all"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </a>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* TransferGo zen guide (Lesson 3 only) */}
+          {lessonId === 3 && (
+            <section className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-sm space-y-4">
+              <span className="text-[10px] font-bold text-[#81D8D0] uppercase tracking-widest font-narrow">Покрокова схема поповнення</span>
+              <h4 className="text-lg font-black uppercase text-white">🔥 Схема поповнення Freedom24 (0.25€ комісія)</h4>
+              
+              <div className="space-y-4 text-xs font-arimo text-gray-300 leading-relaxed">
+                <div className="bg-black/30 border border-white/5 rounded-2xl p-4 font-bold text-[#81D8D0] text-center uppercase tracking-wider font-narrow">
+                  Схема: українська єврова картка → TransferGO → ZEN.COM → Freedom24
+                </div>
+
+                <div className="space-y-3">
+                  <p><strong>💡 Чому це вигідно:</strong></p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Фіксована комісія всього 0,25€ за весь шлях коштів (Monobank) або 1% (ПриватБанк).</li>
+                    <li>Повна відсутність прихованих втрат на подвійній конвертації.</li>
+                    <li>Використовуються виключно ліцензовані європейські брокери та платіжні сервіси.</li>
+                  </ul>
+                  
+                  <p className="mt-2"><strong>⚠️ Важливі нюанси при реєстрації:</strong></p>
+                  <ul className="list-disc pl-5 space-y-1 text-red-300">
+                    <li>У TransferGO під час реєстрації потрібно вказати будь-яку реальну адресу в межах ЄС (оскільки сервіс не верифікує її на даному етапі). Якщо вказати українську адресу, реєстрацію може заблокувати.</li>
+                    <li>Обирайте напрямок переказу «з Литви в Литву» — це дозволить проводити операції повністю без комісії через TransferGO.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Mentorship Program Scroll Reveal Banner */}
+          <section className="bg-gradient-to-r from-[#4E0000] to-[#1A0000] border border-[#81D8D0]/30 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.4)]">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <Award className="w-48 h-48 text-white" />
+            </div>
+            <div className="max-w-xl space-y-4">
+              <span className="text-[10px] font-bold text-[#81D8D0] uppercase tracking-widest font-narrow">Дізнатись більше про менторство з Софією</span>
+              <h3 className="text-3xl font-black uppercase text-white leading-tight">Програма менторства «Перший мільйон»</h3>
+              
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-arimo text-gray-300">
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
+                  <span>2 місяці інтенсивного навчання</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
+                  <span>Онлайн мастермайнди після кожного модуля</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
+                  <span>8 модулів, 3 уроків в записі</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
+                  <span>Повна перевірка домашнього завдання</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
+                  <span>Супровід на кожному етапі</span>
+                </li>
+                <li className="flex items-center space-x-2 text-green-300">
+                  <CheckCircle className="w-4.5 h-4.5 text-green-400 flex-shrink-0" />
+                  <span>Валідація портфеля перед реальними угодами</span>
+                </li>
+              </ul>
+
+              <div className="pt-4">
+                <a 
+                  href="https://t.me/sofi_finsight"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-8 py-3.5 bg-[#81D8D0] text-[#1A0000] hover:bg-[#97e3db] text-xs font-bold uppercase rounded-r-2xl rounded-l-sm tracking-wider flex items-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)] inline-flex hover:scale-105"
+                >
+                  <span>Отримати деталі в Telegram</span>
+                  <ChevronRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right Column - Submission Form & Timers (Width 1/3) */}
+        <div className="space-y-8">
+          
+          {/* 24h Countdown Timer Widget */}
+          {timeLeftStr && (
+            <div className={`border rounded-3xl p-6 backdrop-blur-md relative overflow-hidden transition-all ${
+              timerWarning 
+                ? 'bg-red-950/20 border-red-500/30' 
+                : 'bg-[#81D8D0]/5 border-[#81D8D0]/20'
+            }`}>
+              <div className="flex items-center space-x-3 mb-2">
+                <Clock className={`w-5 h-5 ${timerWarning ? 'text-red-400 animate-pulse' : 'text-[#81D8D0]'}`} />
+                <span className={`text-[10px] font-bold uppercase tracking-widest font-narrow ${
+                  timerWarning ? 'text-red-400' : 'text-[#81D8D0]'
+                }`}>
+                  Ліміт на здачу домашнього завдання
+                </span>
+              </div>
+              
+              <div className="flex items-baseline space-x-2">
+                <span className={`text-4xl font-black font-narrow tracking-widest ${
+                  timerWarning ? 'text-red-400' : 'text-white'
+                }`}>
+                  {timeLeftStr}
+                </span>
+              </div>
+
+              <p className="text-[10px] text-gray-400 mt-2 font-arimo">
+                У вас є 24 години на здачу завдання після відкриття ефіру. 
+                {timerWarning && " ⚠️ Менше 3 годин залишилось! Покваптесь."}
+              </p>
+            </div>
+          )}
+
+          {/* Homework Submission Box */}
+          <section className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6">
+            <h3 className="text-lg font-black uppercase text-white tracking-wider flex items-center space-x-2">
+              <FileText className="w-5 h-5 text-[#81D8D0]" />
+              <span>Домашнє завдання</span>
+            </h3>
+
+            {/* Markdown Instructions */}
+            <div className="text-xs font-arimo text-gray-300 leading-relaxed whitespace-pre-line bg-black/20 border border-white/5 rounded-2xl p-4">
+              {currentLesson.hwInstructions}
+            </div>
+
+            {/* Links / Action Buttons for Spreadsheets */}
+            {hwSpreadsheetUrl && (
+              <a 
+                href={hwSpreadsheetUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full py-3.5 bg-white/5 border border-white/10 text-white hover:border-[#81D8D0]/30 hover:bg-white/10 text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all"
+              >
+                <span>Зробити копію таблиці 🔽</span>
+              </a>
+            )}
+
+            {/* Risk profile test URL (Lesson 3 only) */}
+            {lessonId === 3 && (
+              <div className="space-y-3">
+                <a 
+                  href="https://onlinetestpad.com/t/riskprofileininvesting" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all"
+                >
+                  <span>1. Визначити ризик-профіль 📝</span>
+                </a>
+                <a 
+                  href="https://freedom24.com/invite_from/9275072" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 bg-[#81D8D0]/10 border border-[#81D8D0]/30 text-[#81D8D0] hover:bg-[#81D8D0]/20 text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all"
+                >
+                  <span>2. Відкрити Freedom24 Брокер 📈</span>
+                </a>
+                <a 
+                  href="https://trgo.co/uk/r/9GEij0" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all"
+                >
+                  <span>3. Поповнення рахунку (TransferGo) 💸</span>
+                </a>
+              </div>
+            )}
+
+            {/* Homework submission Status Indicator */}
+            {lessonProgress.hwSubmitted && (
+              <div className="border border-white/5 rounded-2xl p-4 bg-black/30 space-y-3">
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider font-narrow">Статус завдання</span>
+                  {lessonProgress.hwStatus === 'accepted' ? (
+                    <span className="px-2.5 py-1 rounded bg-green-950/20 border border-green-500/30 text-green-400 font-bold text-[10px] uppercase">
+                      Зараховано 🎉
+                    </span>
+                  ) : lessonProgress.hwStatus === 'needs_improvement' ? (
+                    <span className="px-2.5 py-1 rounded bg-amber-950/20 border border-amber-500/30 text-amber-400 font-bold text-[10px] uppercase">
+                      Потребує допрацювання ⚠️
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded bg-[#81D8D0]/10 border border-[#81D8D0]/20 text-[#81D8D0] font-bold text-[10px] uppercase">
+                      На перевірці ⏳
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-500 font-narrow">Ваше посилання на перевірку:</p>
+                  <a 
+                    href={lessonProgress.hwUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#81D8D0] hover:underline block break-all font-arimo"
+                  >
+                    {lessonProgress.hwUrl}
+                  </a>
+                </div>
+
+                {lessonProgress.hwComment && (
+                  <div className="mt-4 pt-3 border-t border-white/5 space-y-1 bg-white/5 rounded-xl p-3">
+                    <p className="text-[9px] text-[#81D8D0] font-bold uppercase tracking-wider font-narrow">Рецензія Софії / Адміна:</p>
+                    <p className="text-xs text-gray-300 italic font-arimo">"{lessonProgress.hwComment}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Submission Input form */}
+            {(lessonProgress.hwStatus === 'not_started' || lessonProgress.hwStatus === 'needs_improvement') && (
+              <form onSubmit={handleHwSubmit} className="space-y-4 pt-4 border-t border-white/10">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
+                    Введіть посилання на скопійовану таблицю / Notion звіт:
+                  </label>
+                  <input 
+                    type="url"
+                    required
+                    value={hwUrlInput}
+                    onChange={(e) => setHwUrlInput(e.target.value)}
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white text-xs font-arimo transition-all placeholder-gray-600"
+                  />
+                </div>
+
+                {errorMsg && (
+                  <div className="p-3 bg-red-950/40 border border-red-500/20 text-red-300 rounded-xl text-[10px] font-arimo">
+                    {errorMsg}
+                  </div>
+                )}
+
+                {successMsg && (
+                  <div className="p-3 bg-green-950/40 border border-green-500/20 text-green-300 rounded-xl text-[10px] font-arimo">
+                    {successMsg}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_15px_rgba(129,216,208,0.2)] disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{submitting ? 'Надсилання...' : 'Здати на перевірку'}</span>
+                </button>
+              </form>
+            )}
+
+            {/* Next lesson unlocked notification */}
+            {lessonProgress.hwStatus === 'accepted' && (
+              <div className="p-4 bg-green-950/30 border border-green-500/20 rounded-2xl flex items-start space-x-3 text-green-400">
+                <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold uppercase">Завдання успішно прийнято!</p>
+                  <p className="text-[10px] text-gray-300 font-arimo">
+                    {lessonId < 3 
+                      ? "Вітаємо! Наступний ефір вже відкритий на вашому робочому столі. Поверніться на панель."
+                      : "🎉 Ви повністю закінчили цей курс та придбали свою першу акцію! Вітаємо!"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Permanent Help Telegram Button */}
+          <a 
+            href="https://t.me/sofi_finsight" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full py-3.5 bg-white/5 border border-white/10 hover:border-[#81D8D0]/30 text-gray-300 hover:text-white text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center space-x-2 transition-all bg-black/20"
+          >
+            <HelpCircle className="w-4 h-4 text-[#81D8D0]" />
+            <span>Маєте питання? Напишіть нам</span>
+          </a>
+        </div>
+      </main>
+    </div>
+  );
+}

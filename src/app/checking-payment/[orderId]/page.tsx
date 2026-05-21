@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { loginUser } from "@/app/minicourse/supabase";
 
 export default function CheckingPaymentPage() {
   const router = useRouter();
@@ -27,7 +28,52 @@ export default function CheckingPaymentPage() {
           const basePath = isReservation ? '/price' : '';
 
           if (status === 'approved') {
-            router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
+            // Sync paid state locally for Mock Mode
+            const savedTelegram = localStorage.getItem('user_telegram');
+            const savedPhone = localStorage.getItem('user_phone');
+            if (savedTelegram || savedPhone) {
+              const localUsersStr = localStorage.getItem('minicourse_users');
+              if (localUsersStr) {
+                try {
+                  const users = JSON.parse(localUsersStr);
+                  const tgClean = (savedTelegram || '').trim().replace(/^@/, '').toLowerCase();
+                  const phoneClean = (savedPhone || '').trim().replace(/\D/g, '');
+                  
+                  const userIndex = users.findIndex((u: any) => 
+                    (u.telegram && u.telegram.toLowerCase() === tgClean) || 
+                    (u.phone && u.phone.replace(/\D/g, '') === phoneClean)
+                  );
+
+                  if (userIndex !== -1) {
+                    users[userIndex].is_paid = true;
+                    users[userIndex].payment_status = 'paid';
+                    localStorage.setItem('minicourse_users', JSON.stringify(users));
+                  }
+                } catch (e) {
+                  console.error("Error updating local mock user to paid:", e);
+                }
+              }
+
+              // Auto-login
+              try {
+                const loginInput = savedTelegram || savedPhone;
+                if (loginInput) {
+                  const deviceUuid = localStorage.getItem('minicourse_device_uuid') || '';
+                  const { user } = await loginUser(loginInput, localStorage.getItem('user_name') || undefined, deviceUuid);
+                  localStorage.setItem('minicourse_session', JSON.stringify(user));
+                }
+              } catch (loginErr) {
+                console.error("Auto-login error on checker page:", loginErr);
+              }
+            }
+
+            // Redirect straight to minicourse dashboard if they bought the minicourse
+            const isMinicourse = tariff === 'Практикум' || tariff === 'PRO' || tariff === 'VIP';
+            if (isMinicourse) {
+              router.push('/minicourse');
+            } else {
+              router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
+            }
             return true;
           } else if (status === 'declined' || status === 'fail' || status === 'expired') {
             router.push(`${basePath}/failure/${orderId}?tariff=${tariff}`);

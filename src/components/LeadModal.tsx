@@ -138,6 +138,16 @@ export default function LeadModal({
 
     setIsLoading(true);
 
+    // Read or generate device UUID
+    let deviceUuid = '';
+    if (typeof window !== 'undefined') {
+      deviceUuid = localStorage.getItem('minicourse_device_uuid') || '';
+      if (!deviceUuid) {
+        deviceUuid = 'dev-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+        localStorage.setItem('minicourse_device_uuid', deviceUuid);
+      }
+    }
+
     // Collect analytics
     const analytics = {
       visitorId: localStorage.getItem('visitor_id'),
@@ -158,7 +168,8 @@ export default function LeadModal({
           price: selectedPrice,
           utms,
           analytics,
-          isTest: isTestMode
+          isTest: isTestMode,
+          deviceUuid
         })
       });
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { supabase } from '@/app/minicourse/supabase';
 
 // Replace with your actual merchant credentials or map to process.env
 const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight';
@@ -13,8 +14,53 @@ export async function POST(req: Request) {
     const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight').trim();
     const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
     const body = await req.json();
-    const { name, phone, telegram, tariff, price, utms, analytics, isTest, targetSheet, currency: inputCurrency } = body;
+    const { name, phone, telegram, tariff, price, utms, analytics, isTest, targetSheet, currency: inputCurrency, deviceUuid } = body;
     const sheetName = targetSheet || 'Заявки на практикум';
+
+    // Register/update the student in the database as unpaid ('pending')
+    if (supabase && (tariff === 'Практикум' || tariff === 'PRO' || tariff === 'VIP')) {
+      try {
+        const tgClean = (telegram || '').trim().replace(/^@/, '');
+        const phoneClean = (phone || '').trim();
+        
+        // Check if user already exists
+        const { data: existingUser } = await supabase
+          .from('minicourse_users')
+          .select('id, device_uuids')
+          .or(`phone.eq.${phoneClean},telegram.eq.${tgClean}`)
+          .maybeSingle();
+
+        if (!existingUser) {
+          const emailPlaceholder = `${tgClean || phoneClean || Math.random().toString(36).substr(2, 9)}@economica.edu`;
+          await supabase
+            .from('minicourse_users')
+            .insert({
+              name: name || 'Учасник',
+              email: emailPlaceholder,
+              telegram: tgClean || null,
+              phone: phoneClean || null,
+              role: 'student',
+              is_paid: false,
+              payment_status: 'pending',
+              device_uuids: deviceUuid ? [deviceUuid] : [],
+              status: 'active'
+            });
+        } else {
+          // If they exist, make sure their device UUID is recorded
+          const currentUuids = existingUser.device_uuids || [];
+          if (deviceUuid && !currentUuids.includes(deviceUuid)) {
+            await supabase
+              .from('minicourse_users')
+              .update({
+                device_uuids: [...currentUuids, deviceUuid]
+              })
+              .eq('id', existingUser.id);
+          }
+        }
+      } catch (dbErr) {
+        console.error("Failed to pre-register student in Supabase:", dbErr);
+      }
+    }
 
     // Generate a unique order ID
     const orderReference = `ORDER_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -115,7 +161,7 @@ export async function POST(req: Request) {
         returnUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
         approveUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
         declineUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook?orderId=${orderReference}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
+        serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook?orderId=${orderReference}&phone=${encodeURIComponent(phone || '')}&telegram=${encodeURIComponent(telegram || '')}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
       }
     });
 

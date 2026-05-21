@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { supabase } from '@/app/minicourse/supabase';
 
 const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight';
 const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
@@ -9,6 +10,8 @@ export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
     const urlOrderId = url.searchParams.get('orderId');
+    const phone = url.searchParams.get('phone');
+    const telegram = url.searchParams.get('telegram');
     const targetSheet = url.searchParams.get('targetSheet') || 'Заявки на практикум';
     const rawBody = await req.text();
 
@@ -37,6 +40,38 @@ export async function POST(req: Request) {
     
     if (sLower === 'approved' || sLower === 'settled') {
       finalStatus = 'Оплачено';
+      
+      // Update paid status in Supabase minicourse database
+      if (supabase) {
+        try {
+          const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+          const phoneClean = (phone || '').trim().replace(/\D/g, '');
+
+          if (tgClean || phoneClean) {
+            let query = supabase.from('minicourse_users').update({
+              is_paid: true,
+              payment_status: 'paid'
+            });
+
+            if (tgClean && phoneClean) {
+              query = query.or(`phone.eq.${phoneClean},telegram.eq.${tgClean}`);
+            } else if (tgClean) {
+              query = query.eq('telegram', tgClean);
+            } else if (phoneClean) {
+              query = query.eq('phone', phoneClean);
+            }
+
+            const { data: updatedUsers, error: dbErr } = await query.select();
+            if (dbErr) {
+              console.error("Failed to mark minicourse student paid in Supabase:", dbErr);
+            } else {
+              console.log("Successfully marked minicourse student as paid:", updatedUsers);
+            }
+          }
+        } catch (dbErr) {
+          console.error("Database error in wayforpay webhook paid sync:", dbErr);
+        }
+      }
     } else if (sLower === 'declined') {
       finalStatus = 'Відхилено';
     } else if (sLower) {
