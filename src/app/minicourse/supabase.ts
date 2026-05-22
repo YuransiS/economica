@@ -175,10 +175,15 @@ export function calculateProgressPercent(lessons: MinicourseProgress['lessons'])
 // Platform API Layer
 export async function loginUser(emailOrTelegram: string, name?: string, deviceUuid?: string): Promise<{ user: MinicourseUser; progress: MinicourseProgress }> {
   const normInput = emailOrTelegram.trim().toLowerCase().replace(/^@/, '');
+  const digitsOnly = normInput.replace(/\D/g, '');
 
   if (IS_MOCK_MODE) {
     const users = getLocalUsers();
-    let user = users.find(u => u.email.toLowerCase() === normInput || (u.telegram && u.telegram.toLowerCase() === normInput));
+    let user = users.find(u => 
+      u.email.toLowerCase() === normInput || 
+      (u.telegram && u.telegram.toLowerCase() === normInput) ||
+      (digitsOnly && u.phone && u.phone.replace(/\D/g, '') === digitsOnly)
+    );
     
     if (!user) {
       // Auto-register new student but mark as unpaid so they are prompted to pay
@@ -187,6 +192,7 @@ export async function loginUser(emailOrTelegram: string, name?: string, deviceUu
         name: name || emailOrTelegram.split('@')[0],
         email: emailOrTelegram.includes('@') ? emailOrTelegram : `${normInput}@mock.com`,
         telegram: emailOrTelegram.includes('@') ? undefined : normInput,
+        phone: digitsOnly || undefined,
         role: 'student',
         is_paid: false,
         payment_status: 'pending',
@@ -198,24 +204,26 @@ export async function loginUser(emailOrTelegram: string, name?: string, deviceUu
       saveLocalUsers(users);
     }
 
-    if (user.role === 'student') {
-      if (!user.is_paid) {
+    const activeUser = user as MinicourseUser;
+
+    if (activeUser.role === 'student') {
+      if (!activeUser.is_paid) {
         throw new Error("Практикум ще не сплачено. Оплатіть участь на головній сторінці для отримання доступу.");
       }
-      if (user.status === 'under_investigation') {
+      if (activeUser.status === 'under_investigation') {
         throw new Error("Доступ заблоковано. Зафіксовано вхід з великої кількості пристроїв. Будь ласка, зверніться в підтримку.");
       }
 
       if (deviceUuid) {
-        const uuids = user.device_uuids || [];
+        const uuids = activeUser.device_uuids || [];
         if (!uuids.includes(deviceUuid)) {
           if (uuids.length >= 4) {
-            user.status = 'under_investigation';
-            user.device_uuids = [...uuids, deviceUuid];
+            activeUser.status = 'under_investigation';
+            activeUser.device_uuids = [...uuids, deviceUuid];
             saveLocalUsers(users);
             throw new Error("Доступ заблоковано. Зафіксовано вхід з 5 унікальних пристроїв. Зверніться до підтримки.");
           } else {
-            user.device_uuids = [...uuids, deviceUuid];
+            activeUser.device_uuids = [...uuids, deviceUuid];
             saveLocalUsers(users);
           }
         }
@@ -223,11 +231,11 @@ export async function loginUser(emailOrTelegram: string, name?: string, deviceUu
     }
 
     const progressList = getLocalProgress();
-    let progress = progressList.find(p => p.userId === user!.id);
+    let progress = progressList.find(p => p.userId === activeUser.id);
     if (!progress) {
       progress = {
         id: 'p-' + Math.random().toString(36).substr(2, 9),
-        userId: user.id,
+        userId: activeUser.id,
         progressPercent: 0,
         lessons: {
           1: { unlocked: true, hwSubmitted: false, hwStatus: 'not_started' },
@@ -240,14 +248,19 @@ export async function loginUser(emailOrTelegram: string, name?: string, deviceUu
       saveLocalProgress(progressList);
     }
 
-    return { user, progress };
+    return { user: activeUser, progress };
   } else {
     // ACTUAL SUPABASE INTEGRATION
     // 1. Fetch user
+    let queryFilter = `email.ilike.${normInput},telegram.ilike.${normInput}`;
+    if (digitsOnly) {
+      queryFilter += `,phone.eq.${digitsOnly}`;
+    }
+
     let { data: user, error } = await supabase!
       .from('minicourse_users')
       .select('*')
-      .or(`email.eq.${normInput},telegram.eq.${normInput}`)
+      .or(queryFilter)
       .maybeSingle();
 
     if (error) throw error;

@@ -17,9 +17,12 @@ export default function CheckingPaymentPage() {
     let attempts = 0;
     const maxAttempts = 5;
     
+    const savedTelegram = typeof window !== 'undefined' ? (localStorage.getItem('user_telegram') || '') : '';
+    const savedPhone = typeof window !== 'undefined' ? (localStorage.getItem('user_phone') || '') : '';
+
     const checkStatus = async () => {
       try {
-        const response = await fetch(`/api/wayforpay/check-status?orderId=${orderId}`);
+        const response = await fetch(`/api/wayforpay/check-status?orderId=${orderId}&phone=${encodeURIComponent(savedPhone)}&telegram=${encodeURIComponent(savedTelegram)}`);
         const data = await response.json();
 
         if (data.success) {
@@ -29,8 +32,6 @@ export default function CheckingPaymentPage() {
 
           if (status === 'approved') {
             // Sync paid state locally for Mock Mode
-            const savedTelegram = localStorage.getItem('user_telegram');
-            const savedPhone = localStorage.getItem('user_phone');
             if (savedTelegram || savedPhone) {
               const localUsersStr = localStorage.getItem('minicourse_users');
               if (localUsersStr) {

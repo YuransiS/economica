@@ -126,6 +126,15 @@ export default function PriceLeadModal({
     setIsLoading(true);
 
     try {
+      let deviceUuid = '';
+      if (typeof window !== 'undefined') {
+        deviceUuid = localStorage.getItem('minicourse_device_uuid') || '';
+        if (!deviceUuid) {
+          deviceUuid = 'dev-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+          localStorage.setItem('minicourse_device_uuid', deviceUuid);
+        }
+      }
+
       const response = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,7 +153,8 @@ export default function PriceLeadModal({
             lastUtms: JSON.parse(localStorage.getItem('last_utms') || '{}'),
             journey: JSON.parse(localStorage.getItem('journey') || '[]'),
           },
-          isTest: isTestMode
+          isTest: isTestMode,
+          deviceUuid
         })
       });
 
@@ -155,6 +165,13 @@ export default function PriceLeadModal({
           setAlreadyPaidInfo({ tariff: result.paidTariff, amount: result.paidAmount });
           setIsLoading(false);
           return;
+        }
+
+        // Save user data to localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_name', name);
+          localStorage.setItem('user_phone', phone);
+          localStorage.setItem('user_telegram', telegram);
         }
 
         // Track Facebook Lead Event

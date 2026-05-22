@@ -10,8 +10,6 @@ export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
     const urlOrderId = url.searchParams.get('orderId');
-    const phone = url.searchParams.get('phone');
-    const telegram = url.searchParams.get('telegram');
     const targetSheet = url.searchParams.get('targetSheet') || 'Заявки на практикум';
     const rawBody = await req.text();
 
@@ -23,6 +21,9 @@ export async function POST(req: Request) {
       const params = new URLSearchParams(rawBody);
       data = Object.fromEntries(params.entries());
     }
+
+    const phone = url.searchParams.get('phone') || data.phone || data.clientPhone || data.client_phone || '';
+    const telegram = url.searchParams.get('telegram') || '';
 
     // WayForPay keys can sometimes be case-sensitive or different
     const status = (data.transactionStatus || data.transaction_status || data.status || '') + '';
@@ -54,9 +55,9 @@ export async function POST(req: Request) {
             });
 
             if (tgClean && phoneClean) {
-              query = query.or(`phone.eq.${phoneClean},telegram.eq.${tgClean}`);
+              query = query.or(`phone.eq.${phoneClean},telegram.ilike.${tgClean}`);
             } else if (tgClean) {
-              query = query.eq('telegram', tgClean);
+              query = query.ilike('telegram', tgClean);
             } else if (phoneClean) {
               query = query.eq('phone', phoneClean);
             }

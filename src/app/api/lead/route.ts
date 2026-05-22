@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     // Register/update the student in the database as unpaid ('pending')
     if (supabase && (tariff === 'Практикум' || tariff === 'PRO' || tariff === 'VIP')) {
       try {
-        const tgClean = (telegram || '').trim().replace(/^@/, '');
-        const phoneClean = (phone || '').trim();
+        const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+        const phoneClean = (phone || '').trim().replace(/\D/g, '');
         
         // Check if user already exists
         const { data: existingUser } = await supabase
