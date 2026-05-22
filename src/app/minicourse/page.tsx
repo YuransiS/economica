@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
+import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 import { getLeaderboard, StudentLeaderboardEntry, getLessonsConfig } from './supabase';
 import { MinicourseLessonConfig } from './types';
 import { 
@@ -75,6 +76,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-[#1A0000] text-white relative font-montserrat flex flex-col pb-16">
+      <InAppBrowserOverlay />
       {/* Background Glows */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#81D8D0]/5 rounded-full blur-[150px] pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#4E0000]/40 rounded-full blur-[200px] pointer-events-none"></div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { loginUser } from "@/app/minicourse/supabase";
+import InAppBrowserOverlay from "@/components/InAppBrowserOverlay";
 
 export default function CheckingPaymentPage() {
   const router = useRouter();
@@ -107,6 +108,7 @@ export default function CheckingPaymentPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FCFAF8] p-6 text-center">
+      <InAppBrowserOverlay />
       <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl border border-[#81D8D0]/20">
         <Loader2 className="h-16 w-16 text-[#81D8D0] animate-spin mx-auto mb-6" />
         <h1 className="mb-4 font-montserrat text-2xl font-black text-[#4E0000] uppercase tracking-tight">

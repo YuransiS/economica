@@ -9,12 +9,40 @@ const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https:
 
 export async function POST(req: Request) {
   try {
-    const origin = new URL(req.url).origin.replace('http://', 'https://');
-    const MERCHANT_DOMAIN_NAME = process.env.NEXT_PUBLIC_SITE_URL?.replace('http://', 'https://') || origin;
+    const body = await req.json();
+    const { 
+      name, 
+      phone, 
+      telegram, 
+      tariff, 
+      price, 
+      utms, 
+      analytics, 
+      isTest, 
+      targetSheet, 
+      currency: inputCurrency, 
+      deviceUuid,
+      clientDomain,
+      clientOrigin
+    } = body;
+
+    const detectedOrigin = new URL(req.url).origin;
+    const baseSiteUrl = clientOrigin || process.env.NEXT_PUBLIC_SITE_URL || detectedOrigin;
+    const siteUrl = baseSiteUrl.includes('localhost') ? baseSiteUrl : baseSiteUrl.replace('http://', 'https://');
+
+    let merchantDomainName = '';
+    if (clientDomain) {
+      merchantDomainName = clientDomain;
+    } else {
+      try {
+        merchantDomainName = new URL(siteUrl).hostname;
+      } catch {
+        merchantDomainName = 'localhost';
+      }
+    }
+
     const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight').trim();
     const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
-    const body = await req.json();
-    const { name, phone, telegram, tariff, price, utms, analytics, isTest, targetSheet, currency: inputCurrency, deviceUuid } = body;
     const sheetName = targetSheet || 'Заявки на практикум';
 
     // Register/update the student in the database as unpaid ('pending')
@@ -135,7 +163,7 @@ export async function POST(req: Request) {
     const productCount = "1";
     const productPrice = finalAmount;
 
-    const signatureString = `${MERCHANT_ACCOUNT};${MERCHANT_DOMAIN_NAME};${orderReference};${orderDate};${finalAmount};${currency};${finalProductName};${productCount};${productPrice}`;
+    const signatureString = `${MERCHANT_ACCOUNT};${merchantDomainName};${orderReference};${orderDate};${finalAmount};${currency};${finalProductName};${productCount};${productPrice}`;
 
     const signature = crypto
       .createHmac('md5', MERCHANT_SECRET_KEY)
@@ -147,7 +175,7 @@ export async function POST(req: Request) {
       success: true,
       data: {
         merchantAccount: MERCHANT_ACCOUNT,
-        merchantDomainName: MERCHANT_DOMAIN_NAME,
+        merchantDomainName: merchantDomainName,
         orderReference,
         orderDate,
         amount: finalAmount,
@@ -158,10 +186,10 @@ export async function POST(req: Request) {
         clientName: name,
         clientPhone: phone,
         merchantSignature: signature,
-        returnUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        approveUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        declineUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        serviceUrl: `${MERCHANT_DOMAIN_NAME}/api/wayforpay/webhook?orderId=${orderReference}&phone=${encodeURIComponent(phone || '')}&telegram=${encodeURIComponent(telegram || '')}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
+        returnUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
+        approveUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
+        declineUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
+        serviceUrl: `${siteUrl}/api/wayforpay/webhook?orderId=${orderReference}&phone=${encodeURIComponent(phone || '')}&telegram=${encodeURIComponent(telegram || '')}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
       }
     });
 

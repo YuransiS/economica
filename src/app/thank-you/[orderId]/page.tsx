@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import PixelPurchaseTracking from "@/components/PixelPurchaseTracking";
+import InAppBrowserOverlay from "@/components/InAppBrowserOverlay";
 
 export default async function ThankYouPage({ 
   params,
@@ -33,6 +34,7 @@ export default async function ThankYouPage({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FCFAF8] p-6 text-center">
+      <InAppBrowserOverlay />
       <PixelPurchaseTracking value={purchaseValue} />
       <div className="w-full max-w-lg rounded-3xl bg-white p-10 shadow-xl border border-[#81D8D0]/20">
         <div className="mb-6 flex justify-center">

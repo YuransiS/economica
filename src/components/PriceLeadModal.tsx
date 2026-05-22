@@ -154,7 +154,9 @@ export default function PriceLeadModal({
             journey: JSON.parse(localStorage.getItem('journey') || '[]'),
           },
           isTest: isTestMode,
-          deviceUuid
+          deviceUuid,
+          clientDomain: typeof window !== 'undefined' ? window.location.hostname : '',
+          clientOrigin: typeof window !== 'undefined' ? window.location.origin : ''
         })
       });
 

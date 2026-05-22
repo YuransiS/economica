@@ -169,7 +169,9 @@ export default function LeadModal({
           utms,
           analytics,
           isTest: isTestMode,
-          deviceUuid
+          deviceUuid,
+          clientDomain: typeof window !== 'undefined' ? window.location.hostname : '',
+          clientOrigin: typeof window !== 'undefined' ? window.location.origin : ''
         })
       });
 
@@ -231,7 +233,9 @@ export default function LeadModal({
             lastUtms: JSON.parse(localStorage.getItem('last_utms') || '{}'),
             journey: JSON.parse(localStorage.getItem('journey') || '[]'),
           },
-          isTest: isTestMode
+          isTest: isTestMode,
+          clientDomain: typeof window !== 'undefined' ? window.location.hostname : '',
+          clientOrigin: typeof window !== 'undefined' ? window.location.origin : ''
         })
       });
 
