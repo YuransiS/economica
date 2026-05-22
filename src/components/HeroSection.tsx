@@ -30,7 +30,7 @@ export default function HeroSection({ onOpenLeadAction }: { onOpenLeadAction: ()
             className="text-left"
           >
             <p className="font-narrow text-xl md:text-3xl tracking-widest uppercase mb-6 text-[#81D8D0] font-bold">
-              3-денний онлайн-практикум • 09.04 - 11.04
+              Практичний курс
             </p>
 
             <h1 className="font-montserrat text-4xl md:text-6xl lg:text-7xl font-black uppercase leading-tight mb-8">

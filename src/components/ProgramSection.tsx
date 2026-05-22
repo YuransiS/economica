@@ -7,12 +7,12 @@ export default function ProgramSection() {
   const days = [
     {
       day: "ДЕНЬ 1",
-      date: "09.04",
+      date: "",
       theme: "Складна економіка простою мовою",
       points: [
         "Зрозумієте, які правила гри на економічному ринку та як знаючи ці правила примножувати дохід навіть під час кризи",
         "Розберемо що відбувається з цінами у світі, чому така висока волатильність?",
-        "Що відбувається з активами і пасивами під час кризи",
+        "Що відбувається з активами і пасивами под час кризи",
         "Планова криза це погано чи добре? Хто на ній заробить?",
         "Розбираємось чому гроші під подушкою в 2026 році - це не шанс зберегти, а прямий шлях до втрати всього, що накопичив"
       ],
@@ -21,7 +21,7 @@ export default function ProgramSection() {
     },
     {
       day: "ДЕНЬ 2",
-      date: "10.04",
+      date: "",
       theme: "Яку фінансову стратегію обрати під час кризи",
       points: [
         "Які активи варто зберігати під час кризи? А які потрібно було ще вчора продати",
@@ -33,7 +33,7 @@ export default function ProgramSection() {
     },
     {
       day: "ДЕНЬ 3",
-      date: "11.04",
+      date: "",
       theme: "Як почати формувати пасивний дохід вже сьогодні",
       points: [
         "Відкриваємо ваш перший брокерський рахунок",
@@ -57,7 +57,7 @@ export default function ProgramSection() {
           viewport={{ once: true }}
           className="font-montserrat text-4xl md:text-5xl font-black text-center text-[#FBCBDA] uppercase mb-16 tracking-tight"
         >
-          Програма практикуму:
+          Програма міні курсу:
         </motion.h2>
 
         <div className="space-y-12">
@@ -77,9 +77,11 @@ export default function ProgramSection() {
                     <span className="font-narrow text-sm font-bold uppercase tracking-widest bg-white/40 px-3 py-1 rounded-full">
                       {item.day}
                     </span>
-                    <span className="font-narrow text-sm font-bold opacity-80">
-                      {item.date}
-                    </span>
+                    {item.date && (
+                      <span className="font-narrow text-sm font-bold opacity-80">
+                        {item.date}
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-montserrat text-xl md:text-2xl font-bold text-[#4E0000]">
                     Тема: {item.theme}

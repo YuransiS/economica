@@ -5,11 +5,10 @@ import AnimatedCheck from './icons/AnimatedCheck';
 
 export default function WhatAwaitsSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
   const items = [
-    "Щоденні прямі ефіри",
+    "3 ефіри в записі",
     "Перевірка Д\\З зі зворотнім зв'язком",
     "Бонусні матеріали, які точно допоможуть не відкладати інвестування",
-    "Чат однодумців, де всі рухаються в єдиному темпі",
-    "Можливість потрапити на індивідуальний ZOOM з Софією"
+    "Канал в якому зібрана вся актуальна інформація"
   ];
 
   return (
@@ -24,7 +23,7 @@ export default function WhatAwaitsSection({ onOpenLeadAction }: { onOpenLeadActi
           viewport={{ once: true }}
           className="font-montserrat text-3xl md:text-5xl font-black text-white uppercase mb-16"
         >
-          Що на вас чекає <br/><span className="text-[#FBCBDA]">на триденному практикумі</span>
+          Що на вас чекає <br/><span className="text-[#FBCBDA]">на міні курсу</span>
         </motion.h2>
 
         <div className="space-y-4 mb-16 text-left inline-block w-full max-w-2xl">

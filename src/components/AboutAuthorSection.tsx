@@ -36,7 +36,7 @@ export default function AboutAuthorSection({ onOpenLeadAction }: { onOpenLeadAct
             Ви теж можете вийти на щомісячний пасивний дохід <br/><span className="text-white">навіть під час кризи.</span>
           </h3>
           <p className="font-arimo text-xl text-gray-400 mb-12">
-            На практикумі будемо розбирати, як ситуація у світі впливає на ваш капітал та як його збільшувати навіть у складні часи
+            На курсі будемо розбирати, як ситуація у світі впливає на ваш капітал та як його збільшувати навіть у складні часи
           </p>
 
           <button

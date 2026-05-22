@@ -26,7 +26,7 @@ export default function TargetAudienceSection({ onOpenLeadAction }: { onOpenLead
           viewport={{ once: true }}
           className="font-montserrat text-3xl md:text-5xl font-black text-center text-[#FBCBDA] uppercase mb-16"
         >
-          Вам точно треба бути на практикумі, якщо ви:
+          Вам точно підійде міні курси, якщо ви:
         </motion.h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">

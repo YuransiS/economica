@@ -5,10 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../useAuth';
 import { updateProgress, getLessonsConfig } from '../../supabase';
 import { HomeworkStatus, MinicourseLessonConfig } from '../../types';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Clock, AlertCircle, FileText, Download, 
-  Send, HelpCircle, CheckCircle, ChevronRight, Play, BookOpen, AlertTriangle, Award
+  Send, HelpCircle, CheckCircle, ChevronRight, Play, BookOpen, AlertTriangle, Award, X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -24,6 +24,8 @@ export default function LessonPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [lessonConfigs, setLessonConfigs] = useState<MinicourseLessonConfig[]>([]);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [telegramCountdown, setTelegramCountdown] = useState(5);
 
   // Fetch lesson configurations dynamically
   useEffect(() => {
@@ -120,6 +122,19 @@ export default function LessonPage() {
     }
   }, [lessonProgress]);
 
+  // Handle Telegram Redirect Countdown for Lesson 1
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTelegramModalOpen && telegramCountdown > 0) {
+      interval = setInterval(() => {
+        setTelegramCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (isTelegramModalOpen && telegramCountdown === 0) {
+      window.location.href = "https://t.me/+gKmEEjeNar02NDIy";
+    }
+    return () => clearInterval(interval);
+  }, [isTelegramModalOpen, telegramCountdown]);
+
   if (loading || !user || !progress || !lessonProgress) {
     return (
       <div className="min-h-screen bg-[#1A0000] flex items-center justify-center">
@@ -196,6 +211,12 @@ export default function LessonPage() {
       });
       setSuccessMsg("Домашнє завдання успішно надіслано на перевірку! 🎉");
       refreshProgress();
+
+      // Trigger Telegram invite modal if it's Lesson 1
+      if (lessonId === 1) {
+        setIsTelegramModalOpen(true);
+        setTelegramCountdown(5);
+      }
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Помилка надсилання. Спробуйте ще раз.");
@@ -598,6 +619,76 @@ export default function LessonPage() {
           </a>
         </div>
       </main>
+
+      {/* Telegram Channel Promo Modal */}
+      <AnimatePresence>
+        {isTelegramModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-[#2E0000] border border-[#81D8D0]/30 rounded-3xl p-8 text-center shadow-[0_24px_50px_rgba(129,216,208,0.15)] overflow-hidden"
+            >
+              {/* Decorative background glows */}
+              <div className="absolute -top-12 -left-12 w-40 h-40 bg-[#81D8D0]/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-[#81D8D0]/10 rounded-full blur-2xl pointer-events-none" />
+
+              <button 
+                onClick={() => setIsTelegramModalOpen(false)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Telegram Custom Premium Icon */}
+              <div className="w-16 h-16 bg-[#81D8D0]/10 border border-[#81D8D0]/20 rounded-2xl flex items-center justify-center text-[#81D8D0] mx-auto mb-6 shadow-[0_0_20px_rgba(129,216,208,0.1)]">
+                <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.82-1.05 4.67-1.5 6.75-.19.88-.6 1.18-.91 1.21-.69.06-1.21-.46-1.88-.9-1.05-.68-1.64-1.11-2.66-1.78-1.17-.78-.41-1.2.26-1.89.17-.18 3.19-2.92 3.25-3.18.01-.03.01-.15-.06-.21-.07-.06-.17-.04-.25-.02-.11.02-1.82 1.15-5.12 3.38-.48.33-.92.49-1.31.48-.43-.01-1.26-.24-1.87-.44-.75-.24-1.35-.37-1.3-.79.03-.22.33-.45.92-.69 3.6-1.57 6-2.6 7.2-3.1 3.42-1.42 4.13-1.67 4.6-.17.1.32.08.68.04.89z" />
+                </svg>
+              </div>
+
+              {/* Title & Description */}
+              <h3 className="text-xl sm:text-2xl font-black uppercase text-white mb-3 tracking-wide leading-snug">
+                Вступайте в телеграм канал з учасниками міні-курсу
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed mb-6 font-arimo">
+                В ньому публікуємо корисну інформацію для учасників та даємо цінні поради
+              </p>
+
+              {/* Link Container */}
+              <div className="bg-black/30 border border-white/5 rounded-2xl p-4 mb-6">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider font-narrow block mb-1">
+                  Посилання на канал
+                </span>
+                <a 
+                  href="https://t.me/+gKmEEjeNar02NDIy" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-xs sm:text-sm font-semibold text-[#81D8D0] hover:underline font-arimo break-all"
+                >
+                  https://t.me/+gKmEEjeNar02NDIy
+                </a>
+              </div>
+
+              {/* Action Button */}
+              <a 
+                href="https://t.me/+gKmEEjeNar02NDIy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)] hover:scale-[1.02] mb-6 inline-flex"
+              >
+                <span>Приєднатися до каналу</span>
+              </a>
+
+              {/* Countdown Message */}
+              <p className="text-xs text-gray-400 font-narrow uppercase tracking-widest">
+                Ви будете автоматично перенаправлені через <span className="text-[#81D8D0] font-bold">{telegramCountdown}...</span>
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

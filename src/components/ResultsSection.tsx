@@ -5,7 +5,7 @@ import AnimatedTarget from './icons/AnimatedTarget';
 
 export default function ResultsSection({ onOpenLeadAction }: { onOpenLeadAction: () => void }) {
   const results = [
-    "ЧІТКО РОЗУМІЄТЕ ЩО ВІДБУВАЄТЬСЯ У СВІТІ ТА ЯК ВАМ ДІЯТИ АБО ВБЕРЕГТИ ВАШ КАПІТАЛ",
+    "ЧІТКО РОЗУМІЄТЕ ЩО ВІДБУВАЄТЬСЯ У СВІТІ ТА ЯК ВАМ ДІЯТИ АБИ ВБЕРЕГТИ ВАШ КАПІТАЛ",
     "ЯК НЕ ДОПУСКАТИ ПОМИЛОК В ІНВЕСТУВАННІ, ЯКІ ДУЖЕ ДОРОГО КОШТУЮТЬ",
     "ВІДКРИТИЙ БРОКЕРСЬКИЙ РАХУНОК",
     "ПОЧИНАЄТЕ ФОРМУВАТИ СВІЙ ІНВЕСТИЦІЙНИЙ ПОРТФЕЛЬ",
@@ -25,7 +25,7 @@ export default function ResultsSection({ onOpenLeadAction }: { onOpenLeadAction:
           viewport={{ once: true }}
           className="font-montserrat text-3xl md:text-5xl font-black text-center text-white uppercase mb-16 leading-tight"
         >
-          Ваші результати <br/><span className="text-[#81D8D0]">після практикуму:</span>
+          Ваші результати <br/><span className="text-[#81D8D0]">після міні курсу:</span>
         </motion.h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">

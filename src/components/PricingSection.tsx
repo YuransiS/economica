@@ -48,7 +48,7 @@ export default function PricingSection({ onOpenLeadAction }: { onOpenLeadAction:
               </div>
             )}
 
-            <h3 className="font-montserrat text-4xl font-black mb-8 text-center text-[#FBCBDA]">{tariff.name}</h3>
+            <h3 className="font-montserrat text-4xl font-black mb-8 text-center text-[#FBCBDA]">Міні-курс</h3>
 
             <div className="flex-1 space-y-6 mb-12">
               <ul className="space-y-4">
