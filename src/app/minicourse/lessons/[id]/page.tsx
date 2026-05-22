@@ -141,7 +141,9 @@ export default function LessonPage() {
     mindmapUrl: currentConfig.mindmap_url,
     hwSpreadsheetUrl: currentConfig.hw_spreadsheet_url,
     notionUrl: currentConfig.notion_url,
-    hwInstructions: currentConfig.hw_instructions
+    hwInstructions: currentConfig.hw_instructions,
+    bonusVideoTitle: currentConfig.bonus_video_title,
+    bonusVideoYoutubeId: currentConfig.bonus_video_youtube_id
   } : {
     // Fallback if not loaded yet
     title: lessonId === 1 ? "Перший ефір" : lessonId === 2 ? "Другий ефір" : "Третій ефір",
@@ -166,7 +168,9 @@ export default function LessonPage() {
 2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
 3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
 4. Купіть свою першу акцію.
-5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`
+5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`,
+    bonusVideoTitle: lessonId === 3 ? "Покрокова інструкція, як придбати першу акцію" : undefined,
+    bonusVideoYoutubeId: lessonId === 3 ? "BB0EeSsSM4s" : undefined
   };
 
   const notionUrl = currentLesson.notionUrl;
@@ -240,6 +244,25 @@ export default function LessonPage() {
               <p className="text-sm text-[#81D8D0] font-narrow uppercase tracking-widest mt-1">{currentLesson.description}</p>
             </div>
           </section>
+
+          {/* Bonus Video Cinema Player Container */}
+          {currentLesson.bonusVideoYoutubeId && (
+            <section className="bg-gradient-to-br from-[#2E0000] to-[#1A0000] border border-[#81D8D0]/30 rounded-3xl overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.5)] p-6 sm:p-8 space-y-4">
+              <div className="border-b border-white/5 pb-4">
+                <span className="text-[10px] text-[#81D8D0] font-bold uppercase tracking-widest font-narrow">🎁 Додаткова інструкція</span>
+                <h3 className="text-xl font-black uppercase text-white mt-1">{currentLesson.bonusVideoTitle || "Бонусний урок"}</h3>
+              </div>
+              <div className="relative aspect-video w-full bg-black rounded-2xl overflow-hidden border border-white/5 shadow-inner">
+                <iframe
+                  src={`https://www.youtube.com/embed/${currentLesson.bonusVideoYoutubeId}?autoplay=0&rel=0`}
+                  title={currentLesson.bonusVideoTitle}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0"
+                />
+              </div>
+            </section>
+          )}
 
           {/* Download & Notion Guides Section */}
           <section className="space-y-4">

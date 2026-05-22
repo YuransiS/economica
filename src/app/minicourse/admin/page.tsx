@@ -888,6 +888,8 @@ function LessonFormCard({ lesson, saveStatus, onSave }: LessonFormCardProps) {
   const [hwSpreadsheetUrl, setHwSpreadsheetUrl] = useState(lesson.hw_spreadsheet_url || '');
   const [notionUrl, setNotionUrl] = useState(lesson.notion_url || '');
   const [hwInstructions, setHwInstructions] = useState(lesson.hw_instructions);
+  const [bonusVideoTitle, setBonusVideoTitle] = useState(lesson.bonus_video_title || '');
+  const [bonusVideoYoutubeId, setBonusVideoYoutubeId] = useState(lesson.bonus_video_youtube_id || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -898,7 +900,9 @@ function LessonFormCard({ lesson, saveStatus, onSave }: LessonFormCardProps) {
       mindmap_url: mindmapUrl.trim() || undefined,
       hw_spreadsheet_url: hwSpreadsheetUrl.trim() || undefined,
       notion_url: notionUrl.trim() || undefined,
-      hw_instructions: hwInstructions.trim()
+      hw_instructions: hwInstructions.trim(),
+      bonus_video_title: bonusVideoTitle.trim() || undefined,
+      bonus_video_youtube_id: bonusVideoYoutubeId.trim() || undefined
     });
   };
 
@@ -1009,6 +1013,41 @@ function LessonFormCard({ lesson, saveStatus, onSave }: LessonFormCardProps) {
           </div>
         </div>
 
+      </div>
+
+      {/* Bonus video fields section */}
+      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-4">
+        <h5 className="text-xs font-bold text-[#81D8D0] uppercase tracking-wider font-narrow flex items-center gap-1.5">
+          🎁 Бонусне відео до ефіру (необов&apos;язково)
+        </h5>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 font-narrow">
+              Назва бонусного відео
+            </label>
+            <input 
+              type="text"
+              value={bonusVideoTitle}
+              onChange={(e) => setBonusVideoTitle(e.target.value)}
+              placeholder="Покрокова інструкція, як придбати першу акцію"
+              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 font-narrow">
+              YouTube Video ID бонусного відео (наприклад: BB0EeSsSM4s)
+            </label>
+            <input 
+              type="text"
+              value={bonusVideoYoutubeId}
+              onChange={(e) => setBonusVideoYoutubeId(e.target.value)}
+              placeholder="BB0EeSsSM4s"
+              className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all font-mono"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Instructions field */}

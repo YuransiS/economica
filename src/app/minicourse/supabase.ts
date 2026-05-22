@@ -136,7 +136,9 @@ export const DEFAULT_LESSONS_CONFIG: MinicourseLessonConfig[] = [
 3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
 4. Купіть свою першу акцію.
 5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`,
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    bonus_video_title: "Покрокова інструкція, як придбати першу акцію",
+    bonus_video_youtube_id: "BB0EeSsSM4s"
   }
 ];
 
@@ -652,6 +654,8 @@ export async function getLessonsConfig(): Promise<MinicourseLessonConfig[]> {
           hw_spreadsheet_url: cfg.hw_spreadsheet_url,
           notion_url: cfg.notion_url,
           hw_instructions: cfg.hw_instructions,
+          bonus_video_title: cfg.bonus_video_title,
+          bonus_video_youtube_id: cfg.bonus_video_youtube_id,
           updated_at: new Date().toISOString()
         })));
       if (seedError) {
@@ -670,6 +674,8 @@ export async function getLessonsConfig(): Promise<MinicourseLessonConfig[]> {
       hw_spreadsheet_url: item.hw_spreadsheet_url,
       notion_url: item.notion_url,
       hw_instructions: item.hw_instructions,
+      bonus_video_title: item.bonus_video_title,
+      bonus_video_youtube_id: item.bonus_video_youtube_id,
       updated_at: item.updated_at
     }));
   }
@@ -700,6 +706,8 @@ export async function updateLessonConfig(lessonId: number, updates: Partial<Mini
         hw_spreadsheet_url: updates.hw_spreadsheet_url,
         notion_url: updates.notion_url,
         hw_instructions: updates.hw_instructions,
+        bonus_video_title: updates.bonus_video_title,
+        bonus_video_youtube_id: updates.bonus_video_youtube_id,
         updated_at: new Date().toISOString()
       })
       .eq('lesson_id', lessonId)
@@ -719,6 +727,8 @@ export async function updateLessonConfig(lessonId: number, updates: Partial<Mini
           hw_spreadsheet_url: updates.hw_spreadsheet_url,
           notion_url: updates.notion_url,
           hw_instructions: updates.hw_instructions,
+          bonus_video_title: updates.bonus_video_title,
+          bonus_video_youtube_id: updates.bonus_video_youtube_id,
           updated_at: new Date().toISOString()
         })
         .select()

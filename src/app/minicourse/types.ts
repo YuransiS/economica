@@ -48,5 +48,7 @@ export interface MinicourseLessonConfig {
   notion_url?: string;
   hw_instructions: string;
   updated_at: string;
+  bonus_video_title?: string;
+  bonus_video_youtube_id?: string;
 }
 
