@@ -7,29 +7,88 @@ import { Compass, Copy, Check, ExternalLink, AlertCircle } from 'lucide-react';
 export default function InAppBrowserOverlay() {
   const [isInApp, setIsInApp] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [appType, setAppType] = useState<'telegram' | 'instagram' | 'facebook' | 'generic'>('generic');
   const [copied, setCopied] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const [intentUrl, setIntentUrl] = useState('');
+
+  const [autologinUrl, setAutologinUrl] = useState('');
+  const [isPostPayment, setIsPostPayment] = useState(false);
+  const [isMinicourseTariff, setIsMinicourseTariff] = useState(false);
+  const [userIdentifier, setUserIdentifier] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const detectAndroid = /Android/i.test(ua);
+    const detectIOS = /iPhone|iPad|iPod/i.test(ua);
+
     const isInstagram = /Instagram/i.test(ua);
     const isFacebook = /FBAN|FBAV/i.test(ua);
-    const isTelegram = /Telegram/i.test(ua);
-    const detectInApp = isInstagram || isFacebook || isTelegram;
+    const isTelegram = /Telegram/i.test(ua) || 
+                       (typeof window !== 'undefined' && (
+                         !!(window as any).Telegram || 
+                         !!(window as any).TelegramWebview || 
+                         !!(window as any).TelegramWebviewProxy || 
+                         !!(window as any).TelegramWebviewProxyProto
+                       ));
+    const isTikTok = /TikTok/i.test(ua);
+    const isViber = /Viber/i.test(ua);
+    const isWhatsApp = /WhatsApp/i.test(ua);
+    const isLine = /Line/i.test(ua);
+    const isWeChat = /MicroMessenger/i.test(ua);
+    const isTwitter = /Twitter|TwitterAndroid/i.test(ua);
 
-    const detectAndroid = /Android/i.test(ua);
+    const detectInApp = isInstagram || isFacebook || isTelegram || isTikTok || isViber || isWhatsApp || isLine || isWeChat || isTwitter;
 
     setIsInApp(detectInApp);
     setIsAndroid(detectAndroid);
+    setIsIOS(detectIOS);
     setCurrentUrl(window.location.href);
 
+    if (isTelegram) {
+      setAppType('telegram');
+    } else if (isInstagram) {
+      setAppType('instagram');
+    } else if (isFacebook) {
+      setAppType('facebook');
+    } else {
+      setAppType('generic');
+    }
+
+    // Post-payment intermediate checker pages check
+    const path = window.location.pathname;
+    const postPaymentDetected = path.includes('/checking-payment') || path.includes('/thank-you');
+    setIsPostPayment(postPaymentDetected);
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const tariff = searchParams.get('tariff') || '';
+    const isMinicourse = tariff === 'Практикум' || tariff === 'PRO' || tariff === 'VIP';
+    setIsMinicourseTariff(isMinicourse);
+
+    const savedTelegram = localStorage.getItem('user_telegram') || '';
+    const savedPhone = localStorage.getItem('user_phone') || '';
+    const identifier = savedTelegram || savedPhone;
+    setUserIdentifier(identifier);
+
+    let targetUrl = window.location.href;
+    if (postPaymentDetected && isMinicourse && identifier) {
+      const cleanIdentifier = identifier.trim();
+      const loginUrl = `${window.location.origin}/minicourse/login?autologin=${encodeURIComponent(cleanIdentifier)}`;
+      setAutologinUrl(loginUrl);
+      targetUrl = loginUrl;
+    }
+
     if (detectInApp && detectAndroid) {
-      const rawUrl = window.location.href;
-      // Strip protocol for Android Intent
-      const strippedUrl = rawUrl.replace(/^https?:\/\//, '');
+      // Strip protocol
+      let strippedUrl = targetUrl.replace(/^https?:\/\//, '');
+      // Strip any hash fragments to prevent intent parser crashes
+      const hashIndex = strippedUrl.indexOf('#');
+      if (hashIndex !== -1) {
+        strippedUrl = strippedUrl.substring(0, hashIndex);
+      }
       const formedIntent = `intent://${strippedUrl}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
       setIntentUrl(formedIntent);
 
@@ -39,8 +98,9 @@ export default function InAppBrowserOverlay() {
   }, []);
 
   const handleCopy = async () => {
+    const textToCopy = (isPostPayment && isMinicourseTariff && autologinUrl) ? autologinUrl : currentUrl;
     try {
-      await navigator.clipboard.writeText(currentUrl);
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     } catch (err) {
@@ -48,7 +108,77 @@ export default function InAppBrowserOverlay() {
     }
   };
 
+  const getInstructions = () => {
+    if (appType === 'telegram') {
+      if (isIOS) {
+        return [
+          <>
+            Натисніть на значок <span className="font-bold text-[#81D8D0]">Компаса (🧭)</span> або значок Safari у правому нижньому кутку екрана Telegram.
+          </>,
+          <>
+            Це автоматично відкриє платформу у вашому стандартному браузері <span className="font-bold text-[#81D8D0]">Safari</span>.
+          </>
+        ];
+      } else {
+        return [
+          <>
+            Натисніть на значок меню <span className="font-bold text-[#81D8D0]">три крапки (⋮)</span> у правому верхньому кутку екрана.
+          </>,
+          <>
+            Оберіть опцію <span className="font-bold text-[#81D8D0]">«Відкрити в Chrome»</span> або «Відкрити в системному браузері».
+          </>
+        ];
+      }
+    }
+
+    if (appType === 'instagram' || appType === 'facebook') {
+      if (isIOS) {
+        return [
+          <>
+            Натисніть на значок меню <span className="font-bold text-[#81D8D0]">три крапки (•••)</span> у правому верхньому кутку екрана.
+          </>,
+          <>
+            Оберіть опцію <span className="font-bold text-[#81D8D0]">«Відкрити в Safari»</span> (або «Open in Browser»).
+          </>
+        ];
+      } else {
+        return [
+          <>
+            Натисніть на значок меню <span className="font-bold text-[#81D8D0]">три крапки (⋮)</span> у правому верхньому кутку.
+          </>,
+          <>
+            Оберіть опцію <span className="font-bold text-[#81D8D0]">«Відкрити в браузері»</span> або «Open in Chrome».
+          </>
+        ];
+      }
+    }
+
+    // Generic fallback instructions
+    if (isIOS) {
+      return [
+        <>
+          Натисніть на кнопку <span className="font-bold text-[#81D8D0]">«Поділитися»</span> (квадрат зі стрілкою вгору) або меню <span className="font-bold text-[#81D8D0]">(...)</span>.
+        </>,
+        <>
+          Оберіть опцію <span className="font-bold text-[#81D8D0]">«Відкрити в Safari»</span>.
+        </>
+      ];
+    } else {
+      return [
+        <>
+          Натисніть на значок меню <span className="font-bold text-[#81D8D0]">три крапки (⋮)</span> або кнопку додаткових дій.
+        </>,
+        <>
+          Оберіть опцію <span className="font-bold text-[#81D8D0]">«Відкрити в браузері»</span> (Chrome).
+        </>
+      ];
+    }
+  };
+
   if (!isInApp) return null;
+
+  const instructions = getInstructions();
+  const showAutologinUI = isIOS && isPostPayment && isMinicourseTariff && userIdentifier;
 
   return (
     <AnimatePresence>
@@ -69,30 +199,61 @@ export default function InAppBrowserOverlay() {
             </div>
 
             <h3 className="mb-2 text-xl font-black uppercase tracking-wider text-white">
-              Відкрийте у браузері
+              {showAutologinUI ? "🎉 Доступ активовано!" : "Відкрийте у браузері"}
             </h3>
+
+            {showAutologinUI && (
+              <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-[#81D8D0]/10 px-3 py-1 border border-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0] uppercase tracking-wider">
+                Аккаунт: {userIdentifier.startsWith('@') ? '' : '@'}{userIdentifier}
+              </div>
+            )}
+
             <p className="mb-6 text-xs leading-relaxed text-gray-300 font-arimo">
-              Ви відкрили платформу через вбудований браузер соцмережі. Щоб не втратити прогрес навчання та зберегти сесію при закритті реклами, будь ласка, перейдіть у звичайний браузер вашого телефону.
+              {showAutologinUI 
+                ? "Вітаємо з успішною оплатою практикуму! Щоб ви не втратили свій кабінет після закриття цієї сторінки, вхід через вбудований браузер соцмережі обмежено. Будь ласка, скопіюйте посилання та відкрийте його в стандартному Safari."
+                : "Ви відкрили платформу через вбудований браузер соцмережі. Щоб не втратити прогрес навчання та зберегти сесію при закритті реклами, будь ласка, перейдіть у звичайний браузер вашого телефону."
+              }
             </p>
 
             {/* Instruction Steps */}
-            <div className="mb-6 w-full space-y-3 rounded-2xl bg-white/5 border border-white/5 p-5 text-left text-xs text-gray-300 font-arimo">
-              <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0]">
-                  1
-                </span>
-                <p className="leading-5">
-                  Натисніть на іконку меню <span className="font-bold text-[#81D8D0]">три крапки (⋮ або ...)</span> або кнопку поділитися у верхньому правому кутку.
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0]">
-                  2
-                </span>
-                <p className="leading-5">
-                  Оберіть опцію <span className="font-bold text-[#81D8D0]">«Відкрити в браузері»</span> або <span className="font-bold text-[#81D8D0]">«Open in Safari / Chrome»</span>.
-                </p>
-              </div>
+            <div className="mb-6 w-full space-y-4 rounded-2xl bg-white/5 border border-white/5 p-5 text-left text-xs text-gray-300 font-arimo">
+              {showAutologinUI ? (
+                <>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0]">
+                      1
+                    </span>
+                    <p className="leading-5">
+                      Натисніть на кнопку <span className="font-bold text-[#81D8D0]">«Скопіювати посилання для авто-входу»</span> нижче.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0]">
+                      2
+                    </span>
+                    <p className="leading-5">
+                      Відкрийте стандартний браузер <span className="font-bold text-[#81D8D0]">Safari</span> (або Chrome) на вашому iPhone.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0]">
+                      3
+                    </span>
+                    <p className="leading-5">
+                      Вставте посилання в адресний рядок і перейдіть. Ви увійдете в кабінет навчання <span className="font-bold text-[#81D8D0]">миттєво та назавжди</span>.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                instructions.map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#81D8D0]/20 text-[10px] font-bold text-[#81D8D0]">
+                      {idx + 1}
+                    </span>
+                    <p className="leading-5">{step}</p>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -109,17 +270,21 @@ export default function InAppBrowserOverlay() {
 
               <button
                 onClick={handleCopy}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/5 border border-white/10 py-4 text-center text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-white/10 active:scale-[0.98]"
+                className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-center text-xs font-black uppercase tracking-wider transition-all active:scale-[0.98] ${
+                  showAutologinUI
+                    ? "bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] shadow-[0_0_25px_rgba(129,216,208,0.2)]"
+                    : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                }`}
               >
                 {copied ? (
                   <>
-                    <Check className="h-4 w-4 text-[#81D8D0]" />
-                    <span className="text-[#81D8D0]">Посилання скопійовано!</span>
+                    <Check className={`h-4 w-4 ${showAutologinUI ? 'text-[#1A0000]' : 'text-[#81D8D0]'}`} />
+                    <span>Посилання скопійовано!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="h-4 w-4" />
-                    <span>Скопіювати посилання</span>
+                    <span>{showAutologinUI ? "Скопіювати посилання для авто-входу" : "Скопіювати посилання"}</span>
                   </>
                 )}
               </button>
@@ -127,7 +292,7 @@ export default function InAppBrowserOverlay() {
             
             <div className="mt-4 flex items-center gap-1.5 text-[9px] text-gray-400 font-arimo">
               <AlertCircle className="h-3 w-3" />
-              <span>Це збереже ваш прогрес і триматиме вас авторизованими.</span>
+              <span>{showAutologinUI ? "Це гарантує безпечне збереження вашого кабінету." : "Це збереже ваш прогрес і триматиме вас авторизованими."}</span>
             </div>
           </div>
         </motion.div>

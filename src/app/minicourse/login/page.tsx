@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 import { loginUser } from '../supabase';
 import { useAuth } from '../useAuth';
 import { Sparkles, ArrowRight, ShieldCheck, Mail, Send, User } from 'lucide-react';
+import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 
-export default function LoginPage() {
+function LoginContent() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const autologinParam = searchParams.get('autologin');
+
   const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
   const [emailOrTg, setEmailOrTg] = useState('');
   const [name, setName] = useState('');
@@ -28,6 +33,25 @@ export default function LoginPage() {
       setDeviceUuid(uuid);
     }
   }, []);
+
+  useEffect(() => {
+    if (autologinParam && deviceUuid) {
+      const performAutologin = async () => {
+        setLoading(true);
+        setError('');
+        try {
+          const { user, progress } = await loginUser(autologinParam.trim(), undefined, deviceUuid);
+          login(user, progress);
+        } catch (err: any) {
+          console.error("Autologin failed:", err);
+          setError(err.message || "Помилка авто-входу. Спробуйте ввести дані вручну.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      performAutologin();
+    }
+  }, [autologinParam, deviceUuid, login]);
 
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +111,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[#1A0000] relative flex items-center justify-center p-4 overflow-hidden">
+      <InAppBrowserOverlay />
       {/* Background Neon Gradients */}
       <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-[#81D8D0]/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#4E0000]/60 rounded-full blur-[150px] pointer-events-none"></div>
@@ -283,3 +308,16 @@ export default function LoginPage() {
     </main>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[#1A0000] flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#81D8D0]"></div>
+      </main>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
