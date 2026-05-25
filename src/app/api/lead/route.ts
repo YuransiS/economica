@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/app/minicourse/supabase';
 
@@ -93,6 +93,88 @@ export async function POST(req: Request) {
     // Generate a unique order ID
     const orderReference = `ORDER_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const orderDate = Math.floor(Date.now() / 1000); // Unix timestamp
+
+    // Sync to Supabase leads table with smart customer journey tracking & aggregation in the background
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+    after(async () => {
+      if (supabase) {
+        try {
+          const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+          const phoneClean = (phone || '').trim().replace(/\D/g, '');
+          const visitorId = analytics?.visitorId;
+          const inputJourney = analytics?.journey?.join(' -> ') || '';
+          
+          let existingLead = null;
+          
+          // 1. First try to find by phone or telegram
+          if (phoneClean || tgClean) {
+            let queryFilter = '';
+            if (phoneClean) queryFilter += `phone.eq.${phoneClean}`;
+            if (tgClean) queryFilter += (queryFilter ? ',' : '') + `telegram.eq.${tgClean}`;
+            
+            const { data } = await supabase
+              .from('leads')
+              .select('*')
+              .or(queryFilter)
+              .maybeSingle();
+            existingLead = data;
+          }
+
+          // 2. If not found by phone/TG, try by visitorId (UUID)
+          if (!existingLead && visitorId && isUuid(visitorId)) {
+            const { data } = await supabase
+              .from('leads')
+              .select('*')
+              .eq('visitor_uuid', visitorId)
+              .maybeSingle();
+            existingLead = data;
+          }
+
+          const leadPayload = {
+            name: name || 'Учасник',
+            phone: phoneClean || null,
+            telegram: tgClean || null,
+            amount: Number(price) || 0,
+            status: 'pending',
+            is_free: false,
+            order_id: orderReference,
+            target_sheet: sheetName,
+            utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source || null,
+            utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium || null,
+            utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign || null,
+            utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content || null,
+            utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term || null,
+            visitor_uuid: visitorId && isUuid(visitorId) ? visitorId : undefined
+          };
+
+          if (existingLead) {
+            // Merge journey
+            const existingJourney = existingLead.query || '';
+            let updatedJourney = existingJourney;
+            if (inputJourney && !existingJourney.includes(inputJourney)) {
+              updatedJourney = existingJourney ? `${existingJourney} | ${inputJourney}` : inputJourney;
+            }
+
+            await supabase
+              .from('leads')
+              .update({
+                ...leadPayload,
+                query: updatedJourney
+              })
+              .eq('id', existingLead.id);
+          } else {
+            await supabase
+              .from('leads')
+              .insert({
+                ...leadPayload,
+                query: inputJourney
+              });
+          }
+        } catch (leadErr) {
+          console.error("Failed to sync lead to Supabase leads table in background:", leadErr);
+        }
+      }
+    });
 
     // Support for 1 UAH test payment or custom currency
     let currency = inputCurrency || 'USD';

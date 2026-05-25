@@ -348,6 +348,12 @@ function doPost(e) {
         data.utm_medium || "",
         data.utm_campaign || ""
       ]);
+
+      try {
+        recordGlobalTraffic(ss, data);
+      } catch (err) {
+        logError(ss, "recordGlobalTraffic Error: " + err.message);
+      }
       
       return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -521,33 +527,166 @@ function updateFieldInSheet(sheet, targetOrderId, fieldName, newValue) {
   return false;
 }
 
-function recordGlobalLead(ss, data, sourceSheetName) {
+function ensureHeader(sheet, headerName) {
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0] || [];
+  var idx = headers.indexOf(headerName);
+  if (idx === -1) {
+    sheet.getRange(1, headers.length + 1).setValue(headerName);
+    sheet.getRange(1, headers.length + 1).setFontWeight("bold");
+    return headers.length;
+  }
+  return idx;
+}
+
+function getSiteNameFromPath(path) {
+  if (!path) return "Головний сайт";
+  var p = path.toLowerCase();
+  if (p.indexOf("web") !== -1 || p.indexOf("webinar") !== -1) return "Вебінар";
+  if (p.indexOf("intensive") !== -1 || p.indexOf("minicourse") !== -1) return "Практикум";
+  if (p.indexOf("vsl") !== -1) return "VSL Трафик";
+  if (p.indexOf("lesson") !== -1 || p.indexOf("vls") !== -1) return "VLS Урок";
+  if (p.indexOf("pre") !== -1) return "Броні";
+  return "Головний сайт";
+}
+
+function getSiteNameFromSheet(sheetName) {
+  if (sheetName === "Лиды Вебинар") return "Вебінар";
+  if (sheetName === "Заявки на практикум") return "Практикум";
+  if (sheetName === "VSL Трафик") return "VSL Трафик";
+  if (sheetName === "VLS Урок") return "VLS Урок";
+  if (sheetName === "Броні Предзапис") return "Броні";
+  return sheetName || "Головний сайт";
+}
+
+function recordGlobalTraffic(ss, data) {
   var sheet = ss.getSheetByName("Аналітика Ліди");
   if (!sheet) {
     sheet = ss.insertSheet("Аналітика Ліди");
-    var headers = ["Дата", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус", "Джерело", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Коментар"];
-    sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    var initialHeaders = ["Дата", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус", "Джерело", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Коментар"];
+    sheet.appendRow(initialHeaders);
+    sheet.getRange(1, 1, 1, initialHeaders.length).setFontWeight("bold");
   }
+
+  var siteName = getSiteNameFromPath(data.path);
+  var visitedColName = "Заходив на " + siteName;
+  var registeredColName = "Зареєстрований на " + siteName;
+  
+  ensureHeader(sheet, visitedColName);
+  ensureHeader(sheet, registeredColName);
+  ensureHeader(sheet, "Коментар");
 
   var values = sheet.getDataRange().getValues();
   var headers = values[0];
   
-  if (headers.indexOf("Коментар") === -1) {
-    sheet.getRange(1, headers.length + 1).setValue("Коментар");
-    headers.push("Коментар");
-    values[0].push("Коментар");
+  var visitorColIdx = headers.indexOf("Visitor ID");
+  var journeyColIdx = headers.indexOf("Customer Journey");
+  var dateColIdx = headers.indexOf("Дата");
+  var visitedColIdx = headers.indexOf(visitedColName);
+  var registeredColIdx = headers.indexOf(registeredColName);
+  var nameColIdx = headers.indexOf("Ім'я");
+  var sourceColIdx = headers.indexOf("Джерело");
+  
+  var visitorId = (data.visitorId || "").toString().trim();
+  if (!visitorId || visitorId === "anonymous") return;
+
+  var foundRowIdx = -1;
+  for (var i = 1; i < values.length; i++) {
+    var rowVisitorId = (values[i][visitorColIdx] || "").toString().trim();
+    if (rowVisitorId === visitorId) {
+      foundRowIdx = i;
+      break;
+    }
   }
+
+  var pathInfo = data.path || "";
+  if (data.utm_source) {
+    pathInfo += " (utm: " + data.utm_source + ")";
+  }
+
+  if (foundRowIdx !== -1) {
+    sheet.getRange(foundRowIdx + 1, dateColIdx + 1).setValue(new Date());
+    sheet.getRange(foundRowIdx + 1, visitedColIdx + 1).setValue("Так");
+    
+    var regCell = sheet.getRange(foundRowIdx + 1, registeredColIdx + 1);
+    if (!regCell.getValue()) {
+      regCell.setValue("Ні");
+    }
+
+    var existingJourney = values[foundRowIdx][journeyColIdx] || "";
+    var updatedJourney = existingJourney;
+    if (pathInfo && existingJourney.indexOf(pathInfo) === -1) {
+      updatedJourney = (existingJourney ? existingJourney + " | " : "") + pathInfo;
+    }
+    sheet.getRange(foundRowIdx + 1, journeyColIdx + 1).setValue(updatedJourney);
+
+    var sourceCell = sheet.getRange(foundRowIdx + 1, sourceColIdx + 1);
+    if (!sourceCell.getValue()) {
+      sourceCell.setValue("Трафік");
+    }
+  } else {
+    var rowData = [];
+    for (var j = 0; j < headers.length; j++) {
+      var hName = headers[j];
+      if (j === dateColIdx) rowData.push(new Date());
+      else if (j === nameColIdx) rowData.push("Анонім");
+      else if (j === visitorColIdx) rowData.push(visitorId);
+      else if (j === journeyColIdx) rowData.push(pathInfo);
+      else if (j === visitedColIdx) rowData.push("Так");
+      else if (j === registeredColIdx) rowData.push("Ні");
+      else if (hName === "Джерело") rowData.push("Трафік");
+      else if (hName.indexOf("Зареєстрований на") === 0) rowData.push("Ні");
+      else if (hName.indexOf("Заходив на") === 0) {
+        if (hName === visitedColName) rowData.push("Так");
+        else rowData.push("Ні");
+      }
+      else if (hName === "utm_source") rowData.push(data.utm_source || "");
+      else if (hName === "utm_medium") rowData.push(data.utm_medium || "");
+      else if (hName === "utm_campaign") rowData.push(data.utm_campaign || "");
+      else rowData.push("");
+    }
+    sheet.appendRow(rowData);
+  }
+}
+
+function recordGlobalLead(ss, data, sourceSheetName) {
+  var sheet = ss.getSheetByName("Аналітика Ліди");
+  if (!sheet) {
+    sheet = ss.insertSheet("Аналітика Ліди");
+    var initialHeaders = ["Дата", "Ім'я", "Телефон", "Telegram", "Тариф", "Номер замовлення", "Статус", "Джерело", "Visitor ID", "Customer Journey", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Коментар"];
+    sheet.appendRow(initialHeaders);
+    sheet.getRange(1, 1, 1, initialHeaders.length).setFontWeight("bold");
+  }
+
+  var siteName = getSiteNameFromSheet(sourceSheetName);
+  var visitedColName = "Заходив на " + siteName;
+  var registeredColName = "Зареєстрований на " + siteName;
+
+  ensureHeader(sheet, visitedColName);
+  ensureHeader(sheet, registeredColName);
+  ensureHeader(sheet, "Коментар");
+
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0];
 
   var phoneCol = headers.indexOf("Телефон");
   var tgCol = headers.indexOf("Telegram");
+  var visitorCol = headers.indexOf("Visitor ID");
   var journeyCol = headers.indexOf("Customer Journey");
   var dateCol = headers.indexOf("Дата");
   var sourceCol = headers.indexOf("Джерело");
+  var nameCol = headers.indexOf("Ім'я");
+  var tariffCol = headers.indexOf("Тариф");
+  var orderCol = headers.indexOf("Номер замовлення");
+  var statusCol = headers.indexOf("Статус");
+  var visitedColIdx = headers.indexOf(visitedColName);
+  var registeredColIdx = headers.indexOf(registeredColName);
 
   var inputPhone = (data.phone || "").toString().replace(/\D/g, '');
   var inputTg = (data.telegram || "").toString().toLowerCase().replace('@', '').trim();
-  var foundRow = -1;
+  var inputVisitorId = (data.visitorId || "").toString().trim();
+  
+  var foundRowIdx = -1;
 
   if (inputPhone.length >= 9 || inputTg.length > 2) {
     for (var i = 1; i < values.length; i++) {
@@ -559,14 +698,23 @@ function recordGlobalLead(ss, data, sourceSheetName) {
       if (inputTg && rowTg === inputTg) match = true;
 
       if (match) {
-        foundRow = i + 1;
+        foundRowIdx = i + 1;
+        break;
+      }
+    }
+  }
+
+  if (foundRowIdx === -1 && inputVisitorId && inputVisitorId !== "anonymous") {
+    for (var i = 1; i < values.length; i++) {
+      var rowVisitorId = (values[i][visitorCol] || "").toString().trim();
+      if (rowVisitorId === inputVisitorId) {
+        foundRowIdx = i + 1;
         break;
       }
     }
   }
 
   var newJourney = data.journey || "";
-  
   var extraComment = data.comment || "";
   if (data.income) extraComment += "Дохід: " + data.income + "\n";
   if (data.debt) extraComment += "Борги: " + data.debt + "\n";
@@ -574,48 +722,92 @@ function recordGlobalLead(ss, data, sourceSheetName) {
   if (data.goal) extraComment += "Ціль: " + data.goal + "\n";
   extraComment = extraComment.trim();
 
-  if (foundRow !== -1) {
-    var existingJourney = values[foundRow - 1][journeyCol] || "";
-    var updatedJourney = existingJourney;
+  if (foundRowIdx !== -1) {
+    sheet.getRange(foundRowIdx, dateCol + 1).setValue(new Date());
     
+    var existingName = values[foundRowIdx - 1][nameCol] || "";
+    if (existingName === "Анонім" || !existingName) {
+      sheet.getRange(foundRowIdx, nameCol + 1).setValue(data.name || "Учасник");
+    }
+
+    if (data.phone) {
+      sheet.getRange(foundRowIdx, phoneCol + 1).setValue(data.phone);
+    }
+    if (data.telegram) {
+      sheet.getRange(foundRowIdx, tgCol + 1).setValue(data.telegram);
+    }
+
+    var existingVisitorId = values[foundRowIdx - 1][visitorCol] || "";
+    if (inputVisitorId && existingVisitorId !== inputVisitorId) {
+      sheet.getRange(foundRowIdx, visitorCol + 1).setValue(inputVisitorId);
+    }
+
+    if (data.tariff) {
+      sheet.getRange(foundRowIdx, tariffCol + 1).setValue(data.tariff);
+    }
+    if (data.orderId) {
+      sheet.getRange(foundRowIdx, orderCol + 1).setValue((data.orderId || "").toString().trim());
+    }
+    
+    var existingStatus = values[foundRowIdx - 1][statusCol] || "";
+    if (!existingStatus || existingStatus === "—" || existingStatus === "Не оплачено") {
+      sheet.getRange(foundRowIdx, statusCol + 1).setValue(sourceSheetName === "Лиды Вебинар" ? "—" : "Не оплачено");
+    }
+
+    sheet.getRange(foundRowIdx, visitedColIdx + 1).setValue("Так");
+    sheet.getRange(foundRowIdx, registeredColIdx + 1).setValue("Так");
+
+    var existingJourney = values[foundRowIdx - 1][journeyCol] || "";
+    var updatedJourney = existingJourney;
     if (newJourney && existingJourney.indexOf(newJourney) === -1) {
       updatedJourney = (existingJourney ? existingJourney + " | " : "") + newJourney;
     }
-    
-    sheet.getRange(foundRow, dateCol + 1).setValue(new Date());
-    sheet.getRange(foundRow, journeyCol + 1).setValue(updatedJourney);
-    
-    var existingSource = values[foundRow - 1][sourceCol] || "";
+    sheet.getRange(foundRowIdx, journeyCol + 1).setValue(updatedJourney);
+
+    var existingSource = values[foundRowIdx - 1][sourceCol] || "";
     if (existingSource.indexOf(sourceSheetName) === -1) {
-      sheet.getRange(foundRow, sourceCol + 1).setValue(existingSource + ", " + sourceSheetName);
+      sheet.getRange(foundRowIdx, sourceCol + 1).setValue(existingSource === "Трафік" ? sourceSheetName : existingSource + ", " + sourceSheetName);
     }
 
     if (extraComment) {
-      var commentCol = headers.indexOf("Коментар");
-      if (commentCol !== -1) {
-        var existingComment = values[foundRow - 1][commentCol] || "";
-        sheet.getRange(foundRow, commentCol + 1).setValue(existingComment + (existingComment ? "\n" : "") + extraComment);
+      var commentColIdx = headers.indexOf("Коментар");
+      if (commentColIdx !== -1) {
+        var existingComment = values[foundRowIdx - 1][commentColIdx] || "";
+        sheet.getRange(foundRowIdx, commentColIdx + 1).setValue(existingComment + (existingComment ? "\n" : "") + extraComment);
       }
     }
   } else {
-    var rowData = [
-      new Date(),
-      data.name || "",
-      data.phone || "",
-      data.telegram || "",
-      data.tariff || (sourceSheetName === "Лиды Вебинар" ? "Вебінар" : ""),
-      (data.orderId || "").toString().trim(),
-      (sourceSheetName === "Лиды Вебинар" ? "—" : "Не оплачено"),
-      sourceSheetName,
-      data.visitorId || "",
-      newJourney,
-      data.utm_source || "",
-      data.utm_medium || "",
-      data.utm_campaign || "",
-      data.utm_content || "",
-      data.utm_term || "",
-      extraComment
-    ];
+    var rowData = [];
+    for (var j = 0; j < headers.length; j++) {
+      var hName = headers[j];
+      if (j === dateCol) rowData.push(new Date());
+      else if (j === nameCol) rowData.push(data.name || "Учасник");
+      else if (j === phoneCol) rowData.push(data.phone || "");
+      else if (j === tgCol) rowData.push(data.telegram || "");
+      else if (j === tariffCol) rowData.push(data.tariff || (sourceSheetName === "Лиды Вебинар" ? "Вебінар" : ""));
+      else if (j === orderCol) rowData.push((data.orderId || "").toString().trim());
+      else if (j === statusCol) rowData.push(sourceSheetName === "Лиды Вебинар" ? "—" : "Не оплачено");
+      else if (j === sourceCol) rowData.push(sourceSheetName);
+      else if (j === visitorCol) rowData.push(inputVisitorId);
+      else if (j === journeyCol) rowData.push(newJourney);
+      else if (j === visitedColIdx) rowData.push("Так");
+      else if (j === registeredColIdx) rowData.push("Так");
+      else if (hName.indexOf("Зареєстрований на") === 0) {
+        if (hName === registeredColName) rowData.push("Так");
+        else rowData.push("Ні");
+      }
+      else if (hName.indexOf("Заходив на") === 0) {
+        if (hName === visitedColName) rowData.push("Так");
+        else rowData.push("Ні");
+      }
+      else if (hName === "utm_source") rowData.push(data.utm_source || "");
+      else if (hName === "utm_medium") rowData.push(data.utm_medium || "");
+      else if (hName === "utm_campaign") rowData.push(data.utm_campaign || "");
+      else if (hName === "utm_content") rowData.push(data.utm_content || "");
+      else if (hName === "utm_term") rowData.push(data.utm_term || "");
+      else if (hName === "Коментар") rowData.push(extraComment);
+      else rowData.push("");
+    }
     sheet.appendRow(rowData);
   }
 }

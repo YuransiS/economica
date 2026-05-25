@@ -76,6 +76,20 @@ economica/
 ---
 
 ## 4. Security & Anti-Spoofing
-- **Telegram Masking (Leaderboard):** To prevent identity spoofing (since login relies on Telegram username), the `getLeaderboard(currentUserId)` API masks all Telegram handles (e.g. `@evgeniiamatviiko` -> `@evg***ko`) except for the currently logged-in student. This ensures students cannot view others' full usernames to impersonate them.
+- **Telegram Isolation (Leaderboard):** To prevent identity spoofing (since login relies on Telegram username), the `getLeaderboard(currentUserId)` API completely strips the Telegram handles of all other students (`telegram: undefined`). Only the currently logged-in student will see their own Telegram handle on the leaderboard.
 - **Anti-Fraud System (Device Limit):** Limits each user to a maximum of 4 unique devices (`device_uuids`). A 5th device triggers `under_investigation` status and blocks access.
+
+---
+
+## 5. Сквозная Аналитика & Путь Клиента (Customer Journey)
+- **Анонимные визиты:** При каждом переходе (`log_traffic`) анонимный пользователь регистрируется в сводной таблице `Аналітика Ліди` со статусом `Анонім` и его `Visitor ID`. Это позволяет видеть посещения до того, как оставлена заявка.
+- **Link & Merge (Автоматическое склеивание):**
+  - При регистрации лида на любом из сайтов происходит поиск по **телефону** (сравнение последних 9 цифр) или **Telegram**. Если совпадение найдено, строка обновляется, привязывается новый `Visitor ID` (для связывания разных устройств), а пути визитов склеиваются в поле `Customer Journey`.
+  - Если по контактам не найдено, поиск идет по **`Visitor ID`** для обновления анонимного профиля, созданного ранее при заходе.
+  - Если совпадений нет — создается новая запись.
+- **Динамические чекбоксы сайтов:** Скрипт в Google Sheets автоматически создает колонки `Заходив на [Site]` и `Зареєстрований на [Site]` при обнаружении посещений или регистраций с новых путей и форм.
+- **Двусторонняя синхронизация (Dual-Write):** Next.js дублирует все анонимные заходы и регистрации в Supabase таблицу `leads` в реальном времени по той же логике Link & Merge.
+- **Оптимизация производительности (Background Execution):** Чтобы исключить задержки на клиенте из-за медленных внешних запросов (таких как API Google Sheets или запись в БД), Next.js API маршруты (`/api/web-lead` и `/api/lead`) используют встроенный API `after()` из `next/server`. Это позволяет немедленно отдать ответ клиенту и перенаправить его, выполняя запись в Google Sheets и Supabase в фоновом режиме.
+
+
 

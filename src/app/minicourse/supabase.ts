@@ -476,7 +476,7 @@ export async function getLeaderboard(currentUserId?: string): Promise<StudentLea
       return {
         id: user.id,
         name: user.name,
-        telegram: user.telegram ? (isSelf ? user.telegram : maskTelegram(user.telegram)) : undefined,
+        telegram: isSelf ? user.telegram : undefined,
         progressPercent: prog ? prog.progressPercent : 0
       };
     }).sort((a, b) => b.progressPercent - a.progressPercent);
@@ -501,7 +501,7 @@ export async function getLeaderboard(currentUserId?: string): Promise<StudentLea
       return {
         id: u.id,
         name: u.name,
-        telegram: u.telegram ? (isSelf ? u.telegram : maskTelegram(u.telegram)) : undefined,
+        telegram: isSelf ? (u.telegram || undefined) : undefined,
         progressPercent: prog ? prog.progress_percent : 0
       };
     }).sort((a, b) => b.progressPercent - a.progressPercent);
