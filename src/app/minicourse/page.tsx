@@ -33,9 +33,10 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
+      if (!user) return;
       try {
         setLeaderboardLoading(true);
-        const data = await getLeaderboard();
+        const data = await getLeaderboard(user.id);
         setLeaderboard(data);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);

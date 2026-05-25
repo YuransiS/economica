@@ -449,6 +449,15 @@ export async function updateProgress(userId: string, lessonId: 1 | 2 | 3, update
   }
 }
 
+export function maskTelegram(tg: string): string {
+  const clean = tg.replace(/^@/, '');
+  if (!clean) return '';
+  if (clean.length <= 3) {
+    return '@' + clean[0] + '*'.repeat(clean.length - 1);
+  }
+  return '@' + clean.slice(0, 3) + '***' + clean.slice(-2);
+}
+
 export interface StudentLeaderboardEntry {
   id: string;
   name: string;
@@ -456,17 +465,18 @@ export interface StudentLeaderboardEntry {
   progressPercent: number;
 }
 
-export async function getLeaderboard(): Promise<StudentLeaderboardEntry[]> {
+export async function getLeaderboard(currentUserId?: string): Promise<StudentLeaderboardEntry[]> {
   if (IS_MOCK_MODE) {
     const users = getLocalUsers().filter(u => u.role === 'student');
     const progressList = getLocalProgress();
     
     return users.map(user => {
       const prog = progressList.find(p => p.userId === user.id);
+      const isSelf = user.id === currentUserId;
       return {
         id: user.id,
         name: user.name,
-        telegram: user.telegram,
+        telegram: user.telegram ? (isSelf ? user.telegram : maskTelegram(user.telegram)) : undefined,
         progressPercent: prog ? prog.progressPercent : 0
       };
     }).sort((a, b) => b.progressPercent - a.progressPercent);
@@ -487,10 +497,11 @@ export async function getLeaderboard(): Promise<StudentLeaderboardEntry[]> {
 
     return users.map(u => {
       const prog = progress.find(p => p.user_id === u.id);
+      const isSelf = u.id === currentUserId;
       return {
         id: u.id,
         name: u.name,
-        telegram: u.telegram || undefined,
+        telegram: u.telegram ? (isSelf ? u.telegram : maskTelegram(u.telegram)) : undefined,
         progressPercent: prog ? prog.progress_percent : 0
       };
     }).sort((a, b) => b.progressPercent - a.progressPercent);

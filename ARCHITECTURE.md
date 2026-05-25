@@ -72,3 +72,10 @@ economica/
 - **notion_url:** `TEXT`
 - **hw_instructions:** `TEXT NOT NULL`
 - **updated_at:** `TIMESTAMPTZ NOT NULL DEFAULT now()`
+
+---
+
+## 4. Security & Anti-Spoofing
+- **Telegram Masking (Leaderboard):** To prevent identity spoofing (since login relies on Telegram username), the `getLeaderboard(currentUserId)` API masks all Telegram handles (e.g. `@evgeniiamatviiko` -> `@evg***ko`) except for the currently logged-in student. This ensures students cannot view others' full usernames to impersonate them.
+- **Anti-Fraud System (Device Limit):** Limits each user to a maximum of 4 unique devices (`device_uuids`). A 5th device triggers `under_investigation` status and blocks access.
+
