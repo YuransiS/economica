@@ -1,19 +1,13 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, Suspense, useMemo } from "react";
+import { useEffect, Suspense } from "react";
 import Script from "next/script";
 
 function FacebookPixelInstance() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  const PIXEL_ID = useMemo(() => {
-    if (pathname && pathname.startsWith("/sofia-invest")) {
-      return "925687026840653"; // Sofia Invest Pixel
-    }
-    return "1548773689373078"; // Default Svitlana Tapes Pixel
-  }, [pathname]);
+  const PIXEL_ID = "925687026840653"; // Sofia Invest Pixel (used across the entire platform)
 
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).fbq) {
