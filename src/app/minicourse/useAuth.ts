@@ -34,10 +34,17 @@ export function useAuth(requireAdmin = false) {
       setLoading(true);
       const sessionStr = localStorage.getItem('minicourse_session');
       
+      const isAdminRoute = pathname.startsWith('/minicourse/admin');
+      const isLoginRoute = pathname === '/minicourse/login' || pathname === '/minicourse/admin/login';
+
       if (!sessionStr) {
-        // If not on login page, redirect to login
-        if (pathname !== '/minicourse/login') {
-          router.push('/minicourse/login');
+        // If not on login page, redirect to correct login page
+        if (!isLoginRoute) {
+          if (isAdminRoute) {
+            router.push('/minicourse/admin/login');
+          } else {
+            router.push('/minicourse/login');
+          }
         } else {
           setLoading(false);
         }
@@ -60,7 +67,11 @@ export function useAuth(requireAdmin = false) {
         if (!freshUser) {
           // Session stale or deleted
           localStorage.removeItem('minicourse_session');
-          router.push('/minicourse/login');
+          if (isAdminRoute) {
+            router.push('/minicourse/admin/login');
+          } else {
+            router.push('/minicourse/login');
+          }
           return;
         }
 
@@ -83,8 +94,8 @@ export function useAuth(requireAdmin = false) {
           setProgress(freshProgress);
         }
 
-        // If logged in student is trying to access login page, redirect to dashboard
-        if (pathname === '/minicourse/login') {
+        // If logged in user is trying to access login page, redirect to dashboard
+        if (isLoginRoute) {
           if (freshUser.role === 'admin') {
             router.push('/minicourse/admin');
           } else {
@@ -94,7 +105,11 @@ export function useAuth(requireAdmin = false) {
       } catch (err) {
         console.error("Failed to parse minicourse session:", err);
         localStorage.removeItem('minicourse_session');
-        router.push('/minicourse/login');
+        if (isAdminRoute) {
+          router.push('/minicourse/admin/login');
+        } else {
+          router.push('/minicourse/login');
+        }
       } finally {
         setLoading(false);
       }
@@ -120,7 +135,11 @@ export function useAuth(requireAdmin = false) {
     localStorage.removeItem('minicourse_session');
     setUser(null);
     setProgress(null);
-    router.push('/minicourse/login');
+    if (pathname.startsWith('/minicourse/admin')) {
+      router.push('/minicourse/admin/login');
+    } else {
+      router.push('/minicourse/login');
+    }
   };
 
   return {

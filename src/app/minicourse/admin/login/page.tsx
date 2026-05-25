@@ -1,84 +1,59 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
-import { loginUser } from '../supabase';
-import { useAuth } from '../useAuth';
-import { Sparkles, ArrowRight, ShieldCheck, Mail, Send, User } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { loginUser } from '../../supabase';
+import { useAuth } from '../../useAuth';
+import { Sparkles, ArrowRight, ShieldCheck, User, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 
-function LoginContent() {
+function AdminLoginContent() {
   const { login } = useAuth();
-  const searchParams = useSearchParams();
-  const autologinParam = searchParams.get('autologin');
-
-  
-  const [telegram, setTelegram] = useState('');
-  const [name, setName] = useState('');
-  
-  
-  
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [deviceUuid, setDeviceUuid] = useState('');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      let uuid = localStorage.getItem('minicourse_device_uuid');
-      if (!uuid) {
-        uuid = 'dev-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
-        localStorage.setItem('minicourse_device_uuid', uuid);
-      }
-      setDeviceUuid(uuid);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (autologinParam && deviceUuid) {
-      const performAutologin = async () => {
-        setLoading(true);
-        setError('');
-        try {
-          const { user, progress } = await loginUser(autologinParam.trim(), undefined, deviceUuid);
-          login(user, progress);
-        } catch (err: any) {
-          console.error("Autologin failed:", err);
-          setError(err.message || "Помилка авто-входу. Спробуйте ввести дані вручну.");
-        } finally {
-          setLoading(false);
-        }
-      };
-      performAutologin();
-    }
-  }, [autologinParam, deviceUuid, login]);
-
-  const handleStudentSubmit = async (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (!telegram.trim()) {
-      setError("Будь ласка, введіть ваш Telegram нікнейм");
+
+    if (!adminUsername.trim() || !adminPassword.trim()) {
+      setError("Будь ласка, заповніть всі поля для входу");
       return;
     }
 
     setLoading(true);
     try {
-      const { user, progress } = await loginUser(telegram.trim(), name.trim() || undefined, deviceUuid);
-      login(user, progress);
+      const response = await fetch('/api/minicourse/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailOrUsername: adminUsername.trim(),
+          password: adminPassword.trim()
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        login(result.user);
+      } else {
+        setError(result.error || "Невірний пароль або логін адміністратора");
+      }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Помилка авторизації. Спробуйте ще раз.");
+      setError("Помилка підключення до сервера");
     } finally {
       setLoading(false);
     }
   };
 
-  ;
-
   return (
     <main className="min-h-screen bg-[#1A0000] relative flex items-center justify-center p-4 overflow-hidden">
       <InAppBrowserOverlay />
+      
       {/* Background Neon Gradients */}
       <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-[#81D8D0]/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#4E0000]/60 rounded-full blur-[150px] pointer-events-none"></div>
@@ -97,33 +72,34 @@ function LoginContent() {
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
             className="w-16 h-16 rounded-2xl bg-[#81D8D0]/10 border border-[#81D8D0]/30 flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(129,216,208,0.1)]"
           >
-            <Sparkles className="w-8 h-8 text-[#81D8D0]" />
+            <ShieldCheck className="w-8 h-8 text-[#81D8D0]" />
           </motion.div>
           <h1 className="font-montserrat text-3xl font-black uppercase tracking-wider text-white">
-            Sofia <span className="text-[#81D8D0]">Finsight</span>
+            Finsight <span className="text-[#81D8D0]">Team</span>
           </h1>
-          <p className="font-narrow text-[#81D8D0]/80 text-lg uppercase tracking-widest mt-1">
-            Платформа Міні-Курсу
+          <p className="font-narrow text-[#81D8D0]/80 text-sm uppercase tracking-widest mt-1">
+            Вхід для Адміністраторів
           </p>
         </div>
 
         {/* Glass Box Container */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
-                 <form 
-            onSubmit={handleStudentSubmit}
+          <form 
+            onSubmit={handleAdminSubmit}
             className="space-y-6"
           >
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
-                Ваше Ім'я (необов'язково)
+                Telegram нікнейм *
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                 <input 
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Введіть ваше ім'я"
+                  required
+                  value={adminUsername}
+                  onChange={(e) => setAdminUsername(e.target.value)}
+                  placeholder="Введіть свій нікнейм"
                   className="w-full pl-12 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white transition-all font-montserrat placeholder-gray-500"
                 />
               </div>
@@ -131,22 +107,19 @@ function LoginContent() {
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
-                Telegram нікнейм *
+                Пароль Доступу *
               </label>
               <div className="relative">
-                <Send className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                <ShieldCheck className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                 <input 
-                  type="text"
+                  type="password"
                   required
-                  value={telegram}
-                  onChange={(e) => setTelegram(e.target.value)}
-                  placeholder="Введіть ваш @telegram нікнейм"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="w-full pl-12 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white transition-all font-montserrat placeholder-gray-500"
                 />
               </div>
-              <p className="text-[10px] text-gray-400 mt-2">
-                * Використовуйте той самий Telegram нікнейм, що й при оплаті практикуму.
-              </p>
             </div>
 
             {error && (
@@ -166,24 +139,35 @@ function LoginContent() {
               disabled={loading}
               className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.2)] disabled:opacity-50"
             >
-              <span>{loading ? 'Вхід...' : 'Почати навчання'}</span>
+              <span>{loading ? 'Перевірка...' : 'Вхід для команди'}</span>
               {!loading && <ArrowRight className="w-5 h-5" />}
             </motion.button>
-          </form>    </div>
+          </form>
+
+          {/* Link back to student dashboard */}
+          <div className="mt-6 pt-6 border-t border-white/10 text-center">
+            <Link 
+              href="/minicourse/login" 
+              className="inline-flex items-center space-x-2 text-xs font-bold text-gray-400 hover:text-white uppercase tracking-wider transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#81D8D0]" />
+              <span>Кабінет учасника</span>
+            </Link>
+          </div>
+        </div>
       </motion.div>
     </main>
   );
 }
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   return (
     <Suspense fallback={
       <main className="min-h-screen bg-[#1A0000] flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#81D8D0]"></div>
       </main>
     }>
-      <LoginContent />
+      <AdminLoginContent />
     </Suspense>
   );
 }
-
