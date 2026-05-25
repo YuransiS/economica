@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { loginUser } from "@/app/minicourse/supabase";
 import InAppBrowserOverlay from "@/components/InAppBrowserOverlay";
 
@@ -11,12 +11,15 @@ export default function CheckingPaymentPage() {
   const searchParams = useSearchParams();
   const params = useParams();
   const orderId = params.orderId as string;
-  const tariff = searchParams.get('tariff') || 'Invest Baby';
+  const tariff = searchParams.get('tariff') || 'Практикум';
+  
+  const [checkingStatus, setCheckingStatus] = useState<'checking' | 'approved' | 'failed'>('checking');
   const [error, setError] = useState<string | null>(null);
+  const pixelFired = useRef(false);
 
   useEffect(() => {
     let attempts = 0;
-    const maxAttempts = 5;
+    const maxAttempts = 10; // Extra attempts to ensure we catch slow webhooks
     
     const savedTelegram = typeof window !== 'undefined' ? (localStorage.getItem('user_telegram') || '') : '';
     const savedPhone = typeof window !== 'undefined' ? (localStorage.getItem('user_phone') || '') : '';
@@ -32,7 +35,9 @@ export default function CheckingPaymentPage() {
           const basePath = isReservation ? '/price' : '';
 
           if (status === 'approved') {
-            // Sync paid state locally for Mock Mode
+            setCheckingStatus('approved');
+
+            // 1. Sync paid state locally for Mock Mode
             if (savedTelegram || savedPhone) {
               const localUsersStr = localStorage.getItem('minicourse_users');
               if (localUsersStr) {
@@ -56,7 +61,7 @@ export default function CheckingPaymentPage() {
                 }
               }
 
-              // Auto-login
+              // 2. Auto-login
               try {
                 const loginInput = savedTelegram || savedPhone;
                 if (loginInput) {
@@ -69,19 +74,35 @@ export default function CheckingPaymentPage() {
               }
             }
 
-            // Redirect straight to minicourse dashboard if they bought the minicourse
-            const isMinicourse = tariff === 'Практикум' || tariff === 'PRO' || tariff === 'VIP';
-            if (isMinicourse) {
-              router.push('/minicourse');
-            } else {
-              router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
+            // 3. Fire Facebook Pixel Purchase Event
+            if (!pixelFired.current) {
+              pixelFired.current = true;
+              if (typeof window !== 'undefined' && (window as any).fbq) {
+                const purchaseValue = isReservation ? 25.00 : 9.00; // Minicourse is 9 USD
+                console.log(`[FB Pixel] Tracking Purchase event: value=${purchaseValue} USD`);
+                (window as any).fbq('track', 'Purchase', { 
+                  value: purchaseValue, 
+                  currency: 'USD',
+                  content_name: isReservation ? 'Sofia Invest Reservation' : 'Sofia Minicourse'
+                });
+              }
             }
+
+            // 4. Delayed redirect to allow pixel event to fire and show beautiful success screen
+            setTimeout(() => {
+              if (isReservation) {
+                router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
+              } else {
+                router.push('/minicourse');
+              }
+            }, 2500);
+
             return true;
           } else if (status === 'declined' || status === 'fail' || status === 'expired') {
-            router.push(`${basePath}/failure/${orderId}?tariff=${tariff}`);
+            setCheckingStatus('failed');
+            setError(data.reason || "Платіж було відхилено банком або термін дії сесії оплати закінчився.");
             return true;
           }
-          // If status is 'InProcessing' or 'Pending', we might want to wait
         }
       } catch (err) {
         console.error("Status check error:", err);
@@ -89,35 +110,89 @@ export default function CheckingPaymentPage() {
       return false;
     };
 
-    const interval = setInterval(async () => {
-      attempts++;
-      const done = await checkStatus();
-      if (done || attempts >= maxAttempts) {
-        clearInterval(interval);
-        if (!done) {
-          // Fallback if we still don't know after 5 attempts
-          const isReservation = tariff === 'Invest Baby' || tariff === 'Business Baby' || tariff === 'Finance Baby';
-          const basePath = isReservation ? '/price' : '';
-          router.push(`${basePath}/failure/${orderId}?tariff=${tariff}`);
+    // Run first check immediately
+    checkStatus().then((done) => {
+      if (done) return;
+      
+      const interval = setInterval(async () => {
+        attempts++;
+        const doneChecking = await checkStatus();
+        if (doneChecking || attempts >= maxAttempts) {
+          clearInterval(interval);
+          if (!doneChecking) {
+            setCheckingStatus('failed');
+            setError("Не вдалося отримати автоматичне підтвердження від платіжної системи. Якщо кошти були списані, будь ласка, зверніться в підтримку.");
+          }
         }
-      }
-    }, 2000);
+      }, 2500);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    });
   }, [orderId, tariff, router]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FCFAF8] p-6 text-center">
       <InAppBrowserOverlay />
-      <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl border border-[#81D8D0]/20">
-        <Loader2 className="h-16 w-16 text-[#81D8D0] animate-spin mx-auto mb-6" />
-        <h1 className="mb-4 font-montserrat text-2xl font-black text-[#4E0000] uppercase tracking-tight">
-          Перевіряємо статус оплати
-        </h1>
-        <p className="font-arimo text-gray-600">
-          Будь ласка, зачекайте кілька секунд. Ми отримуємо підтвердження від платіжної системи...
-        </p>
-        <div className="mt-8 text-xs text-gray-400">
+      
+      <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl border border-[#81D8D0]/20 transition-all duration-500">
+        {checkingStatus === 'checking' && (
+          <>
+            <Loader2 className="h-16 w-16 text-[#81D8D0] animate-spin mx-auto mb-6" />
+            <h1 className="mb-4 font-montserrat text-2xl font-black text-[#4E0000] uppercase tracking-tight">
+              Перевіряємо статус оплати
+            </h1>
+            <p className="font-arimo text-gray-600">
+              Будь ласка, зачекайте кілька секунд. Ми отримуємо підтвердження від платіжної системи...
+            </p>
+          </>
+        )}
+
+        {checkingStatus === 'approved' && (
+          <div className="animate-fade-in">
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-full bg-[#81D8D0]/10 p-4 animate-bounce">
+                <CheckCircle2 className="h-16 w-16 text-[#81D8D0]" />
+              </div>
+            </div>
+            <h1 className="mb-4 font-montserrat text-2xl font-black text-[#4E0000] uppercase tracking-tight">
+              Оплата успішна!
+            </h1>
+            <p className="font-arimo text-gray-600 mb-6">
+              Дякуємо! Ваш платіж підтверджено. Готуємо ваш доступ та перенаправляємо на платформу практикуму...
+            </p>
+            <div className="flex items-center justify-center space-x-2 text-sm text-[#81D8D0] font-bold">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Перенаправлення...</span>
+            </div>
+          </div>
+        )}
+
+        {checkingStatus === 'failed' && (
+          <div className="animate-fade-in">
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-full bg-red-50 p-4">
+                <XCircle className="h-16 w-16 text-red-500" />
+              </div>
+            </div>
+            <h1 className="mb-4 font-montserrat text-2xl font-black text-red-700 uppercase tracking-tight">
+              Оплата не підтверджена
+            </h1>
+            <p className="font-arimo text-gray-600 mb-8 leading-relaxed">
+              {error || "Не вдалося підтвердити транзакцію. Спробуйте ще раз або зверніться до нашої служби підтримки."}
+            </p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => router.push('/')}
+                className="w-full rounded-xl bg-[#4E0000] py-4 text-center font-bold uppercase tracking-wider text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Повернутися на головну
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-8 text-xs text-gray-400 font-narrow">
           Замовлення: {orderId}
         </div>
       </div>
