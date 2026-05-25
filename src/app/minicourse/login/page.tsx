@@ -14,7 +14,7 @@ function LoginContent() {
   const autologinParam = searchParams.get('autologin');
 
   const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
-  const [emailOrTg, setEmailOrTg] = useState('');
+  const [telegram, setTelegram] = useState('');
   const [name, setName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -57,14 +57,14 @@ function LoginContent() {
     e.preventDefault();
     setError('');
     
-    if (!emailOrTg.trim()) {
-      setError("Будь ласка, введіть ваш Email або Telegram нікнейм");
+    if (!telegram.trim()) {
+      setError("Будь ласка, введіть ваш Telegram нікнейм");
       return;
     }
 
     setLoading(true);
     try {
-      const { user, progress } = await loginUser(emailOrTg.trim(), name.trim() || undefined, deviceUuid);
+      const { user, progress } = await loginUser(telegram.trim(), name.trim() || undefined, deviceUuid);
       login(user, progress);
     } catch (err: any) {
       console.error(err);
@@ -193,23 +193,23 @@ function LoginContent() {
                   </div>
                 </div>
 
-                <div>
+                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
-                    Email або Telegram нікнейм *
+                    Telegram нікнейм *
                   </label>
                   <div className="relative">
                     <Send className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                     <input 
                       type="text"
                       required
-                      value={emailOrTg}
-                      onChange={(e) => setEmailOrTg(e.target.value)}
-                      placeholder="Введіть ваш Email або @telegram"
+                      value={telegram}
+                      onChange={(e) => setTelegram(e.target.value)}
+                      placeholder="Введіть ваш @telegram нікнейм"
                       className="w-full pl-12 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white transition-all font-montserrat placeholder-gray-500"
                     />
                   </div>
                   <p className="text-[10px] text-gray-400 mt-2">
-                    * Використовуйте ті ж дані, що й при реєстрації на практикум для синхронізації.
+                    * Використовуйте той самий Telegram нікнейм, що й при оплаті практикуму.
                   </p>
                 </div>
 
@@ -245,7 +245,7 @@ function LoginContent() {
               >
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
-                    Логін або Email Адміністратора *
+                    Telegram нікнейм Адміністратора *
                   </label>
                   <div className="relative">
                     <User className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />

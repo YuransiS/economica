@@ -94,7 +94,7 @@ export default function StudentDashboard() {
           <div className="flex items-center space-x-4">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-bold text-white">{user.name}</p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest">{user.email}</p>
+              <p className="text-[10px] text-[#81D8D0] uppercase tracking-widest">@{user.telegram}</p>
             </div>
             <button 
               onClick={logout}

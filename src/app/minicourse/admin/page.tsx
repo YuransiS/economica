@@ -233,7 +233,6 @@ export default function AdminDashboard() {
       
     const matchesSearch = 
       student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-      student.email.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
       (student.telegram && student.telegram.toLowerCase().includes(studentSearchQuery.toLowerCase())) ||
       (student.phone && student.phone.includes(studentSearchQuery));
 
@@ -363,7 +362,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={hwSearchQuery}
                   onChange={(e) => setHwSearchQuery(e.target.value)}
-                  placeholder="Шукати домашку за ім'ям, email або TG..."
+                  placeholder="Шукати домашку за ім'ям або TG..."
                   className="w-full pl-11 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all placeholder-gray-500"
                 />
               </div>
@@ -443,23 +442,13 @@ export default function AdminDashboard() {
                             <td className="p-4 pl-6 space-y-1">
                               <p className="font-bold text-white">{sub.userName}</p>
                               <div className="flex items-center space-x-2 text-[10px] text-gray-400 font-arimo">
-                                <span 
-                                  onClick={() => copyToClipboard(sub.userEmail, `${rowId}-email`)}
-                                  className="hover:text-white cursor-pointer transition-colors flex items-center space-x-1"
-                                >
-                                  <span>{sub.userEmail}</span>
-                                  {copiedId === `${rowId}-email` ? <Check className="w-3 h-3 text-[#81D8D0]" /> : <MessageSquare className="w-2.5 h-2.5 opacity-40" />}
-                                </span>
                                 {sub.userTelegram && (
-                                  <>
-                                    <span>•</span>
-                                    <span 
-                                      onClick={() => copyToClipboard(`@${sub.userTelegram}`, `${rowId}-tg`)}
-                                      className="hover:text-white cursor-pointer transition-colors text-[#81D8D0]"
-                                    >
-                                      @{sub.userTelegram}
-                                    </span>
-                                  </>
+                                  <span 
+                                    onClick={() => copyToClipboard(`@${sub.userTelegram}`, `${rowId}-tg`)}
+                                    className="hover:text-white cursor-pointer transition-colors text-[#81D8D0]"
+                                  >
+                                    @{sub.userTelegram}
+                                  </span>
                                 )}
                               </div>
                             </td>
@@ -554,7 +543,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={studentSearchQuery}
                   onChange={(e) => setStudentSearchQuery(e.target.value)}
-                  placeholder="Шукати учня за ім'ям, email, TG або телефоном..."
+                  placeholder="Шукати учня за ім'ям, TG або телефоном..."
                   className="w-full pl-11 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all placeholder-gray-500"
                 />
               </div>
@@ -623,10 +612,6 @@ export default function AdminDashboard() {
                             <td className="p-4 pl-6 space-y-1">
                               <p className="font-bold text-white">{student.name}</p>
                               <div className="space-y-0.5 text-[10px] text-gray-400 font-arimo">
-                                <p className="flex items-center space-x-1">
-                                  <span className="text-gray-500">Email:</span>
-                                  <span className="text-white">{student.email}</span>
-                                </p>
                                 <p className="flex items-center space-x-2">
                                   {student.telegram && (
                                     <>

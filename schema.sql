@@ -5,8 +5,8 @@
 CREATE TABLE IF NOT EXISTS public.minicourse_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    telegram TEXT UNIQUE,
+    email TEXT UNIQUE,
+    telegram TEXT UNIQUE NOT NULL,
     phone TEXT,
     role TEXT NOT NULL DEFAULT 'student',
     is_paid BOOLEAN NOT NULL DEFAULT false,
@@ -49,7 +49,7 @@ VALUES
     ('00000000-0000-0000-0000-000000000001', 'Адміністратор Owner (Софія)', 'sofifinsight@finsight.com', 'sofifinsight', 'admin', true, 'paid', 'active'),
     ('00000000-0000-0000-0000-000000000002', 'Адміністратор YuransiS', 'yuransis@finsight.com', 'yuransis', 'admin', true, 'paid', 'active'),
     ('00000000-0000-0000-0000-000000000003', 'Адміністратор JeniaProop', 'jeniaproop@finsight.com', 'jeniaproop', 'admin', true, 'paid', 'active')
-ON CONFLICT (email) DO UPDATE 
+ON CONFLICT (telegram) DO UPDATE 
 SET role = 'admin', is_paid = true, payment_status = 'paid', status = 'active';
 
 -- 6. Seed default Lesson Configurations (if they don't already exist)
@@ -63,7 +63,7 @@ VALUES
         'https://mm.tt/map/3978357799?t=cIsPiI7Jsq', 
         'https://docs.google.com/spreadsheets/d/1xptWzJrSQ8aW2pOyuWpSH7P-4_tOJ6i04iB2-roF9kw/edit?usp=sharing', 
         NULL,
-        'ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці❗️\n\n1. Зробіть копію таблиці за посиланням нижче.\n2. Заповніть її по відповідним критеріям відповідно до ефіру.\n3. Після заповнення таблиці відкрийте доступ «всім у кого є посилання».\n4. Надішліть посилання у вікно праворуч для перевірки.'
+        E'ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці!\n\nЗробіть копію таблиці за посиланням нижче.\n\nЗаповніть її за відповідними критеріями відповідно до ефіру.\n\nПісля заповнення таблиці відкрийте доступ «всім, у кого є посилання».\n\nНадішліть посилання у вікно праворуч для перевірки.'
     ),
     (
         2, 
@@ -73,7 +73,7 @@ VALUES
         'https://mm.tt/map/3979303280?t=HfkclCi41H', 
         'https://docs.google.com/spreadsheets/d/1UhFeWJyezb4W_t5jkesOvjiAe6l5SNDf/edit?gid=1880085387#gid=1880085387', 
         NULL,
-        '❗️ ВАЖЛИВО! Працюємо лише в скопійованій таблиці.\n\n1. Зробіть копію таблиці за посиланням нижче.\n2. Ваше завдання — заповнити таблицю відповідно до критеріїв.\n3. Після виконання відкрийте доступ «всім, у кого є посилання».\n4. Надішліть посилання на перевірку.'
+        E'! ВАЖЛИВО! Працюємо лише в скопійованій таблиці.\n\nЗробіть копію таблиці за посиланням нижче.\n\nВаше завдання — заповнити таблицю відповідно до критеріїв.\n\nПісля виконання відкрийте доступ «всім, у кого є посилання».\n\nНадішліть посилання на перевірку.'
     ),
     (
         3, 
@@ -83,6 +83,6 @@ VALUES
         'https://mm.tt/map/3663819169?t=B79jLpx0HT', 
         NULL, 
         'https://soapy-floss-c69.notion.site/33f9215c3f2180cf93e7e4f3bc7527d4',
-        'Виконайте фінальні кроки для завершення курсу:\n\n1. Пройдіть тест і визначте свій ризик-профіль в інвестиціях.\n2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).\n3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.\n4. Купіть свою першу акцію.\n5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.'
+        E'Виконайте фінальні кроки для завершення курсу:\n\nПройдіть тест і визначте свій ризик-профіль в інвестиціях.\n\nВідкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).\n\nПоповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.\n\nНадішліть скрін купленої вашої першої акції.'
     )
 ON CONFLICT (lesson_id) DO NOTHING;

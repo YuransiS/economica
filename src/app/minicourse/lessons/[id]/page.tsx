@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../useAuth';
-import { updateProgress, getLessonsConfig } from '../../supabase';
+import { updateProgress, getLessonsConfig, uploadHomeworkFile } from '../../supabase';
 import { HomeworkStatus, MinicourseLessonConfig } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -17,7 +17,41 @@ export default function LessonPage() {
   const router = useRouter();
   const lessonId = Number(params.id) as 1 | 2 | 3;
   
+  
   const { user, progress, loading, refreshProgress } = useAuth();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
+
+  const formatInstructions = (text: string) => {
+    if (!text) return null;
+    const paragraphs = text.split('\n\n');
+    return paragraphs.map((p, idx) => (
+      <p key={idx} className={idx > 0 ? "mt-4" : ""}>
+        {p.trim()}
+      </p>
+    ));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg("Файл занадто великий. Максимальний розмір 5MB.");
+        return;
+      }
+      setSelectedFile(file);
+      setErrorMsg('');
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   
   const [hwUrlInput, setHwUrlInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -371,55 +405,7 @@ export default function LessonPage() {
             </section>
           )}
 
-          {/* Mentorship Program Scroll Reveal Banner */}
-          <section className="bg-gradient-to-r from-[#4E0000] to-[#1A0000] border border-[#81D8D0]/30 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.4)]">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <Award className="w-48 h-48 text-white" />
-            </div>
-            <div className="max-w-xl space-y-4">
-              <span className="text-[10px] font-bold text-[#81D8D0] uppercase tracking-widest font-narrow">Дізнатись більше про менторство з Софією</span>
-              <h3 className="text-3xl font-black uppercase text-white leading-tight">Програма менторства «Перший мільйон»</h3>
-              
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-arimo text-gray-300">
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
-                  <span>2 місяці інтенсивного навчання</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
-                  <span>Онлайн мастермайнди після кожного модуля</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
-                  <span>8 модулів, 3 уроків в записі</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
-                  <span>Повна перевірка домашнього завдання</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="w-4.5 h-4.5 text-[#81D8D0] flex-shrink-0" />
-                  <span>Супровід на кожному етапі</span>
-                </li>
-                <li className="flex items-center space-x-2 text-green-300">
-                  <CheckCircle className="w-4.5 h-4.5 text-green-400 flex-shrink-0" />
-                  <span>Валідація портфеля перед реальними угодами</span>
-                </li>
-              </ul>
-
-              <div className="pt-4">
-                <a 
-                  href="https://t.me/sofi_finsight"
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-8 py-3.5 bg-[#81D8D0] text-[#1A0000] hover:bg-[#97e3db] text-xs font-bold uppercase rounded-r-2xl rounded-l-sm tracking-wider flex items-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)] inline-flex hover:scale-105"
-                >
-                  <span>Отримати деталі в Telegram</span>
-                  <ChevronRight className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
-          </section>
+          
         </div>
 
         {/* Right Column - Submission Form & Timers (Width 1/3) */}
@@ -465,7 +451,7 @@ export default function LessonPage() {
 
             {/* Markdown Instructions */}
             <div className="text-xs font-arimo text-gray-300 leading-relaxed whitespace-pre-line bg-black/20 border border-white/5 rounded-2xl p-4">
-              {currentLesson.hwInstructions}
+              {formatInstructions(currentLesson.hwInstructions)}
             </div>
 
             {/* Links / Action Buttons for Spreadsheets */}
@@ -619,6 +605,56 @@ export default function LessonPage() {
           </a>
         </div>
       </main>
+
+      
+      {/* Completion Success Modal for Lesson 3 */}
+      <AnimatePresence>
+        {isCompletionModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-[#2E0000] border border-[#81D8D0]/30 rounded-3xl p-8 text-center shadow-[0_24px_50px_rgba(129,216,208,0.15)] overflow-hidden"
+            >
+              <button 
+                onClick={() => setIsCompletionModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="w-16 h-16 bg-[#81D8D0]/10 border border-[#81D8D0]/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Award className="w-8 h-8 text-[#81D8D0]" />
+              </div>
+
+              <h3 className="font-montserrat text-2xl font-black text-white uppercase tracking-wider mb-4">
+                ЗАВДАННЯ УСПІШНО ПРИЙНЯТО!
+              </h3>
+
+              <p className="font-arimo text-gray-200 text-sm leading-relaxed mb-6">
+                🎉 Ви повністю закінчили цей курс та придбали свою першу акцію! Вітаємо!
+              </p>
+
+              <div className="p-4 bg-black/25 border border-white/5 rounded-2xl mb-8">
+                <p className="font-narrow text-xs font-bold text-[#81D8D0] uppercase tracking-widest leading-relaxed">
+                  Щоб дізнатись більше про менторство з Софією пишіть нам на телеграм кодове слово «МЕНТОРСТВО»
+                </p>
+              </div>
+
+              <a 
+                href="https://t.me/sofi_finsight"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)]"
+              >
+                <Send className="w-5 h-5" />
+                <span>Звʼязатись з нами в TG</span>
+              </a>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Telegram Channel Promo Modal */}
       <AnimatePresence>

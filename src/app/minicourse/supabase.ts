@@ -41,9 +41,7 @@ function getLocalUsers(): MinicourseUser[] {
       u.role === 'admin' || 
       (u.role === 'student' && 
        !u.id.startsWith('mock-') && 
-       u.email && 
-       !u.email.includes('alex_invest') && 
-       !u.email.includes('student') && 
+       (!u.email || (!u.email.includes('alex_invest') && !u.email.includes('student'))) && 
        !u.name.includes('Алекс') && 
        !u.name.includes('Студент') && 
        !u.name.includes('Марія'))
@@ -99,12 +97,15 @@ export const DEFAULT_LESSONS_CONFIG: MinicourseLessonConfig[] = [
     youtube_id: "SnyxALmvvnE",
     mindmap_url: "https://mm.tt/map/3978357799?t=cIsPiI7Jsq",
     hw_spreadsheet_url: "https://docs.google.com/spreadsheets/d/1xptWzJrSQ8aW2pOyuWpSH7P-4_tOJ6i04iB2-roF9kw/edit?usp=sharing",
-    hw_instructions: `ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці❗️
-    
-1. Зробіть копію таблиці за посиланням нижче.
-2. Заповніть її по відповідним критеріям відповідно до ефіру.
-3. Після заповнення таблиці відкрийте доступ «всім у кого є посилання».
-4. Надішліть посилання у вікно праворуч для перевірки.`,
+    hw_instructions: `ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці!
+
+Зробіть копію таблиці за посиланням нижче.
+
+Заповніть її за відповідними критеріями відповідно до ефіру.
+
+Після заповнення таблиці відкрийте доступ «всім, у кого є посилання».
+
+Надішліть посилання у вікно праворуч для перевірки.`,
     updated_at: new Date().toISOString()
   },
   {
@@ -114,12 +115,15 @@ export const DEFAULT_LESSONS_CONFIG: MinicourseLessonConfig[] = [
     youtube_id: "l4p1F9oy3ko",
     mindmap_url: "https://mm.tt/map/3979303280?t=HfkclCi41H",
     hw_spreadsheet_url: "https://docs.google.com/spreadsheets/d/1UhFeWJyezb4W_t5jkesOvjiAe6l5SNDf/edit?gid=1880085387#gid=1880085387",
-    hw_instructions: `❗️ ВАЖЛИВО! Працюємо лише в скопійованій таблиці.
-    
-1. Зробіть копію таблиці за посиланням нижче.
-2. Ваше завдання — заповнити таблицю відповідно до критеріїв.
-3. Після виконання відкрийте доступ «всім, у кого є посилання».
-4. Надішліть посилання на перевірку.`,
+    hw_instructions: `! ВАЖЛИВО! Працюємо лише в скопійованій таблиці.
+
+Зробіть копію таблиці за посиланням нижче.
+
+Ваше завдання — заповнити таблицю відповідно до критеріїв.
+
+Після виконання відкрийте доступ «всім, у кого є посилання».
+
+Надішліть посилання на перевірку.`,
     updated_at: new Date().toISOString()
   },
   {
@@ -131,11 +135,13 @@ export const DEFAULT_LESSONS_CONFIG: MinicourseLessonConfig[] = [
     notion_url: "https://soapy-floss-c69.notion.site/33f9215c3f2180cf93e7e4f3bc7527d4",
     hw_instructions: `Виконайте фінальні кроки для завершення курсу:
 
-1. Пройдіть тест і визначте свій ризик-профіль в інвестиціях.
-2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
-3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
-4. Купіть свою першу акцію.
-5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`,
+Пройдіть тест і визначте свій ризик-профіль в інвестиціях.
+
+Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
+
+Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
+
+Надішліть скрін купленої вашої першої акції.`,
     updated_at: new Date().toISOString(),
     bonus_video_title: "Покрокова інструкція, як придбати першу акцію",
     bonus_video_youtube_id: "BB0EeSsSM4s"
@@ -175,14 +181,13 @@ export function calculateProgressPercent(lessons: MinicourseProgress['lessons'])
 }
 
 // Platform API Layer
-export async function loginUser(emailOrTelegram: string, name?: string, deviceUuid?: string): Promise<{ user: MinicourseUser; progress: MinicourseProgress }> {
-  const normInput = emailOrTelegram.trim().toLowerCase().replace(/^@/, '');
+export async function loginUser(telegramUsername: string, name?: string, deviceUuid?: string): Promise<{ user: MinicourseUser; progress: MinicourseProgress }> {
+  const normInput = telegramUsername.trim().toLowerCase().replace(/^@/, '');
   const digitsOnly = normInput.replace(/\D/g, '');
 
   if (IS_MOCK_MODE) {
     const users = getLocalUsers();
     let user = users.find(u => 
-      u.email.toLowerCase() === normInput || 
       (u.telegram && u.telegram.toLowerCase() === normInput) ||
       (digitsOnly && u.phone && u.phone.replace(/\D/g, '') === digitsOnly)
     );
@@ -191,9 +196,8 @@ export async function loginUser(emailOrTelegram: string, name?: string, deviceUu
       // Auto-register new student but mark as unpaid so they are prompted to pay
       user = {
         id: 'u-' + Math.random().toString(36).substr(2, 9),
-        name: name || emailOrTelegram.split('@')[0],
-        email: emailOrTelegram.includes('@') ? emailOrTelegram : `${normInput}@mock.com`,
-        telegram: emailOrTelegram.includes('@') ? undefined : normInput,
+        name: name || normInput,
+        telegram: normInput,
         phone: digitsOnly || undefined,
         role: 'student',
         is_paid: false,
@@ -254,7 +258,7 @@ export async function loginUser(emailOrTelegram: string, name?: string, deviceUu
   } else {
     // ACTUAL SUPABASE INTEGRATION
     // 1. Fetch user
-    let queryFilter = `email.ilike.${normInput},telegram.ilike.${normInput}`;
+    let queryFilter = `telegram.ilike.${normInput}`;
     if (digitsOnly) {
       queryFilter += `,phone.eq.${digitsOnly}`;
     }
@@ -521,7 +525,7 @@ export async function getAdminSubmissions(): Promise<AdminSubmissionItem[]> {
           items.push({
             userId: user.id,
             userName: user.name,
-            userEmail: user.email,
+            userEmail: user.email || '',
             userTelegram: user.telegram,
             lessonId,
             hwUrl: lesson.hwUrl,
@@ -559,7 +563,7 @@ export async function getAdminSubmissions(): Promise<AdminSubmissionItem[]> {
           items.push({
             userId: u.id,
             userName: u.name,
-            userEmail: u.email,
+            userEmail: u.email || '',
             userTelegram: u.telegram || undefined,
             lessonId,
             hwUrl: lesson.hwUrl,
@@ -786,3 +790,46 @@ export async function toggleUserLockout(userId: string, shouldBlock: boolean): P
   }
 }
 
+export async function uploadHomeworkFile(file: File, userId: string, lessonId: number): Promise<string> {
+  if (IS_MOCK_MODE) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${userId}/lesson-${lessonId}-${Date.now()}.${fileExt}`;
+  const bucketName = 'homeworks';
+
+  try {
+    await supabase!.storage.createBucket(bucketName, { public: true });
+  } catch (err) {
+    // Ignore error if already exists
+  }
+
+  const { data, error } = await supabase!.storage
+    .from(bucketName)
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+
+  if (error) {
+    console.error('Supabase upload error, falling back to base64:', error);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const { data: { publicUrl } } = supabase!.storage
+    .from(bucketName)
+    .getPublicUrl(fileName);
+
+  return publicUrl;
+}

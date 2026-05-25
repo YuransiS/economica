@@ -5,8 +5,8 @@ export type HomeworkStatus = 'not_started' | 'pending' | 'accepted' | 'needs_imp
 export interface MinicourseUser {
   id: string;
   name: string;
-  email: string;
-  telegram?: string;
+  email?: string;
+  telegram: string;
   phone?: string;
   role: UserRole;
   created_at: string;
