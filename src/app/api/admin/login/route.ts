@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 const ADMIN_USER = 'Yuransis';
 const ADMIN_PASS = '56780156Yura';
@@ -8,11 +9,10 @@ export async function POST(request: Request) {
     const { username, password } = await request.json();
 
     if (username === ADMIN_USER && password === ADMIN_PASS) {
-      const response = NextResponse.json({ success: true });
+      const cookieStore = await cookies();
       
-      // Set a simple session cookie
-      // In a real production app, you would use a signed JWT or similar
-      response.cookies.set('admin_session', 'authenticated_yuransis', {
+      // Set a simple session cookie using standard Next.js cookies API
+      cookieStore.set('admin_session', 'authenticated_yuransis', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         path: '/',
       });
 
-      return response;
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json(
