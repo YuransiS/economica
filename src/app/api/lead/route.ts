@@ -2,9 +2,7 @@ import { NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/app/minicourse/supabase';
 
-// Replace with your actual merchant credentials or map to process.env
-const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight';
-const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e';
+// Google Sheets Webhook URL from environment variables
 const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
 
 export async function POST(req: Request) {
@@ -41,8 +39,13 @@ export async function POST(req: Request) {
       }
     }
 
-    const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight').trim();
-    const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
+    const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || '').trim();
+    const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '').trim();
+
+    if (!MERCHANT_ACCOUNT || !MERCHANT_SECRET_KEY) {
+      return NextResponse.json({ success: false, error: 'WayForPay credentials are not configured on the server.' }, { status: 500 });
+    }
+
     const sheetName = targetSheet || 'Заявки на практикум';
 
     // Register/update the student in the database as unpaid ('pending')

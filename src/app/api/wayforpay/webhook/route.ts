@@ -2,12 +2,16 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/app/minicourse/supabase';
 
-const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight';
-const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e').trim();
+const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || '').trim();
+const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '').trim();
 const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
 
 export async function POST(req: Request) {
   try {
+    if (!MERCHANT_ACCOUNT || !MERCHANT_SECRET_KEY) {
+      console.error("WayForPay credentials are not configured on the server.");
+      return NextResponse.json({ success: false, error: 'Payment gateway configuration missing' }, { status: 500 });
+    }
     const url = new URL(req.url);
     const urlOrderId = url.searchParams.get('orderId');
     const targetSheet = url.searchParams.get('targetSheet') || 'Заявки на практикум';

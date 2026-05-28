@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/app/minicourse/supabase';
 
-const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT || 'sofi_finsight';
-const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY || '2d93b171ba9b11c6cf71a123c556221eb73cdb0e';
+const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || '').trim();
+const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '').trim();
 
 export async function GET(req: Request) {
   try {
+    if (!MERCHANT_ACCOUNT || !MERCHANT_SECRET_KEY) {
+      return NextResponse.json({ success: false, error: 'Payment gateway configuration missing' }, { status: 500 });
+    }
     const { searchParams } = new URL(req.url);
     const orderReference = searchParams.get('orderId');
     const phone = searchParams.get('phone');
