@@ -4,7 +4,9 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = request.cookies.get('admin_session');
-  const isAuthenticated = session?.value === 'authenticated_yuransis';
+  const isAuthenticated = 
+    session?.value === 'authenticated_yuransis' || 
+    session?.value === 'authenticated_anya_koorator';
 
   // 1. If trying to access admin login page while already authenticated
   if (pathname === '/admin/login' && isAuthenticated) {

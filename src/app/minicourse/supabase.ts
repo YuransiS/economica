@@ -21,6 +21,7 @@ const DEFAULT_USERS: MinicourseUser[] = [
   { id: 'admin-sofifinsight', name: 'Адміністратор Owner (Софія)', email: 'sofifinsight@finsight.com', telegram: 'sofifinsight', role: 'admin', created_at: new Date().toISOString(), is_paid: true, payment_status: 'paid', device_uuids: [], status: 'active' },
   { id: 'admin-yuransis', name: 'Адміністратор YuransiS', email: 'yuransis@finsight.com', telegram: 'yuransis', role: 'admin', created_at: new Date().toISOString(), is_paid: true, payment_status: 'paid', device_uuids: [], status: 'active' },
   { id: 'admin-jeniaproop', name: 'Адміністратор JeniaProop', email: 'jeniaproop@finsight.com', telegram: 'jeniaproop', role: 'admin', created_at: new Date().toISOString(), is_paid: true, payment_status: 'paid', device_uuids: [], status: 'active' },
+  { id: 'admin-anya-koorator', name: 'Адміністратор Anya-Koorator', email: 'anya-koorator@finsight.com', telegram: 'anya-koorator', role: 'admin', created_at: new Date().toISOString(), is_paid: true, payment_status: 'paid', device_uuids: [], status: 'active' },
 ];
 
 const DEFAULT_PROGRESS: MinicourseProgress[] = [];

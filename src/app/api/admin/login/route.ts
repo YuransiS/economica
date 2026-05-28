@@ -1,18 +1,24 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const ADMIN_USER = 'Yuransis';
-const ADMIN_PASS = '56780156Yura';
+const ADMINS = [
+  { username: 'Yuransis', password: '56780156Yura', sessionVal: 'authenticated_yuransis' },
+  { username: 'anya-koorator', password: 'fh1`lkfdmcwS5', sessionVal: 'authenticated_anya_koorator' },
+];
 
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
+    const matchedAdmin = ADMINS.find(
+      (admin) => admin.username.toLowerCase() === username?.trim().toLowerCase() && admin.password === password
+    );
+
+    if (matchedAdmin) {
       const cookieStore = await cookies();
       
       // Set a simple session cookie using standard Next.js cookies API
-      cookieStore.set('admin_session', 'authenticated_yuransis', {
+      cookieStore.set('admin_session', matchedAdmin.sessionVal, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

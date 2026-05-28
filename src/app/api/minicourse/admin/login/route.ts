@@ -6,6 +6,7 @@ const ADMIN_CREDENTIALS = [
   { username: 'sofifinsight', role: 'admin', label: 'Адміністратор Owner', password: 'ndfdfh4#fd' },
   { username: 'yuransis', role: 'admin', label: 'Адміністратор Admin', password: 'fdsjhe35Frgf' },
   { username: 'jeniaproop', role: 'admin', label: 'Адміністратор Admin', password: 'dfaGdxvvg@x3' },
+  { username: 'anya-koorator', role: 'admin', label: 'Адміністратор Anya-Koorator', password: 'fh1`lkfdmcwS5' },
 ];
 
 export async function POST(req: Request) {
