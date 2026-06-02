@@ -8,17 +8,17 @@ const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { 
-      name, 
-      phone, 
-      telegram, 
-      tariff, 
-      price, 
-      utms, 
-      analytics, 
-      isTest, 
-      targetSheet, 
-      currency: inputCurrency, 
+    const {
+      name,
+      phone,
+      telegram,
+      tariff,
+      price,
+      utms,
+      analytics,
+      isTest,
+      targetSheet,
+      currency: inputCurrency,
       deviceUuid,
       clientDomain,
       clientOrigin
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       try {
         const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
         const phoneClean = (phone || '').trim().replace(/\D/g, '');
-        
+
         // Check if user already exists
         const { data: existingUser } = await supabase
           .from('minicourse_users')
@@ -106,15 +106,15 @@ export async function POST(req: Request) {
           const phoneClean = (phone || '').trim().replace(/\D/g, '');
           const visitorId = analytics?.visitorId;
           const inputJourney = analytics?.journey?.join(' -> ') || '';
-          
+
           let existingLead = null;
-          
+
           // 1. First try to find by phone or telegram
           if (phoneClean || tgClean) {
             let queryFilter = '';
             if (phoneClean) queryFilter += `phone.eq.${phoneClean}`;
             if (tgClean) queryFilter += (queryFilter ? ',' : '') + `telegram.eq.${tgClean}`;
-            
+
             const { data } = await supabase
               .from('leads')
               .select('*')
@@ -173,6 +173,40 @@ export async function POST(req: Request) {
                 query: inputJourney
               });
           }
+
+          // Дополнительно отправляем лид в Единую Сквозную Аналитику B&W Analytics
+          await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_slug: 'sofia',
+              api_key: 'bw_analytics_sofia_key_112233',
+              lead: {
+                name: name || 'Учасник',
+                phone: phoneClean || null,
+                telegram: tgClean || null,
+                amount: Number(price) || 0,
+                status: 'pending',
+                order_id: orderReference
+              },
+              marketing: {
+                utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source || null,
+                utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium || null,
+                utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign || null,
+                utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content || null,
+                utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term || null,
+                visitor_uuid: visitorId && isUuid(visitorId) ? visitorId : undefined,
+                page_path: analytics?.pagePath || '/',
+                page_url: analytics?.pageUrl || null,
+                user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null
+              },
+              metadata: {
+                tariff: tariff,
+                target_sheet: sheetName
+              }
+            })
+          }).catch(err => console.error("Failed to forward lead to B&W Analytics Gateway:", err));
+
         } catch (leadErr) {
           console.error("Failed to sync lead to Supabase leads table in background:", leadErr);
         }
@@ -236,7 +270,7 @@ export async function POST(req: Request) {
     // 2. Prepare WayForPay Signature
     const isUpgrade = body.isUpgrade;
     const upgradeAmount = body.upgradeAmount;
-    
+
     let finalAmount = amount;
     let finalProductName = productName;
 
@@ -271,6 +305,7 @@ export async function POST(req: Request) {
         clientName: name,
         clientPhone: phone,
         merchantSignature: signature,
+        clientPaymentMethods: "card;googlePay;applePay",
         returnUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
         approveUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
         declineUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,

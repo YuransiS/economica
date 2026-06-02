@@ -72,6 +72,28 @@ export async function POST(req: Request) {
             } else {
               console.log("Successfully marked minicourse student as paid:", updatedUsers);
             }
+
+            // Дополнительно отправляем статус оплаты в Единую Сквозную Аналитику B&W Analytics
+            await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                project_slug: 'sofia',
+                api_key: 'bw_analytics_sofia_key_112233',
+                lead: {
+                  phone: phoneClean || null,
+                  telegram: tgClean || null,
+                  amount: data.amount ? Number(data.amount) : 0,
+                  status: 'closed_won',
+                  order_id: orderId
+                },
+                marketing: {
+                  utm_source: data.utm_source || null,
+                  utm_medium: data.utm_medium || null,
+                  utm_campaign: data.utm_campaign || null
+                }
+              })
+            }).catch(err => console.error("Failed to sync payment callback with B&W Analytics:", err));
           }
         } catch (dbErr) {
           console.error("Database error in wayforpay webhook paid sync:", dbErr);
