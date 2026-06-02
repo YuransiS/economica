@@ -7,6 +7,7 @@ import { loginUser } from '../supabase';
 import { useAuth } from '../useAuth';
 import { Sparkles, ArrowRight, ShieldCheck, Mail, Send, User } from 'lucide-react';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
+import TelegramLoginWidget from '@/components/TelegramLoginWidget';
 
 function LoginContent() {
   const { login } = useAuth();
@@ -169,7 +170,49 @@ function LoginContent() {
               <span>{loading ? 'Вхід...' : 'Почати навчання'}</span>
               {!loading && <ArrowRight className="w-5 h-5" />}
             </motion.button>
-          </form>    </div>
+          </form>
+
+          {/* Divider */}
+          <div className="my-6 flex items-center justify-between">
+            <span className="h-px bg-white/10 w-full" />
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mx-3 whitespace-nowrap font-narrow">або увійдіть через</span>
+            <span className="h-px bg-white/10 w-full" />
+          </div>
+
+          {/* Telegram Login Widget */}
+          <div className="space-y-4">
+            <TelegramLoginWidget 
+              botName="SofiaCompanionBot" 
+              onAuth={async (tgUser) => {
+                setLoading(true);
+                setError('');
+                try {
+                  const res = await fetch('/api/minicourse/telegram-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tgUser)
+                  });
+                  const result = await res.json();
+                  
+                  if (!res.ok || !result.success) {
+                    throw new Error(result.error || "Не вдалося авторизуватися через Telegram.");
+                  }
+
+                  // Successfully validated on server-side and fetched profile, trigger login hook
+                  login(result.user, result.progress);
+                } catch (err: any) {
+                  console.error("TG Auth error:", err);
+                  setError(err.message || "Помилка авторизації через Telegram. Спробуйте ще раз.");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+            <p className="text-[9px] text-center text-gray-500">
+              Безпечна авторизація в один клік без введення паролів.
+            </p>
+          </div>
+        </div>
       </motion.div>
     </main>
   );

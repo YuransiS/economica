@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.minicourse_users (
     name TEXT NOT NULL,
     email TEXT UNIQUE,
     telegram TEXT UNIQUE NOT NULL,
+    telegram_chat_id BIGINT UNIQUE,
     phone TEXT,
     role TEXT NOT NULL DEFAULT 'student',
     is_paid BOOLEAN NOT NULL DEFAULT false,

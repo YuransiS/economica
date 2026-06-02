@@ -7,6 +7,7 @@ export interface MinicourseUser {
   name: string;
   email?: string;
   telegram: string;
+  telegram_chat_id?: number | null;
   phone?: string;
   role: UserRole;
   created_at: string;

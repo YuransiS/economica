@@ -47,6 +47,7 @@ economica/
 - **name:** `TEXT NOT NULL`
 - **email:** `TEXT` (optional, for backward compatibility)
 - **telegram:** `TEXT UNIQUE NOT NULL`
+- **telegram_chat_id:** `BIGINT UNIQUE` (authentic ID verified via Telegram Login Widget or bot pairing)
 - **phone:** `TEXT`
 - **role:** `TEXT NOT NULL DEFAULT 'student'` ('student' | 'admin')
 - **is_paid:** `BOOLEAN NOT NULL DEFAULT false`

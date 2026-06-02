@@ -123,6 +123,49 @@ export default function AdminDashboard() {
         reviewComment.trim()
       );
       
+      // Look up student to get their telegram_chat_id
+      const student = students.find(s => s.id === selectedSub.userId);
+      if (student && student.telegram_chat_id) {
+        // Trigger notification asynchronously
+        fetch('/api/minicourse/bot/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: student.telegram_chat_id,
+            messageType: status === 'accepted' ? 'hw_accepted' : 'hw_needs_improvement',
+            templateData: {
+              userName: student.name,
+              lessonId: selectedSub.lessonId,
+              comment: reviewComment.trim(),
+              actionUrl: `${window.location.origin}/minicourse`
+            }
+          })
+        }).catch(err => console.error("Failed to trigger homework review telegram notification:", err));
+
+        // If homework accepted and it's not the last lesson, notify about the newly unlocked lesson
+        if (status === 'accepted' && selectedSub.lessonId < 3) {
+          const nextLessonId = selectedSub.lessonId + 1;
+          const nextConfig = lessons.find(l => l.lesson_id === nextLessonId);
+          
+          setTimeout(() => {
+            fetch('/api/minicourse/bot/notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chatId: student.telegram_chat_id,
+                messageType: 'new_lesson_unlocked',
+                templateData: {
+                  userName: student.name,
+                  lessonId: nextLessonId,
+                  lessonTitle: nextConfig?.title || `Ефір ${nextLessonId}`,
+                  actionUrl: `${window.location.origin}/minicourse`
+                }
+              })
+            }).catch(err => console.error("Failed to trigger new lesson telegram notification:", err));
+          }, 2000);
+        }
+      }
+      
       setSelectedSub(null);
       // Hot reload stats & directory
       await fetchSubmissions();
