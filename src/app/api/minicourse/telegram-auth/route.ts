@@ -18,10 +18,11 @@ export async function POST(req: Request) {
     }
 
     // 1. Generate check string from sorted key-value pairs
+    const cleanUserData = Object.assign(Object.create(null), userData);
     const secret = createHash('sha256').update(BOT_TOKEN).digest();
-    const checkString = Object.keys(userData)
+    const checkString = Object.keys(cleanUserData)
       .sort()
-      .map((key) => `${key}=${userData[key]}`)
+      .map((key) => `${key}=${cleanUserData[key]}`)
       .join('\n');
 
     // 2. Perform HMAC-SHA256 signature verification

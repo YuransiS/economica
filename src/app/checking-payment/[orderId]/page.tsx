@@ -93,7 +93,9 @@ export default function CheckingPaymentPage() {
               if (isReservation) {
                 router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
               } else {
-                router.push('/minicourse');
+                // Redirect directly to the Telegram bot to activate the companion
+                const linkToken = savedPhone ? savedPhone.trim().replace(/\D/g, '') : orderId;
+                router.push(`https://t.me/SofiaCompanionBot?start=pay_${linkToken}`);
               }
             }, 2500);
 

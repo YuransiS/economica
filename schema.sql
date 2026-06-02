@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.minicourse_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     email TEXT UNIQUE,
-    telegram TEXT UNIQUE NOT NULL,
+    telegram TEXT UNIQUE,
     telegram_chat_id BIGINT UNIQUE,
     phone TEXT,
     role TEXT NOT NULL DEFAULT 'student',
