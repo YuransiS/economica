@@ -77,6 +77,7 @@ export default function PriceLeadModal({
         clientFirstName: wayForPayData.clientName,
         clientPhone: wayForPayData.clientPhone,
         merchantSignature: wayForPayData.merchantSignature,
+        clientPaymentMethods: wayForPayData.clientPaymentMethods || "card;googlePay;applePay",
         returnUrl: wayForPayData.returnUrl,
         serviceUrl: wayForPayData.serviceUrl
       };

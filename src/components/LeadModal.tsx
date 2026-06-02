@@ -90,6 +90,7 @@ export default function LeadModal({
         clientFirstName: wayForPayData.clientName,
         clientPhone: wayForPayData.clientPhone,
         merchantSignature: wayForPayData.merchantSignature,
+        clientPaymentMethods: wayForPayData.clientPaymentMethods || "card;googlePay;applePay",
         returnUrl: wayForPayData.returnUrl,
         serviceUrl: wayForPayData.serviceUrl
       };
