@@ -182,7 +182,7 @@ function LoginContent() {
           {/* Telegram Login Widget */}
           <div className="space-y-4">
             <TelegramLoginWidget 
-              botName="SofiaCompanionBot" 
+              botName="sofifmc_bot" 
               onAuth={async (tgUser) => {
                 setLoading(true);
                 setError('');

@@ -95,7 +95,7 @@ export default function CheckingPaymentPage() {
               } else {
                 // Redirect directly to the Telegram bot to activate the companion
                 const linkToken = savedPhone ? savedPhone.trim().replace(/\D/g, '') : orderId;
-                router.push(`https://t.me/SofiaCompanionBot?start=pay_${linkToken}`);
+                router.push(`https://t.me/sofifmc_bot?start=pay_${linkToken}`);
               }
             }, 2500);
 
