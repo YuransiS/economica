@@ -55,11 +55,21 @@ export async function POST(req: Request) {
         const phoneClean = (phone || '').trim().replace(/\D/g, '');
 
         // Check if user already exists
-        const { data: existingUser } = await supabase
+        let query = supabase
           .from('minicourse_users')
-          .select('id, device_uuids')
-          .or(`phone.eq.${phoneClean},telegram.eq.${tgClean}`)
-          .maybeSingle();
+          .select('id, device_uuids');
+
+        if (phoneClean && tgClean) {
+          query = query.or(`phone.eq.${phoneClean},telegram.eq.${tgClean}`);
+        } else if (phoneClean) {
+          query = query.eq('phone', phoneClean);
+        } else if (tgClean) {
+          query = query.eq('telegram', tgClean);
+        } else {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+        }
+
+        const { data: existingUser } = await query.maybeSingle();
 
         if (!existingUser) {
           const emailPlaceholder = `${tgClean || phoneClean || Math.random().toString(36).substr(2, 9)}@economica.edu`;

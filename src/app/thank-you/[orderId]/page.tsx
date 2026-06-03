@@ -15,12 +15,7 @@ export default async function ThankYouPage({
   const { tariff } = await searchParams;
   const isValidOrder = orderId.startsWith('ORDER_');
 
-  const telegramLinks: Record<string, string> = {
-    'VIP': 'https://t.me/Minikurspracticum_bot?start=69bbd4ed939274036b0d7da9',
-    'PRO': 'https://t.me/Minikurspracticum_bot?start=69b1774f3d25c210e50895a6',
-  };
-
-  const currentTelegramLink = telegramLinks[tariff as string] || telegramLinks['PRO'];
+  const currentTelegramLink = `https://t.me/Minikurspracticum_bot?start=pay_${orderId}`;
 
   if (!isValidOrder) {
     return (

@@ -93,8 +93,8 @@ export default function CheckingPaymentPage() {
               if (isReservation) {
                 router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
               } else {
-                // Redirect straight to minicourse dashboard
-                router.push('/minicourse');
+                // Redirect straight to Telegram bot activation link!
+                window.location.href = `https://t.me/Minikurspracticum_bot?start=pay_${orderId}`;
               }
             }, 2500);
 

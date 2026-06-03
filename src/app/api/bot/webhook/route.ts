@@ -137,6 +137,91 @@ export async function POST(req: Request) {
         }
       }
 
+      if (supabase) {
+        try {
+          const { data: linkedUser } = await supabase
+            .from('minicourse_users')
+            .select('*')
+            .eq('telegram_chat_id', chatId)
+            .maybeSingle();
+
+          if (linkedUser) {
+            if (linkedUser.role === 'student' && !linkedUser.is_paid) {
+              const unpaidText = `⚠️ *Оплата не підтверджена.*\n\nШановний(а) ${firstName}, оплату за Вашою участю в практикумі ще не підтверджено платіжною системою. Будь ласка, завершіть оплату на нашому сайті для активації доступу.\n\nЯкщо у Вас виникли питання чи проблеми з доступом, зверніться до нашої техпідтримки: @YuransiS`;
+              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: unpaidText,
+                  parse_mode: 'Markdown'
+                })
+              });
+              return NextResponse.json({ ok: true });
+            }
+
+            // Enforce 14-day limit
+            const accessStart = linkedUser.access_opened_at || linkedUser.created_at;
+            const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
+            if (linkedUser.role === 'student' && elapsedDays > 14) {
+              const expiredText = `⏳ *Термін дії доступу закінчився.*\n\nШановний(а) ${firstName}, термін дії Вашого доступу до міні-курсу закінчився (доступ надається на 14 днів з моменту оплати).\n\nЯкщо у Вас виникли питання, зверніться до підтримки: @YuransiS`;
+              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: expiredText,
+                  parse_mode: 'Markdown'
+                })
+              });
+              return NextResponse.json({ ok: true });
+            }
+
+            // Generate autologin token
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 14);
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
+            let autologinUrl = `${siteUrl}/minicourse`;
+
+            const { data: tokenData, error: tokenErr } = await supabase
+              .from('minicourse_autologin_tokens')
+              .insert({
+                user_id: linkedUser.id,
+                expires_at: expiresAt.toISOString()
+              })
+              .select('token')
+              .single();
+
+            if (tokenData) {
+              autologinUrl = `${siteUrl}/minicourse/login?token=${tokenData.token}&redirect=${encodeURIComponent('/minicourse')}`;
+            }
+
+            const welcomeBackText = `Вітаємо, ${firstName}! 👋\n\nРаді бачити Вас знову. Ви можете увійти у свій кабінет практикуму за кнопкою нижче (авторизація відбудеться автоматично):`;
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: welcomeBackText,
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      {
+                        text: '🌐 Увійти в кабінет',
+                        url: autologinUrl
+                      }
+                    ]
+                  ]
+                }
+              })
+            });
+            return NextResponse.json({ ok: true });
+          }
+        } catch (err) {
+          console.error('[Bot Webhook] Error looking up linked user on fallback:', err);
+        }
+      }
+
       // Default welcome fallback if start param doesn't match or user not found
       const defaultWelcome = `Вітаємо, ${firstName}! 👋\n\nЯ ваш персональний помічник на міні-курсі Софії.\n\nЯкщо Ви вже оплатили участь, будь ласка, переходьте на сайт для входу у Ваш кабінет:`;
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
