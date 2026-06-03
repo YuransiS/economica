@@ -161,13 +161,38 @@ export async function POST(req: Request) {
 
       if (supabase) {
         try {
-          const { data: linkedUser } = await supabase
+          let linkedUser = null;
+          const { data: byChatId } = await supabase
             .from('minicourse_users')
             .select('*')
             .eq('telegram_chat_id', chatId)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
+
+          if (byChatId) {
+            linkedUser = byChatId;
+          } else if (username) {
+            const cleanUsername = username.trim().replace(/^@/, '');
+            const { data: byUsername } = await supabase
+              .from('minicourse_users')
+              .select('*')
+              .ilike('telegram', cleanUsername)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (byUsername) {
+              const { data: updatedUser } = await supabase
+                .from('minicourse_users')
+                .update({ telegram_chat_id: chatId })
+                .eq('id', byUsername.id)
+                .select()
+                .single();
+              
+              linkedUser = updatedUser;
+            }
+          }
 
           if (linkedUser) {
             if (linkedUser.role === 'student' && !linkedUser.is_paid) {
@@ -245,7 +270,7 @@ export async function POST(req: Request) {
               [
                 {
                   text: '🌐 Відкрити кабінет',
-                  url: `${siteUrl}/minicourse`
+                  url: `${siteUrl}/minicourse/login?tg_id=${chatId}`
                 }
               ]
             ]

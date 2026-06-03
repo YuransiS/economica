@@ -38,12 +38,19 @@ export function useAuth(requireAdmin = false) {
       const isLoginRoute = pathname === '/minicourse/login' || pathname === '/minicourse/admin/login';
 
       if (!sessionStr) {
-        // If not on login page, redirect to correct login page
+        // If not on login page, redirect to correct login page with query params preserved
         if (!isLoginRoute) {
+          const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+          if (!searchParams.has('redirect') && pathname !== '/minicourse') {
+            searchParams.set('redirect', pathname);
+          }
+          const searchStr = searchParams.toString();
+          const querySuffix = searchStr ? `?${searchStr}` : '';
+          
           if (isAdminRoute) {
-            router.push('/minicourse/admin/login');
+            router.push(`/minicourse/admin/login${querySuffix}`);
           } else {
-            router.push('/minicourse/login');
+            router.push(`/minicourse/login${querySuffix}`);
           }
         } else {
           setLoading(false);
