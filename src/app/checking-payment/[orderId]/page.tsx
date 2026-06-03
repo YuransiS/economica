@@ -93,9 +93,8 @@ export default function CheckingPaymentPage() {
               if (isReservation) {
                 router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
               } else {
-                // Redirect directly to the Telegram bot to activate the companion
-                const linkToken = savedPhone ? savedPhone.trim().replace(/\D/g, '') : orderId;
-                router.push(`https://t.me/sofifmc_bot?start=pay_${linkToken}`);
+                // Redirect straight to minicourse dashboard
+                router.push('/minicourse');
               }
             }, 2500);
 

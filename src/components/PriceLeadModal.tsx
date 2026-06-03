@@ -54,6 +54,19 @@ export default function PriceLeadModal({
     }
   }, []);
 
+  // Autofill from localStorage
+  useEffect(() => {
+    if (isOpen) {
+      const savedName = localStorage.getItem('user_name');
+      const savedPhone = localStorage.getItem('user_phone');
+      const savedTelegram = localStorage.getItem('user_telegram');
+
+      if (savedName) setName(savedName);
+      if (savedPhone) setPhone(savedPhone);
+      if (savedTelegram) setTelegram(savedTelegram);
+    }
+  }, [isOpen]);
+
   // When wayForPayData is set, automatically submit the form
   useEffect(() => {
     if (wayForPayData) {
@@ -117,6 +130,10 @@ export default function PriceLeadModal({
     }
     if (!phone || !isValidPhoneNumber(phone)) {
       setError('Введіть коректний номер телефону');
+      return;
+    }
+    if (!telegram.trim()) {
+      setError('Введіть ваш нік у Telegram');
       return;
     }
 
@@ -267,6 +284,17 @@ export default function PriceLeadModal({
                       className="PhoneInput-custom w-full bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Нік у Telegram</label>
+                  <input
+                    type="text"
+                    value={telegram}
+                    onChange={(e) => setTelegram(e.target.value)}
+                    placeholder="@username"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#81D8D0] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#81D8D0]"
+                  />
                 </div>
 
                 <div className="space-y-3 pt-2">
