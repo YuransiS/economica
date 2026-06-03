@@ -59,6 +59,21 @@ export async function POST(req: Request) {
           }
 
           if (user) {
+            // Enforce payment confirmation check before bot activation
+            if (user.role === 'student' && !user.is_paid) {
+              const unpaidText = `⚠️ *Оплата не підтверджена.*\n\nШановний(а) ${firstName}, оплату за Вашою участю в практикумі ще не підтверджено платіжною системою. Будь ласка, завершіть оплату на нашому сайті для активації доступу.\n\nЯкщо у Вас виникли питання чи проблеми з доступом, зверніться до нашої техпідтримки: @YuransiS`;
+              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: unpaidText,
+                  parse_mode: 'Markdown'
+                })
+              });
+              return NextResponse.json({ ok: true });
+            }
+
             // Update telegram username and telegram_chat_id in database
             const { error: updateErr } = await supabase
               .from('minicourse_users')
@@ -72,9 +87,30 @@ export async function POST(req: Request) {
               console.error('[Bot Webhook] Error updating student Telegram details:', updateErr);
             }
 
-            // Send successful activation notification message
             const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            const welcomeText = `🚀 *Вітаємо, ${firstName}! Ваш бот-компаньйон успішно активовано!* 🎉\n\nЯ буду надсилати вам нагадування про лекції, сповіщення про перевірку ДЗ від куратора та коментарі Софії.\n\nЗаходьте до вашого особистого кабінету та починайте навчання! 👇`;
+            
+            // Generate autologin token for Lesson 1 redirect
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 14);
+            let autologinUrl = `${siteUrl}/minicourse`;
+            
+            const { data: tokenData, error: tokenErr } = await supabase
+              .from('minicourse_autologin_tokens')
+              .insert({
+                user_id: user.id,
+                expires_at: expiresAt.toISOString()
+              })
+              .select('token')
+              .single();
+
+            if (tokenErr) {
+              console.error('[Bot Webhook] Failed to generate autologin token:', tokenErr);
+            } else if (tokenData) {
+              autologinUrl = `${siteUrl}/minicourse/login?token=${tokenData.token}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
+            }
+
+            // Send successful activation notification message
+            const welcomeText = `🚀 *Вітаємо, ${firstName}! Ваш бот-компаньйон успішно активовано!* 🎉\n\nЯ буду надсилати Вам корисні нагадування, результати перевірки домашніх завдань та коментарі кураторів.\n\nЗверніть увагу! \n\nДоступ до міні-курсу відкрито на 2 тижні. Перевірка зі зворотнім зв’язком від куратора доступна протягом 7 днів.\n\nТому не відкладайте перегляд уроків та починайте прямо зараз! 👇`;
             
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
               method: 'POST',
@@ -87,8 +123,8 @@ export async function POST(req: Request) {
                   inline_keyboard: [
                     [
                       {
-                        text: '👉 Увійти в кабінет міні-курсу',
-                        url: `${siteUrl}/minicourse`
+                        text: '👉 Почати навчання (Урок 1)',
+                        url: autologinUrl
                       }
                     ]
                   ]
@@ -102,7 +138,7 @@ export async function POST(req: Request) {
       }
 
       // Default welcome fallback if start param doesn't match or user not found
-      const defaultWelcome = `Привіт, ${firstName}! 👋\n\nЯ твій персональний помічник на міні-курсі Софії.\n\nЯкщо ви вже оплатили участь, будь ласка, переходьте на сайт для входу у ваш кабінет:`;
+      const defaultWelcome = `Вітаємо, ${firstName}! 👋\n\nЯ ваш персональний помічник на міні-курсі Софії.\n\nЯкщо Ви вже оплатили участь, будь ласка, переходьте на сайт для входу у Ваш кабінет:`;
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
       
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

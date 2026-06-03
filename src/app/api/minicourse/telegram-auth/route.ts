@@ -86,6 +86,18 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
+    // Access control: check 14-day limit
+    if (user.role === 'student') {
+      const accessStart = user.access_opened_at || user.created_at;
+      const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
+      if (elapsedDays > 14) {
+        return NextResponse.json({
+          success: false,
+          error: 'Термін дії Вашого доступу до міні-курсу закінчився (доступ надається на 2 тижні з моменту оплати).'
+        }, { status: 403 });
+      }
+    }
+
     // 5. Update the telegram_chat_id column with authentic chat ID from widget
     const { error: updateErr } = await supabase
       .from('minicourse_users')

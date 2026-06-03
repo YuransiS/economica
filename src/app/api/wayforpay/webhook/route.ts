@@ -55,7 +55,8 @@ export async function POST(req: Request) {
           if (tgClean || phoneClean) {
             let query = supabase.from('minicourse_users').update({
               is_paid: true,
-              payment_status: 'paid'
+              payment_status: 'paid',
+              access_opened_at: new Date().toISOString()
             });
 
             if (tgClean && phoneClean) {

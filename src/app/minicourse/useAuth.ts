@@ -79,12 +79,21 @@ export function useAuth(requireAdmin = false) {
         if (freshUser.role === 'student') {
           if (!freshUser.is_paid) {
             localStorage.removeItem('minicourse_session');
-            router.push('/?warning=unpaid');
+            router.push('/minicourse/login?warning=unpaid');
             return;
           }
           if (freshUser.status === 'under_investigation') {
             localStorage.removeItem('minicourse_session');
-            router.push('/?warning=blocked');
+            router.push('/minicourse/login?warning=blocked');
+            return;
+          }
+          
+          // Enforce 14-day limit
+          const accessStart = freshUser.access_opened_at || freshUser.created_at;
+          const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
+          if (elapsedDays > 14) {
+            localStorage.removeItem('minicourse_session');
+            router.push('/minicourse/login?warning=expired');
             return;
           }
         }

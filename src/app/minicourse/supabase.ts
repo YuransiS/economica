@@ -221,6 +221,13 @@ export async function loginUser(telegramUsername: string, name?: string, deviceU
         throw new Error("Доступ заблоковано. Зафіксовано вхід з великої кількості пристроїв. Будь ласка, зверніться в підтримку.");
       }
 
+      // Check 14-day limit
+      const accessStart = activeUser.access_opened_at || activeUser.created_at;
+      const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
+      if (elapsedDays > 14) {
+        throw new Error("Термін Вашого доступу до міні-курсу закінчився (доступ надається на 2 тижні з моменту оплати).");
+      }
+
       if (deviceUuid) {
         const uuids = activeUser.device_uuids || [];
         if (!uuids.includes(deviceUuid)) {
@@ -282,6 +289,13 @@ export async function loginUser(telegramUsername: string, name?: string, deviceU
       }
       if (user.status === 'under_investigation') {
         throw new Error("Доступ заблоковано. Зафіксовано вхід з великої кількості пристроїв. Будь ласка, зверніться в підтримку.");
+      }
+
+      // Check 14-day limit
+      const accessStart = user.access_opened_at || user.created_at;
+      const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
+      if (elapsedDays > 14) {
+        throw new Error("Термін Вашого доступу до міні-курсу закінчився (доступ надається на 2 тижні з моменту оплати).");
       }
 
       if (deviceUuid) {

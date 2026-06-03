@@ -19,6 +19,13 @@ export default function LessonPage() {
   
   
   const { user, progress, loading, refreshProgress } = useAuth();
+  
+  const accessStart = user?.access_opened_at || user?.created_at;
+  const feedbackElapsedDays = accessStart 
+    ? (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24) 
+    : 0;
+  const isFeedbackExpired = user?.role === 'student' && feedbackElapsedDays > 7;
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -212,7 +219,7 @@ export default function LessonPage() {
 2. Ваше завдання — заповнити таблицю відповідно до критеріїв.
 3. Після виконання відкрийте доступ «всім, у кого є посилання».
 4. Надішліть посилання на перевірку.` : `Виконайте фінальні кроки для завершення курсу:
-
+ 
 1. Пройдіть тест і визначте свій ризик-профіль в інвестиціях.
 2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
 3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
@@ -229,6 +236,11 @@ export default function LessonPage() {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (isFeedbackExpired) {
+      setErrorMsg("Термін зворотнього зв'язку закінчився. Здача ДЗ більше недоступна.");
+      return;
+    }
 
     if (!hwUrlInput.trim()) {
       setErrorMsg("Будь ласка, введіть посилання на вашу таблицю/звіт");
@@ -538,43 +550,55 @@ export default function LessonPage() {
             )}
 
             {/* Submission Input form */}
-            {(lessonProgress.hwStatus === 'not_started' || lessonProgress.hwStatus === 'needs_improvement') && (
-              <form onSubmit={handleHwSubmit} className="space-y-4 pt-4 border-t border-white/10">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
-                    Введіть посилання на скопійовану таблицю / Notion звіт:
-                  </label>
-                  <input 
-                    type="url"
-                    required
-                    value={hwUrlInput}
-                    onChange={(e) => setHwUrlInput(e.target.value)}
-                    placeholder="https://docs.google.com/spreadsheets/d/..."
-                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white text-xs font-arimo transition-all placeholder-gray-600"
-                  />
+            {isFeedbackExpired ? (
+              <div className="p-4 bg-amber-950/20 border border-amber-500/25 text-amber-400 rounded-2xl flex items-start space-x-3 mt-4">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold uppercase">Термін здачі минув</p>
+                  <p className="text-[10px] text-gray-300 font-arimo leading-relaxed">
+                    Термін перевірки домашнього завдання з куратором (7 днів) закінчився. Ви все ще можете переглядати уроки та виконувати завдання для себе, але надсилання робіт на перевірку більше недоступне.
+                  </p>
                 </div>
-
-                {errorMsg && (
-                  <div className="p-3 bg-red-950/40 border border-red-500/20 text-red-300 rounded-xl text-[10px] font-arimo">
-                    {errorMsg}
+              </div>
+            ) : (
+              (lessonProgress.hwStatus === 'not_started' || lessonProgress.hwStatus === 'needs_improvement') && (
+                <form onSubmit={handleHwSubmit} className="space-y-4 pt-4 border-t border-white/10">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
+                      Введіть посилання на скопійовану таблицю / Notion звіт:
+                    </label>
+                    <input 
+                      type="url"
+                      required
+                      value={hwUrlInput}
+                      onChange={(e) => setHwUrlInput(e.target.value)}
+                      placeholder="https://docs.google.com/spreadsheets/d/..."
+                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white text-xs font-arimo transition-all placeholder-gray-600"
+                    />
                   </div>
-                )}
 
-                {successMsg && (
-                  <div className="p-3 bg-green-950/40 border border-green-500/20 text-green-300 rounded-xl text-[10px] font-arimo">
-                    {successMsg}
-                  </div>
-                )}
+                  {errorMsg && (
+                    <div className="p-3 bg-red-950/40 border border-red-500/20 text-red-300 rounded-xl text-[10px] font-arimo">
+                      {errorMsg}
+                    </div>
+                  )}
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_15px_rgba(129,216,208,0.2)] disabled:opacity-50"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{submitting ? 'Надсилання...' : 'Здати на перевірку'}</span>
-                </button>
-              </form>
+                  {successMsg && (
+                    <div className="p-3 bg-green-950/40 border border-green-500/20 text-green-300 rounded-xl text-[10px] font-arimo">
+                      {successMsg}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_15px_rgba(129,216,208,0.2)] disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{submitting ? 'Надсилання...' : 'Здати на перевірку'}</span>
+                  </button>
+                </form>
+              )
             )}
 
             {/* Next lesson unlocked notification */}
@@ -595,7 +619,7 @@ export default function LessonPage() {
 
           {/* Permanent Help Telegram Button */}
           <a 
-            href="https://t.me/sofi_finsight" 
+            href="https://t.me/YuransiS" 
             target="_blank" 
             rel="noopener noreferrer"
             className="w-full py-3.5 bg-white/5 border border-white/10 hover:border-[#81D8D0]/30 text-gray-300 hover:text-white text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center space-x-2 transition-all bg-black/20"

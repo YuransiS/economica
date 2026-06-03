@@ -15,6 +15,7 @@ export interface MinicourseUser {
   payment_status?: string;
   device_uuids?: string[];
   status?: 'active' | 'under_investigation';
+  access_opened_at?: string;
 }
 
 export interface LessonProgress {
