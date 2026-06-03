@@ -54,11 +54,12 @@ export async function POST(req: Request) {
 
           if (phoneToMatch) {
             const phoneClean = phoneToMatch.trim().replace(/\D/g, '');
-            // Find existing minicourse user
             const { data: existingUser } = await supabase
               .from('minicourse_users')
               .select('*')
               .eq('phone', phoneClean)
+              .order('created_at', { ascending: false })
+              .limit(1)
               .maybeSingle();
 
             if (existingUser) {
@@ -164,6 +165,8 @@ export async function POST(req: Request) {
             .from('minicourse_users')
             .select('*')
             .eq('telegram_chat_id', chatId)
+            .order('created_at', { ascending: false })
+            .limit(1)
             .maybeSingle();
 
           if (linkedUser) {

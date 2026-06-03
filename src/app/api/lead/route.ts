@@ -69,7 +69,10 @@ export async function POST(req: Request) {
           query = query.eq('id', '00000000-0000-0000-0000-000000000000');
         }
 
-        const { data: existingUser } = await query.maybeSingle();
+        const { data: existingUser } = await query
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
         if (!existingUser) {
           const emailPlaceholder = `${tgClean || phoneClean || Math.random().toString(36).substr(2, 9)}@economica.edu`;
