@@ -94,7 +94,7 @@ export default function CheckingPaymentPage() {
                 router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
               } else {
                 // Redirect straight to Telegram bot activation link!
-                window.location.href = `https://t.me/Minikurspracticum_bot?start=pay_${orderId}`;
+                window.location.href = `https://t.me/sofifmc_bot?start=pay_${orderId}`;
               }
             }, 2500);
 

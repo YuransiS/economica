@@ -15,7 +15,7 @@ export default async function ThankYouPage({
   const { tariff } = await searchParams;
   const isValidOrder = orderId.startsWith('ORDER_');
 
-  const currentTelegramLink = `https://t.me/Minikurspracticum_bot?start=pay_${orderId}`;
+  const currentTelegramLink = `https://t.me/sofifmc_bot?start=pay_${orderId}`;
 
   if (!isValidOrder) {
     return (
