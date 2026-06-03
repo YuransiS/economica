@@ -95,6 +95,7 @@ export async function sendTelegramNotification(
         chat_id: chatId,
         text: text,
         parse_mode: 'Markdown',
+        protect_content: true,
         reply_markup: replyMarkup
       })
     });

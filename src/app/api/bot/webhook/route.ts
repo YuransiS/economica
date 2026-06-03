@@ -115,6 +115,7 @@ export async function POST(req: Request) {
                 chat_id: chatId,
                 text: welcomeText,
                 parse_mode: 'Markdown',
+                protect_content: true,
                 reply_markup: {
                   inline_keyboard: [
                     [
@@ -137,7 +138,8 @@ export async function POST(req: Request) {
               body: JSON.stringify({
                 chat_id: chatId,
                 text: warningText,
-                parse_mode: 'Markdown'
+                parse_mode: 'Markdown',
+                protect_content: true
               })
             });
 
@@ -151,7 +153,8 @@ export async function POST(req: Request) {
               body: JSON.stringify({
                 chat_id: chatId,
                 text: notFoundText,
-                parse_mode: 'Markdown'
+                parse_mode: 'Markdown',
+                protect_content: true
               })
             });
             return NextResponse.json({ ok: true });
@@ -203,7 +206,8 @@ export async function POST(req: Request) {
                 body: JSON.stringify({
                   chat_id: chatId,
                   text: unpaidText,
-                  parse_mode: 'Markdown'
+                  parse_mode: 'Markdown',
+                  protect_content: true
                 })
               });
               return NextResponse.json({ ok: true });
@@ -220,7 +224,8 @@ export async function POST(req: Request) {
                 body: JSON.stringify({
                   chat_id: chatId,
                   text: expiredText,
-                  parse_mode: 'Markdown'
+                  parse_mode: 'Markdown',
+                  protect_content: true
                 })
               });
               return NextResponse.json({ ok: true });
@@ -236,6 +241,7 @@ export async function POST(req: Request) {
               body: JSON.stringify({
                 chat_id: chatId,
                 text: welcomeBackText,
+                protect_content: true,
                 reply_markup: {
                   inline_keyboard: [
                     [
@@ -265,6 +271,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           chat_id: chatId,
           text: defaultWelcome,
+          protect_content: true,
           reply_markup: {
             inline_keyboard: [
               [

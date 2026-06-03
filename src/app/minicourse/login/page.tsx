@@ -20,7 +20,7 @@ function LoginContent() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tokenVerifying, setTokenVerifying] = useState(false);
+  const [tokenVerifying, setTokenVerifying] = useState(!!(tokenParam || tgIdParam));
   const [deviceUuid, setDeviceUuid] = useState('');
   const [isUnpaid, setIsUnpaid] = useState(false);
 
