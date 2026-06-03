@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     // Register/update the student in the database as unpaid ('pending')
     if (supabase && (tariff === 'Практикум' || tariff === 'PRO' || tariff === 'VIP')) {
       try {
-        const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+        const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
         const phoneClean = (phone || '').trim().replace(/\D/g, '');
 
         // Check if user already exists
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     after(async () => {
       if (supabase) {
         try {
-          const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+          const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
           const phoneClean = (phone || '').trim().replace(/\D/g, '');
           const visitorId = analytics?.visitorId;
           const inputJourney = analytics?.journey?.join(' -> ') || '';

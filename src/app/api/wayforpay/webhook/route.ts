@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       // Update paid status in Supabase minicourse database
       if (supabase) {
         try {
-          const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+          const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
           const phoneClean = (phone || '').trim().replace(/\D/g, '');
 
           if (tgClean || phoneClean) {

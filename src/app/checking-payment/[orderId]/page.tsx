@@ -43,7 +43,7 @@ export default function CheckingPaymentPage() {
               if (localUsersStr) {
                 try {
                   const users = JSON.parse(localUsersStr);
-                  const tgClean = (savedTelegram || '').trim().replace(/^@/, '').toLowerCase();
+                  const tgClean = (savedTelegram || '').replace(/^@/, '').trim().toLowerCase();
                   const phoneClean = (savedPhone || '').trim().replace(/\D/g, '');
                   
                   const userIndex = users.findIndex((u: any) => 

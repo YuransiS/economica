@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       // 2. Dual-Write to Supabase leads table
       if (supabase) {
         try {
-          const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+          const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
           const phoneClean = (phone || '').trim().replace(/\D/g, '');
           const visitorId = analytics?.visitorId;
           const inputJourney = analytics?.journey?.join(' -> ') || '';

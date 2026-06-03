@@ -44,7 +44,7 @@ export async function GET(req: Request) {
     // 2. Direct database update: mark user as paid in Supabase ONLY if status is Approved!
     if (status.toLowerCase() === 'approved' && supabase) {
       try {
-        const tgClean = (telegram || '').trim().replace(/^@/, '').toLowerCase();
+        const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
         const phoneClean = (phone || '').trim().replace(/\D/g, '');
 
         if (tgClean || phoneClean) {

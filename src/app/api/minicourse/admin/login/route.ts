@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Будь ласка, заповніть всі поля для входу' }, { status: 400 });
     }
 
-    const inputClean = emailOrUsername.trim().toLowerCase().replace(/^@/, '');
+    const inputClean = emailOrUsername.replace(/^@/, '').trim().toLowerCase();
     const passwordClean = password.trim();
 
     // Match admin credentials

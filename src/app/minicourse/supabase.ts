@@ -183,7 +183,7 @@ export function calculateProgressPercent(lessons: MinicourseProgress['lessons'])
 
 // Platform API Layer
 export async function loginUser(telegramUsername: string, name?: string, deviceUuid?: string): Promise<{ user: MinicourseUser; progress: MinicourseProgress }> {
-  const normInput = telegramUsername.trim().toLowerCase().replace(/^@/, '');
+  const normInput = telegramUsername.replace(/^@/, '').trim().toLowerCase();
   const digitsOnly = normInput.replace(/\D/g, '');
 
   if (IS_MOCK_MODE) {
