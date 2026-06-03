@@ -14,6 +14,7 @@ function LoginContent() {
   const router = useRouter();
 
   const tokenParam = searchParams.get('token');
+  const tgIdParam = searchParams.get('tg_id');
   const redirectParam = searchParams.get('redirect') || '/minicourse';
   const warningParam = searchParams.get('warning');
 
@@ -21,6 +22,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [tokenVerifying, setTokenVerifying] = useState(false);
   const [deviceUuid, setDeviceUuid] = useState('');
+  const [isUnpaid, setIsUnpaid] = useState(false);
 
   // 1. Get or generate device UUID for device tracking limits
   useEffect(() => {
@@ -40,6 +42,7 @@ function LoginContent() {
       if (warningParam === 'expired') {
         setError('Термін дії Вашого доступу до міні-курсу закінчився. Доступ надається на 2 тижні з моменту оплати.');
       } else if (warningParam === 'unpaid') {
+        setIsUnpaid(true);
         setError('Доступ обмежено. Оплата практикуму ще не підтверджена.');
       } else if (warningParam === 'blocked') {
         setError('Доступ заблоковано через перевищення ліміту унікальних пристроїв. Будь ласка, зверніться до підтримки.');
@@ -47,26 +50,30 @@ function LoginContent() {
     }
   }, [warningParam]);
 
-  // 3. Auto-authenticate when coming from bot with autologin token
+  // 3. Auto-authenticate when coming from bot with autologin token or tg_id
   useEffect(() => {
-    if (tokenParam && deviceUuid) {
+    if ((tokenParam || tgIdParam) && deviceUuid) {
       const performTokenAuth = async () => {
         setLoading(true);
         setTokenVerifying(true);
         setError('');
+        setIsUnpaid(false);
         try {
           const res = await fetch('/api/minicourse/token-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: tokenParam, deviceUuid })
+            body: JSON.stringify({ token: tokenParam, tgId: tgIdParam, deviceUuid })
           });
           const result = await res.json();
 
           if (!res.ok || !result.success) {
             if (result.error === 'access_expired') {
               setError('Термін дії Вашого доступу до міні-курсу закінчився (доступ надається на 2 тижні з моменту оплати).');
+            } else if (result.error === 'unpaid') {
+              setIsUnpaid(true);
+              setError('Доступ обмежено. Оплата практикуму не підтверджена або профіль не знайдено.');
             } else {
-              setError(result.error || 'Не вдалося авторизуватися. Можливо, посилання застаріло або вже використовувалось.');
+              setError(result.error || 'Не вдалося авторизуватися. Будь ласка, перейдіть за свіжим посиланням з бота.');
             }
             return;
           }
@@ -84,7 +91,7 @@ function LoginContent() {
       };
       performTokenAuth();
     }
-  }, [tokenParam, deviceUuid, login, redirectParam, router]);
+  }, [tokenParam, tgIdParam, deviceUuid, login, redirectParam, router]);
 
   return (
     <main className="min-h-screen bg-[#1A0000] relative flex items-center justify-center p-4 overflow-hidden">
@@ -131,6 +138,40 @@ function LoginContent() {
               <p className="text-xs text-gray-400 font-arimo">
                 Будь ласка, зачекайте. Ми перевіряємо Ваше посилання для авто-входу.
               </p>
+            </div>
+          ) : isUnpaid ? (
+            /* Unpaid error view with link to purchase */
+            <div className="py-4 text-center space-y-6">
+              <div className="rounded-full bg-red-950/50 border border-red-500/25 p-4 w-16 h-16 flex items-center justify-center mx-auto text-red-400">
+                <AlertTriangle className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-white font-montserrat font-bold text-lg uppercase tracking-wider">
+                  Доступ обмежено
+                </h2>
+                <p className="text-xs text-gray-300 font-arimo leading-relaxed">
+                  На жаль, оплату для цього профілю не знайдено, або Ваша участь ще не підтверджена платіжною системою.
+                </p>
+                <p className="text-xs text-gray-400 font-arimo leading-relaxed">
+                  Якщо Ви ще не придбали міні-курс, Ви можете зробити це на нашій головній сторінці за посиланням нижче.
+                </p>
+              </div>
+              
+              <a
+                href="/"
+                className="flex w-full items-center justify-center rounded-xl bg-[#81D8D0] py-4 text-center font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(129,216,208,0.2)] font-montserrat"
+              >
+                Придбати міні-курс
+              </a>
+              
+              <div className="pt-2 text-center border-t border-white/5">
+                <p className="text-[10px] text-gray-400 font-arimo">
+                  Вже оплатили і виникла помилка? Напишіть у техпідтримку:{" "}
+                  <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
+                    @YuransiS
+                  </a>
+                </p>
+              </div>
             </div>
           ) : (
             /* Standard Telegram Auth Info and Widget */
@@ -200,7 +241,7 @@ function LoginContent() {
                   <p className="text-[10px] text-gray-400 font-arimo">
                     Виникли проблеми з доступом? Напишіть у техпідтримку:{" "}
                     <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold">
-                      Написати у Телеграм
+                      @YuransiS
                     </a>
                   </p>
                 </div>

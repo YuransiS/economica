@@ -4,57 +4,86 @@ import { supabase } from '@/app/minicourse/supabase';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { token, deviceUuid } = body;
-
-    if (!token) {
-      return NextResponse.json({ success: false, error: 'Токен відсутній' }, { status: 400 });
-    }
+    const { token, tgId, deviceUuid } = body;
 
     if (!supabase) {
       return NextResponse.json({ success: false, error: 'Database service unavailable' }, { status: 500 });
     }
 
-    // 1. Fetch the token from database, ensuring it is unused and not expired
-    const { data: tokenData, error: tokenErr } = await supabase
-      .from('minicourse_autologin_tokens')
-      .select('*')
-      .eq('token', token)
-      .eq('is_used', false)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
+    let user = null;
+    let userId = null;
 
-    if (tokenErr) {
-      console.error('Error fetching autologin token:', tokenErr);
-      return NextResponse.json({ success: false, error: 'Помилка бази даних при перевірці токену' }, { status: 500 });
+    if (token) {
+      // 1. Fetch the token from database, ensuring it is unused and not expired
+      const { data: tokenData, error: tokenErr } = await supabase
+        .from('minicourse_autologin_tokens')
+        .select('*')
+        .eq('token', token)
+        .eq('is_used', false)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (tokenErr) {
+        console.error('Error fetching autologin token:', tokenErr);
+        return NextResponse.json({ success: false, error: 'Помилка бази даних при перевірці токену' }, { status: 500 });
+      }
+
+      if (!tokenData) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'expired_or_invalid',
+          message: 'Посилання для авто-входу недійсне або вже було використане. Будь ласка, перейдіть за свіжим посиланням з бота.' 
+        }, { status: 400 });
+      }
+
+      // 2. Mark token as used immediately to prevent replay attacks / link sharing
+      const { error: updateTokenErr } = await supabase
+        .from('minicourse_autologin_tokens')
+        .update({ is_used: true })
+        .eq('token', token);
+
+      if (updateTokenErr) {
+        console.error('Failed to mark autologin token as used:', updateTokenErr);
+      }
+
+      userId = tokenData.user_id;
+    } else if (tgId) {
+      // Look up user by telegram_chat_id
+      const { data: tgUser, error: tgUserErr } = await supabase
+        .from('minicourse_users')
+        .select('*')
+        .eq('telegram_chat_id', Number(tgId))
+        .maybeSingle();
+
+      if (tgUserErr) {
+        console.error('Error fetching user by tgId:', tgUserErr);
+        return NextResponse.json({ success: false, error: 'Помилка бази даних при отриманні профілю' }, { status: 500 });
+      }
+
+      if (!tgUser) {
+        return NextResponse.json({ success: false, error: 'unpaid', message: 'Користувача не знайдено' }, { status: 403 });
+      }
+
+      user = tgUser;
+      userId = tgUser.id;
+    } else {
+      return NextResponse.json({ success: false, error: 'Токен або Telegram ID відсутній' }, { status: 400 });
     }
 
-    if (!tokenData) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Посилання для авто-входу недійсне або вже було використане. Будь ласка, перейдіть за свіжим посиланням з бота.' 
-      }, { status: 400 });
-    }
+    if (!user && userId) {
+      // 3. Fetch user details
+      const { data: dbUser, error: userErr } = await supabase
+        .from('minicourse_users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    // 2. Mark token as used immediately to prevent replay attacks / link sharing
-    const { error: updateTokenErr } = await supabase
-      .from('minicourse_autologin_tokens')
-      .update({ is_used: true })
-      .eq('token', token);
+      if (userErr) {
+        console.error('Error fetching user profile:', userErr);
+        return NextResponse.json({ success: false, error: 'Помилка бази даних при отриманні профілю' }, { status: 500 });
+      }
 
-    if (updateTokenErr) {
-      console.error('Failed to mark autologin token as used:', updateTokenErr);
-    }
-
-    // 3. Fetch user details
-    const { data: user, error: userErr } = await supabase
-      .from('minicourse_users')
-      .select('*')
-      .eq('id', tokenData.user_id)
-      .maybeSingle();
-
-    if (userErr) {
-      console.error('Error fetching user profile:', userErr);
-      return NextResponse.json({ success: false, error: 'Помилка бази даних при отриманні профілю' }, { status: 500 });
+      user = dbUser;
     }
 
     if (!user) {

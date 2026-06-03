@@ -6,6 +6,36 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { loginUser } from "@/app/minicourse/supabase";
 import InAppBrowserOverlay from "@/components/InAppBrowserOverlay";
 
+function getFriendlyErrorReason(reason: string): string {
+  if (!reason) {
+    return "Платіж було відхилено банком або термін дії сесії оплати закінчився.";
+  }
+  
+  const rLower = reason.toLowerCase();
+  
+  if (rLower.includes('declined to card issuer') || rLower.includes('declined to cardissuer') || rLower.includes('decline')) {
+    return "Оплату відхилено вашим банком-емітентом (Declined to Card Issuer). " + 
+           "Найчастіша причина: перевищення ліміту на інтернет-покупки, недостатньо коштів або обмеження на операції за кордон. " + 
+           "Будь ласка, перевірте налаштування картки в додатку вашого банку (збільште інтернет-ліміт) або спробуйте іншу картку/Google Pay/Apple Pay.";
+  }
+  
+  if (rLower.includes('insufficient funds') || rLower.includes('not enough money')) {
+    return "Недостатньо коштів на вашій картці для завершення транзакції. " + 
+           "Будь ласка, поповніть рахунок або скористайтеся іншою карткою.";
+  }
+
+  if (rLower.includes('limit') || rLower.includes('exceeded')) {
+    return "Перевищено ліміт інтернет-оплат по вашій картці. " + 
+           "Будь ласка, збільште ліміт на інтернет-покупки у вашому банківському додатку та спробуйте ще раз.";
+  }
+  
+  if (rLower.includes('expired')) {
+    return "Термін дії картки закінчився або час сесії оплати вийшов. Спробуйте іншу картку або повторіть платіж.";
+  }
+  
+  return `Платіж не підтверджено платіжною системою. Причина: ${reason}. Будь ласка, перевірте налаштування картки або зверніться до підтримки.`;
+}
+
 export default function CheckingPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -101,7 +131,7 @@ export default function CheckingPaymentPage() {
             return true;
           } else if (status === 'declined' || status === 'fail' || status === 'expired') {
             setCheckingStatus('failed');
-            setError(data.reason || "Платіж було відхилено банком або термін дії сесії оплати закінчився.");
+            setError(getFriendlyErrorReason(data.reason));
             return true;
           }
         }

@@ -88,29 +88,10 @@ export async function POST(req: Request) {
             }
 
             const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            
-            // Generate autologin token for Lesson 1 redirect
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + 14);
-            let autologinUrl = `${siteUrl}/minicourse`;
-            
-            const { data: tokenData, error: tokenErr } = await supabase
-              .from('minicourse_autologin_tokens')
-              .insert({
-                user_id: user.id,
-                expires_at: expiresAt.toISOString()
-              })
-              .select('token')
-              .single();
+            const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
 
-            if (tokenErr) {
-              console.error('[Bot Webhook] Failed to generate autologin token:', tokenErr);
-            } else if (tokenData) {
-              autologinUrl = `${siteUrl}/minicourse/login?token=${tokenData.token}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
-            }
-
-            // Send successful activation notification message
-            const welcomeText = `🚀 *Вітаємо, ${firstName}! Ваш бот-компаньйон успішно активовано!* 🎉\n\nЯ буду надсилати Вам корисні нагадування, результати перевірки домашніх завдань та коментарі кураторів.\n\nЗверніть увагу! \n\nДоступ до міні-курсу відкрито на 2 тижні. Перевірка зі зворотнім зв’язком від куратора доступна протягом 7 днів.\n\nТому не відкладайте перегляд уроків та починайте прямо зараз! 👇`;
+            // Send successful activation notification message (Message 1: Onboarding Link)
+            const welcomeText = `Дякуємо за купівлю! 🎉\n\nВітаємо на курсі, ${firstName}! Ваш доступ до кабінету міні-курсу успішно активовано. Я — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`;
             
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
               method: 'POST',
@@ -129,6 +110,19 @@ export async function POST(req: Request) {
                     ]
                   ]
                 }
+              })
+            });
+
+            // Message 2: Warning Message
+            const warningText = `⚠️ *Зверніть увагу!*\n\nДоступ до міні-курсу відкрито на 2 тижні. Перевірка зі зворотнім зв’язком від куратора доступна протягом 7 днів.\n\nТому не відкладайте перегляд уроків та починайте прямо зараз!`;
+            
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: warningText,
+                parse_mode: 'Markdown'
               })
             });
 
@@ -177,24 +171,8 @@ export async function POST(req: Request) {
               return NextResponse.json({ ok: true });
             }
 
-            // Generate autologin token
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + 14);
             const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            let autologinUrl = `${siteUrl}/minicourse`;
-
-            const { data: tokenData, error: tokenErr } = await supabase
-              .from('minicourse_autologin_tokens')
-              .insert({
-                user_id: linkedUser.id,
-                expires_at: expiresAt.toISOString()
-              })
-              .select('token')
-              .single();
-
-            if (tokenData) {
-              autologinUrl = `${siteUrl}/minicourse/login?token=${tokenData.token}&redirect=${encodeURIComponent('/minicourse')}`;
-            }
+            const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse')}`;
 
             const welcomeBackText = `Вітаємо, ${firstName}! 👋\n\nРаді бачити Вас знову. Ви можете увійти у свій кабінет практикуму за кнопкою нижче (авторизація відбудеться автоматично):`;
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

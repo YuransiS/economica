@@ -4,46 +4,7 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 async function generateAutologinLink(chatId: number, targetPath: string): Promise<string> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-  if (!supabase) {
-    return `${siteUrl}/minicourse/login?redirect=${encodeURIComponent(targetPath)}`;
-  }
-
-  try {
-    // 1. Fetch user by telegram_chat_id
-    const { data: user, error: userErr } = await supabase
-      .from('minicourse_users')
-      .select('id')
-      .eq('telegram_chat_id', chatId)
-      .maybeSingle();
-
-    if (userErr || !user) {
-      console.warn(`[Telegram Bot] User with telegram_chat_id ${chatId} not found in DB:`, userErr);
-      return `${siteUrl}/minicourse/login?redirect=${encodeURIComponent(targetPath)}`;
-    }
-
-    // 2. Generate a secure, single-use token valid for 14 days
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 14);
-
-    const { data: tokenData, error: tokenErr } = await supabase
-      .from('minicourse_autologin_tokens')
-      .insert({
-        user_id: user.id,
-        expires_at: expiresAt.toISOString()
-      })
-      .select('token')
-      .single();
-
-    if (tokenErr || !tokenData) {
-      console.error("[Telegram Bot] Failed to generate autologin token:", tokenErr);
-      return `${siteUrl}/minicourse/login?redirect=${encodeURIComponent(targetPath)}`;
-    }
-
-    return `${siteUrl}/minicourse/login?token=${tokenData.token}&redirect=${encodeURIComponent(targetPath)}`;
-  } catch (err) {
-    console.error("[Telegram Bot] Error generating autologin link:", err);
-    return `${siteUrl}/minicourse/login?redirect=${encodeURIComponent(targetPath)}`;
-  }
+  return `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent(targetPath)}`;
 }
 
 export async function sendTelegramNotification(
