@@ -27,66 +27,80 @@ export async function POST(req: Request) {
       const startParam = parts.length > 1 ? parts[1] : '';
 
       if (startParam.startsWith('pay_')) {
-        const token = startParam.substring(4); // Extract value after 'pay_'
+        const token = startParam.substring(4); // Extract order_id or phone
         
         if (supabase) {
-          // Look up user by phone or orderReference
-          let query = supabase.from('minicourse_users').select('*');
-          
+          let user = null;
+          let phoneToMatch = null;
+          let leadName = 'Учасник';
+
+          // 1. If token is phone number, match directly
           const isPhone = /^\d+$/.test(token);
           if (isPhone) {
-            query = query.eq('phone', token);
+            phoneToMatch = token;
           } else {
-            // Otherwise, we search for orderId in leads to match user or query payment reference
+            // 2. Otherwise, look up the lead by order_id
             const { data: leadData } = await supabase
               .from('leads')
-              .select('phone, telegram')
+              .select('*')
               .eq('order_id', token)
               .maybeSingle();
 
-            if (leadData && leadData.phone) {
-              query = query.eq('phone', leadData.phone);
-            } else {
-              // Fallback lookup
-              query = query.ilike('telegram', token);
+            if (leadData) {
+              phoneToMatch = leadData.phone;
+              leadName = leadData.name || 'Учасник';
             }
           }
 
-          const { data: user, error: fetchErr } = await query.maybeSingle();
+          if (phoneToMatch) {
+            const phoneClean = phoneToMatch.trim().replace(/\D/g, '');
+            // Find existing minicourse user
+            const { data: existingUser } = await supabase
+              .from('minicourse_users')
+              .select('*')
+              .eq('phone', phoneClean)
+              .maybeSingle();
 
-          if (fetchErr) {
-            console.error('[Bot Webhook] Error fetching student profile:', fetchErr);
+            if (existingUser) {
+              // Update existing user, mark paid, set access open time
+              const { data: updatedUser } = await supabase
+                .from('minicourse_users')
+                .update({
+                  telegram: username || existingUser.telegram,
+                  telegram_chat_id: chatId,
+                  is_paid: true,
+                  payment_status: 'paid',
+                  access_opened_at: existingUser.access_opened_at || new Date().toISOString()
+                })
+                .eq('id', existingUser.id)
+                .select()
+                .single();
+              
+              user = updatedUser;
+            } else {
+              // Register new user on the fly
+              const { data: newUser } = await supabase
+                .from('minicourse_users')
+                .insert({
+                  name: leadName,
+                  email: `${phoneClean}@economica.edu`,
+                  phone: phoneClean,
+                  role: 'student',
+                  is_paid: true,
+                  payment_status: 'paid',
+                  access_opened_at: new Date().toISOString(),
+                  telegram: username || null,
+                  telegram_chat_id: chatId,
+                  status: 'active'
+                })
+                .select()
+                .single();
+              
+              user = newUser;
+            }
           }
 
           if (user) {
-            // Enforce payment confirmation check before bot activation
-            if (user.role === 'student' && !user.is_paid) {
-              const unpaidText = `⚠️ *Оплата не підтверджена.*\n\nШановний(а) ${firstName}, оплату за Вашою участю в практикумі ще не підтверджено платіжною системою. Будь ласка, завершіть оплату на нашому сайті для активації доступу.\n\nЯкщо у Вас виникли питання чи проблеми з доступом, зверніться до нашої техпідтримки: @YuransiS`;
-              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: unpaidText,
-                  parse_mode: 'Markdown'
-                })
-              });
-              return NextResponse.json({ ok: true });
-            }
-
-            // Update telegram username and telegram_chat_id in database
-            const { error: updateErr } = await supabase
-              .from('minicourse_users')
-              .update({
-                telegram: username || user.telegram,
-                telegram_chat_id: chatId
-              })
-              .eq('id', user.id);
-
-            if (updateErr) {
-              console.error('[Bot Webhook] Error updating student Telegram details:', updateErr);
-            }
-
             const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
             const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
 
@@ -126,6 +140,19 @@ export async function POST(req: Request) {
               })
             });
 
+            return NextResponse.json({ ok: true });
+          } else {
+            // User not found and could not be linked (e.g. order not found)
+            const notFoundText = `⚠️ *Замовлення не знайдено.*\n\nШановний(а) ${firstName}, ми не змогли знайти оплату за цим посиланням. Будь ласка, переконайтеся, що оплату завершено.\n\nЯкщо виникли запитання, зверніться в підтримку: @YuransiS`;
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: notFoundText,
+                parse_mode: 'Markdown'
+              })
+            });
             return NextResponse.json({ ok: true });
           }
         }
@@ -201,7 +228,7 @@ export async function POST(req: Request) {
       }
 
       // Default welcome fallback if start param doesn't match or user not found
-      const defaultWelcome = `Вітаємо, ${firstName}! 👋\n\nЯ ваш персональний помічник на міні-курсі Софії.\n\nЯкщо Ви вже оплатили участь, будь ласка, переходьте на сайт для входу у Ваш кабінет:`;
+      const defaultWelcome = `Вітаємо, ${firstName}! 👋\n\nЯ ваш персональний помічник на міні-курсі Софії.\n\nЯкщо Ви вже оплатили курс, будь ласка, активуйте цього бота за посиланням, отриманим після оплати на сайті, або перейдіть до кабінету практикуму за кнопкою нижче:`;
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
       
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
