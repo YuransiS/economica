@@ -51,11 +51,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Database service unavailable' }, { status: 500 });
     }
 
-    // Fetch user profile matching telegram username
+    // Fetch user profile matching telegram username (order by newest to handle multiple test entries)
     const { data: user, error: fetchErr } = await supabase
       .from('minicourse_users')
       .select('*')
       .ilike('telegram', telegramUsername)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (fetchErr) {

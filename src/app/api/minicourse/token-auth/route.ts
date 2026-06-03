@@ -48,11 +48,13 @@ export async function POST(req: Request) {
 
       userId = tokenData.user_id;
     } else if (tgId) {
-      // Look up user by telegram_chat_id
+      // Look up user by telegram_chat_id (order by newest to handle multiple test entries)
       const { data: tgUser, error: tgUserErr } = await supabase
         .from('minicourse_users')
         .select('*')
         .eq('telegram_chat_id', Number(tgId))
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (tgUserErr) {
