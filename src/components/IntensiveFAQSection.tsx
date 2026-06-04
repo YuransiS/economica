@@ -11,7 +11,7 @@ export default function IntensiveFAQSection({ onOpenLeadAction }: { onOpenLeadAc
       answer: "Так, для початку достатньо почати з 30$ в місяць."
     },
     {
-      question: "Чи потрібен інтенсив курс, якщо я вже маю інвестиційний портфель?",
+      question: "Чи потрібен інтенсив, якщо я вже маю інвестиційний портфель?",
       answer: "Тільки у випадку якщо ви купуєте акції хаотично і не маєте ніякого пасивного доходу."
     },
     {
@@ -33,7 +33,7 @@ export default function IntensiveFAQSection({ onOpenLeadAction }: { onOpenLeadAc
   return (
     <section className="bg-[#2D0000] py-24 pb-32">
       <div className="container mx-auto px-4 lg:px-8 max-w-4xl">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -71,7 +71,7 @@ export default function IntensiveFAQSection({ onOpenLeadAction }: { onOpenLeadAc
                     className="overflow-hidden"
                   >
                     <div className="p-6 md:p-8 pt-0 font-arimo text-lg text-gray-300 leading-relaxed border-t border-white/10 mt-2">
-                       {faq.answer}
+                      {faq.answer}
                     </div>
                   </motion.div>
                 )}

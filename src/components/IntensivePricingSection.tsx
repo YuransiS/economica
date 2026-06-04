@@ -71,7 +71,7 @@ export default function IntensivePricingSection({ onOpenLeadAction }: { onOpenLe
             </div>
 
             <CountdownTimer />
-            
+
             <div className="text-center text-xs text-amber-300/80 uppercase font-bold tracking-wider mb-6 -mt-2">
               * Акція діє ще 24 години
             </div>
@@ -80,7 +80,7 @@ export default function IntensivePricingSection({ onOpenLeadAction }: { onOpenLe
               onClick={() => onOpenLeadAction(tariff.name, tariff.price)}
               className={`w-full rounded-2xl py-5 text-xl font-bold uppercase tracking-widest transition-transform hover:scale-105 shadow-xl ${tariff.buttonColor}`}
             >
-              Придбати участь
+              Зареєструватись
             </button>
           </motion.div>
         </div>
