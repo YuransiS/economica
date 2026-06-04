@@ -73,6 +73,34 @@ export async function POST(req: Request) {
               utm_term: utms?.utm_term || null
             });
         }
+
+        // Forward click/traffic session to B&W Analytics Gateway
+        await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_slug: 'sofia',
+            api_key: 'bw_analytics_sofia_key_112233',
+            lead: {
+              name: 'Анонім',
+              amount: 0,
+              status: 'Клик'
+            },
+            marketing: {
+              utm_source: utms?.utm_source || null,
+              utm_medium: utms?.utm_medium || null,
+              utm_campaign: utms?.utm_campaign || null,
+              utm_content: utms?.utm_content || null,
+              utm_term: utms?.utm_term || null,
+              visitor_uuid: visitorId,
+              page_path: pathInfo
+            },
+            metadata: {
+              target_sheet: 'Трафік'
+            }
+          })
+        }).catch(err => console.error("Failed to forward traffic log to B&W Analytics Gateway:", err));
+
       } catch (supabaseErr) {
         console.error("Failed to log traffic lead in Supabase:", supabaseErr);
       }

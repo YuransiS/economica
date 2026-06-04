@@ -115,6 +115,38 @@ export async function POST(req: Request) {
                 query: inputJourney
               });
           }
+
+          // Forward webinar lead to B&W Analytics Gateway
+          await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_slug: 'sofia',
+              api_key: 'bw_analytics_sofia_key_112233',
+              lead: {
+                name: name || 'Учасник',
+                phone: phoneClean || null,
+                telegram: tgClean || null,
+                amount: 0,
+                status: 'pending'
+              },
+              marketing: {
+                utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source || null,
+                utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium || null,
+                utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign || null,
+                utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content || null,
+                utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term || null,
+                visitor_uuid: visitorId && isUuid(visitorId) ? visitorId : undefined,
+                page_path: analytics?.pagePath || '/',
+                page_url: analytics?.pageUrl || null
+              },
+              metadata: {
+                tariff: 'Безкоштовно',
+                target_sheet: 'Лиды Вебинар'
+              }
+            })
+          }).catch(err => console.error("Failed to forward webinar lead to B&W Analytics Gateway:", err));
+
         } catch (leadErr) {
           console.error("Failed to sync lead to Supabase leads table in web-lead background:", leadErr);
         }
