@@ -7,7 +7,6 @@ import { useAuth } from '../useAuth';
 import { Sparkles, Loader2, AlertTriangle, Send } from 'lucide-react';
 import { loginUser } from '../supabase';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
-import TelegramLoginWidget from '@/components/TelegramLoginWidget';
 
 function LoginContent() {
   const { login } = useAuth();
@@ -198,15 +197,15 @@ function LoginContent() {
               </div>
             </div>
           ) : (
-            /* Standard Telegram Auth Info and Widget */
+            /* Standard Telegram Auth Info */
             <>
               <div className="text-center space-y-2">
                 <h2 className="text-white font-montserrat font-bold text-lg uppercase tracking-wider">
                   Вхід на Платформу
                 </h2>
                 <p className="text-xs text-gray-300 font-arimo leading-relaxed">
-                  Вхід до кабінету практикуму здійснюється виключно через Telegram.
-                  Перейдіть за посиланням, отриманим у нашому Telegram-боті після оплати, або скористайтеся кнопкою швидкої авторизації нижче.
+                  Вхід до кабінету практикуму здійснюється за Вашим Telegram нікнеймом.
+                  Будь ласка, введіть його нижче для входу на платформу.
                 </p>
               </div>
 
@@ -221,57 +220,8 @@ function LoginContent() {
                 </motion.div>
               )}
 
-              {/* Divider */}
-              <div className="flex items-center justify-between">
-                <span className="h-px bg-white/10 w-full" />
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mx-3 whitespace-nowrap font-narrow">
-                  Авторизація
-                </span>
-                <span className="h-px bg-white/10 w-full" />
-              </div>
-
-              {/* Telegram Login Widget */}
-              <div className="space-y-4 flex flex-col items-center">
-                <TelegramLoginWidget
-                  botName="sofifmc_bot"
-                  onAuth={async (tgUser) => {
-                    setLoading(true);
-                    setError('');
-                    try {
-                      const res = await fetch('/api/minicourse/telegram-auth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(tgUser)
-                      });
-                      const result = await res.json();
-
-                      if (!res.ok || !result.success) {
-                        throw new Error(result.error || "Не вдалося авторизуватися через Telegram.");
-                      }
-
-                      login(result.user, result.progress);
-                    } catch (err: any) {
-                      console.error("TG Auth error:", err);
-                      setError(err.message || "Помилка авторизації через Telegram. Спробуйте ще раз.");
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                />
-                <p className="text-[9px] text-center text-gray-500 font-arimo">
-                  Безпечна авторизація в один клік через офіційний Telegram API.
-                </p>
-
-                {/* Divider for manual login */}
-                <div className="flex items-center justify-between w-full py-2">
-                  <span className="h-px bg-white/10 w-full" />
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mx-3 whitespace-nowrap font-narrow">
-                    Або за нікнеймом
-                  </span>
-                  <span className="h-px bg-white/10 w-full" />
-                </div>
-
-                {/* Manual Telegram Username Login Form */}
+              {/* Manual Telegram Username Login Form */}
+              <div className="space-y-4 flex flex-col items-center w-full">
                 <form onSubmit={handleManualLogin} className="space-y-4 w-full">
                   <div className="relative">
                     <span className="absolute left-4 top-3.5 text-gray-400 font-montserrat font-bold">@</span>
@@ -307,7 +257,7 @@ function LoginContent() {
                 <div className="pt-2 text-center border-t border-white/5 w-full">
                   <p className="text-[10px] text-gray-400 font-arimo">
                     Виникли проблеми з доступом? Напишіть у техпідтримку:{" "}
-                    <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold">
+                    <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
                       @YuransiS
                     </a>
                   </p>
