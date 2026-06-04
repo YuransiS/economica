@@ -25,6 +25,7 @@ economica/
     ├── app/
     │   ├── admin/                 # Main Admin CRM panel (Google Sheets integrated)
     │   ├── api/                   # API Routes (Analytics, WayForPay, Web Lead, etc.)
+    │   ├── intensive/             # Free Intensive landing page with custom copywriting
     │   ├── minicourse/            # Sofia Minicourse Platform
     │   │   ├── admin/             # Minicourse Admin panel (submissions, configs)
     │   │   ├── lessons/           # Individual lesson pages (video player, HW submission)
@@ -92,6 +93,14 @@ economica/
 - **Динамические чекбоксы сайтов:** Скрипт в Google Sheets автоматически создает колонки `Заходив на [Site]` и `Зареєстрований на [Site]` при обнаружении посещений или регистраций с новых путей и форм.
 - **Двусторонняя синхронизация (Dual-Write):** Next.js дублирует все анонимные заходы и регистрации в Supabase таблицу `leads` в реальном времени по той же логике Link & Merge.
 - **Оптимизация производительности (Background Execution):** Чтобы исключить задержки на клиенте из-за медленных внешних запросов (таких как API Google Sheets или запись в БД), Next.js API маршруты (`/api/web-lead` и `/api/lead`) используют встроенный API `after()` из `next/server`. Это позволяет немедленно отдать ответ клиенту и перенаправить его, выполняя запись в Google Sheets и Supabase в фоновом режиме.
+
+---
+
+## 6. Free Intensive Registration Flow (/intensive)
+- **Direct Access Activation:** Because registration for the intensive program is free, submitting the form at `/intensive` bypasses payment gateways completely.
+- **Instant Status Update:** The backend `/api/lead` registers the user directly in `minicourse_users` with `is_paid = true` and `payment_status = 'paid'`, granting immediate access.
+- **Analytics & Sheets Sync:** Google Sheets webhook is updated instantly to mark the lead as `Оплачено`, while B&W Analytics Gateway registers the conversion with `status = 'closed_won'` and `amount = 0`.
+- **Client Redirection:** The client is redirected immediately to the success thank you page (`/thank-you/[orderId]?tariff=Безкоштовно`), which provides the Telegram bot start command linking to their activated account.
 
 
 

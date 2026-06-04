@@ -5,6 +5,8 @@ import { supabase } from '@/app/minicourse/supabase';
 // Google Sheets Webhook URL from environment variables
 const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
 
+const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -27,6 +29,232 @@ export async function POST(req: Request) {
     const detectedOrigin = new URL(req.url).origin;
     const baseSiteUrl = clientOrigin || process.env.NEXT_PUBLIC_SITE_URL || detectedOrigin;
     const siteUrl = baseSiteUrl.includes('localhost') ? baseSiteUrl : baseSiteUrl.replace('http://', 'https://');
+
+    // Free Registration Flow Bypass
+    const isFree = Number(price) === 0 || tariff === 'Безкоштовно' || tariff === 'Інтенсив';
+    if (isFree) {
+      const orderReference = `ORDER_FREE_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      const sheetName = targetSheet || 'Заявки на інтенсив';
+      const phoneClean = (phone || '').trim().replace(/\D/g, '');
+      const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
+
+      // 1. Supabase minicourse_users
+      if (supabase) {
+        try {
+          let query = supabase.from('minicourse_users').select('id, device_uuids');
+          if (phoneClean && tgClean) {
+            query = query.or(`phone.eq.${phoneClean},telegram.eq.${tgClean}`);
+          } else if (phoneClean) {
+            query = query.eq('phone', phoneClean);
+          } else if (tgClean) {
+            query = query.eq('telegram', tgClean);
+          } else {
+            query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+          }
+
+          const { data: existingUser } = await query
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!existingUser) {
+            const emailPlaceholder = `${tgClean || phoneClean || Math.random().toString(36).substr(2, 9)}@economica.edu`;
+            await supabase
+              .from('minicourse_users')
+              .insert({
+                name: name || 'Учасник',
+                email: emailPlaceholder,
+                telegram: tgClean || null,
+                phone: phoneClean || null,
+                role: 'student',
+                is_paid: true,
+                payment_status: 'paid',
+                device_uuids: deviceUuid ? [deviceUuid] : [],
+                status: 'active',
+                access_opened_at: new Date().toISOString()
+              });
+          } else {
+            const currentUuids = existingUser.device_uuids || [];
+            const updatePayload: any = {
+              is_paid: true,
+              payment_status: 'paid',
+              access_opened_at: new Date().toISOString()
+            };
+            if (deviceUuid && !currentUuids.includes(deviceUuid)) {
+              updatePayload.device_uuids = [...currentUuids, deviceUuid];
+            }
+            await supabase
+              .from('minicourse_users')
+              .update(updatePayload)
+              .eq('id', existingUser.id);
+          }
+        } catch (dbErr) {
+          console.error("Failed to register free student in Supabase:", dbErr);
+        }
+      }
+
+      // 2. Background logging
+      const visitorId = analytics?.visitorId;
+      const inputJourney = analytics?.journey?.join(' -> ') || '';
+      
+      after(async () => {
+        // Supabase leads
+        if (supabase) {
+          try {
+            let existingLead = null;
+            if (phoneClean || tgClean) {
+              let queryFilter = '';
+              if (phoneClean) queryFilter += `phone.eq.${phoneClean}`;
+              if (tgClean) queryFilter += (queryFilter ? ',' : '') + `telegram.eq.${tgClean}`;
+
+              const { data } = await supabase
+                .from('leads')
+                .select('*')
+                .or(queryFilter)
+                .maybeSingle();
+              existingLead = data;
+            }
+
+            if (!existingLead && visitorId && isUuid(visitorId)) {
+              const { data } = await supabase
+                .from('leads')
+                .select('*')
+                .eq('visitor_uuid', visitorId)
+                .maybeSingle();
+              existingLead = data;
+            }
+
+            const leadPayload = {
+              name: name || 'Учасник',
+              phone: phoneClean || null,
+              telegram: tgClean || null,
+              amount: 0,
+              status: 'approved',
+              is_free: true,
+              order_id: orderReference,
+              target_sheet: sheetName,
+              utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source || null,
+              utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium || null,
+              utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign || null,
+              utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content || null,
+              utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term || null,
+              visitor_uuid: visitorId && isUuid(visitorId) ? visitorId : undefined
+            };
+
+            if (existingLead) {
+              const existingJourney = existingLead.query || '';
+              let updatedJourney = existingJourney;
+              if (inputJourney && !existingJourney.includes(inputJourney)) {
+                updatedJourney = existingJourney ? `${existingJourney} | ${inputJourney}` : inputJourney;
+              }
+
+              await supabase
+                .from('leads')
+                .update({
+                  ...leadPayload,
+                  query: updatedJourney
+                })
+                .eq('id', existingLead.id);
+            } else {
+              await supabase
+                .from('leads')
+                .insert({
+                  ...leadPayload,
+                  query: inputJourney
+                });
+            }
+          } catch (leadErr) {
+            console.error("Failed to sync free lead to Supabase leads:", leadErr);
+          }
+        }
+
+        // B&W Analytics Gateway
+        try {
+          await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_slug: 'sofia',
+              api_key: 'bw_analytics_sofia_key_112233',
+              lead: {
+                name: name || 'Учасник',
+                phone: phoneClean || null,
+                telegram: tgClean || null,
+                amount: 0,
+                status: 'closed_won',
+                order_id: orderReference
+              },
+              marketing: {
+                utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source || null,
+                utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium || null,
+                utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign || null,
+                utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content || null,
+                utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term || null,
+                visitor_uuid: visitorId && isUuid(visitorId) ? visitorId : undefined,
+                page_path: analytics?.pagePath || '/intensive',
+                page_url: analytics?.pageUrl || null
+              },
+              metadata: {
+                tariff: tariff,
+                target_sheet: sheetName
+              }
+            })
+          }).catch(err => console.error("Failed to forward free lead to B&W Analytics Gateway:", err));
+        } catch (err) {
+          console.error("Failed to forward free lead to B&W Analytics:", err);
+        }
+
+        // Google Sheets
+        if (GOOGLE_SHEET_WEBHOOK_URL) {
+          try {
+            await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'create_lead',
+                targetSheet: sheetName,
+                name,
+                phone,
+                telegram,
+                tariff,
+                price: 0,
+                orderId: orderReference,
+                visitorId: analytics?.visitorId,
+                journey: analytics?.journey?.join(' -> '),
+                utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
+                utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
+                utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
+                utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
+                utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
+                first_utm_source: analytics?.firstUtms?.utm_source,
+                first_utm_medium: analytics?.firstUtms?.utm_medium,
+                first_utm_campaign: analytics?.firstUtms?.utm_campaign,
+              })
+            });
+
+            // Mark as Paid immediately in Sheets
+            await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'update_status',
+                targetSheet: sheetName,
+                orderId: orderReference,
+                status: 'Оплачено'
+              })
+            });
+          } catch (err) {
+            console.error("Failed to send free lead to Google Sheets:", err);
+          }
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        isFree: true,
+        orderId: orderReference
+      });
+    }
 
     let merchantDomainName = '';
     if (clientDomain) {

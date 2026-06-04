@@ -62,7 +62,7 @@ export default async function ThankYouPage({
     isPaid = true;
   }
 
-  const purchaseValue = tariff === 'VIP' ? 39 : 19;
+  const purchaseValue = tariff === 'Безкоштовно' ? 0 : (tariff === 'VIP' ? 39 : 19);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FCFAF8] p-6 text-center">
@@ -80,11 +80,13 @@ export default async function ThankYouPage({
             </div>
             
             <h1 className="mb-2 font-montserrat text-3xl font-black text-[#4E0000] uppercase tracking-tight">
-              Дякуємо за оплату!
+              {tariff === 'Безкоштовно' ? 'Дякуємо за реєстрацію!' : 'Дякуємо за оплату!'}
             </h1>
             
             <p className="mb-8 font-arimo text-lg text-gray-600 leading-relaxed">
-              Ваш платіж підтверджено. Натисніть кнопку нижче, щоб перейти до нашого Telegram-бота та розпочати навчання.
+              {tariff === 'Безкоштовно' 
+                ? 'Реєстрацію підтверджено. Натисніть кнопку нижче, щоб перейти до нашого Telegram-бота та розпочати навчання.'
+                : 'Ваш платіж підтверджено. Натисніть кнопку нижче, щоб перейти до нашого Telegram-бота та розпочати навчання.'}
             </p>
 
             <div className="rounded-xl bg-gray-50 p-4 text-left text-sm text-gray-500 font-narrow mb-8">
