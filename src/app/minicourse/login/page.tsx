@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../useAuth';
 import { Sparkles, Loader2, AlertTriangle, Send } from 'lucide-react';
+import { loginUser } from '../supabase';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 import TelegramLoginWidget from '@/components/TelegramLoginWidget';
 
@@ -23,6 +24,29 @@ function LoginContent() {
   const [tokenVerifying, setTokenVerifying] = useState(!!(tokenParam || tgIdParam));
   const [deviceUuid, setDeviceUuid] = useState('');
   const [isUnpaid, setIsUnpaid] = useState(false);
+  const [telegramInput, setTelegramInput] = useState('');
+
+  const handleManualLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!telegramInput.trim()) return;
+
+    setLoading(true);
+    setError('');
+    setIsUnpaid(false);
+    try {
+      const result = await loginUser(telegramInput.trim(), undefined, deviceUuid);
+      login(result.user, result.progress);
+    } catch (err: any) {
+      console.error("Manual login failed:", err);
+      const errMsg = err.message || '';
+      if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
+        setIsUnpaid(true);
+      }
+      setError(errMsg || "Не вдалося авторизуватися. Будь ласка, перевірте свій нікнейм.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 1. Get or generate device UUID for device tracking limits
   useEffect(() => {
@@ -237,7 +261,50 @@ function LoginContent() {
                 <p className="text-[9px] text-center text-gray-500 font-arimo">
                   Безпечна авторизація в один клік через офіційний Telegram API.
                 </p>
-                <div className="pt-2 text-center border-t border-white/5">
+
+                {/* Divider for manual login */}
+                <div className="flex items-center justify-between w-full py-2">
+                  <span className="h-px bg-white/10 w-full" />
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mx-3 whitespace-nowrap font-narrow">
+                    Або за нікнеймом
+                  </span>
+                  <span className="h-px bg-white/10 w-full" />
+                </div>
+
+                {/* Manual Telegram Username Login Form */}
+                <form onSubmit={handleManualLogin} className="space-y-4 w-full">
+                  <div className="relative">
+                    <span className="absolute left-4 top-3.5 text-gray-400 font-montserrat font-bold">@</span>
+                    <input
+                      type="text"
+                      required
+                      value={telegramInput}
+                      onChange={(e) => setTelegramInput(e.target.value)}
+                      placeholder="username"
+                      disabled={loading}
+                      className="w-full pl-8 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-white transition-all font-montserrat placeholder-gray-500"
+                    />
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading || !telegramInput.trim()}
+                    className="w-full py-3.5 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.2)] disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Вхід...</span>
+                      </>
+                    ) : (
+                      <span>Увійти</span>
+                    )}
+                  </motion.button>
+                </form>
+
+                <div className="pt-2 text-center border-t border-white/5 w-full">
                   <p className="text-[10px] text-gray-400 font-arimo">
                     Виникли проблеми з доступом? Напишіть у техпідтримку:{" "}
                     <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold">

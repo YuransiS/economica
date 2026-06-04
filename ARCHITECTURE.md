@@ -79,6 +79,7 @@ economica/
 
 ## 4. Security & Anti-Spoofing
 - **Telegram Isolation (Leaderboard):** To prevent identity spoofing (since login relies on Telegram username), the `getLeaderboard(currentUserId)` API completely strips the Telegram handles of all other students (`telegram: undefined`). Only the currently logged-in student will see their own Telegram handle on the leaderboard.
+- **Minicourse Login Options:** Supports both dynamic one-click widget login (verifying secure signatures via `/api/minicourse/telegram-auth`) and a manual fallback input form where students enter their Telegram handle (checked via the client-side `loginUser` DB querying function).
 - **Anti-Fraud System (Device Limit):** Limits each user to a maximum of 4 unique devices (`device_uuids`). A 5th device triggers `under_investigation` status and blocks access.
 - **Admin Access Control:** CRM and Minicourse administration access are secured via pre-configured admin credentials. The CRM uses standard HTTP-only session cookies validated in the Next.js middleware, while the Minicourse uses credentials mirrored both in database user roles (`admin` role in `minicourse_users`) and secure login routes.
 
