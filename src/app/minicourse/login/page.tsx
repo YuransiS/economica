@@ -9,7 +9,7 @@ import { loginUser } from '../supabase';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 
 function LoginContent() {
-  const { login } = useAuth();
+  const { login, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -116,6 +116,14 @@ function LoginContent() {
     }
   }, [tokenParam, tgIdParam, deviceUuid, login, redirectParam, router]);
 
+  if (authLoading) {
+    return (
+      <main className="min-h-screen bg-[#1A0000] flex items-center justify-center p-4">
+        <Loader2 className="h-10 w-10 text-[#81D8D0] animate-spin" />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#1A0000] relative flex items-center justify-center p-4 overflow-hidden">
       <InAppBrowserOverlay />
@@ -157,9 +165,6 @@ function LoginContent() {
               <Loader2 className="h-12 w-12 text-[#81D8D0] animate-spin mx-auto" />
               <p className="font-narrow text-[#81D8D0] uppercase tracking-widest text-sm font-bold animate-pulse">
                 Авторизація через Telegram...
-              </p>
-              <p className="text-xs text-gray-400 font-arimo">
-                Будь ласка, зачекайте. Ми перевіряємо Ваше посилання для авто-входу.
               </p>
             </div>
           ) : isUnpaid ? (
