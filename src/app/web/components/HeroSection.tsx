@@ -14,7 +14,7 @@ export default function HeroSection({ onOpenLeadAction }: { onOpenLeadAction: ()
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_35%] md:object-center opacity-30 md:opacity-40 mix-blend-luminosity scale-105"
+          className="object-cover object-[center_35%] md:object-center opacity-20 md:opacity-25 grayscale scale-105"
         />
         {/* Multilayered Gradients for Premium Feel */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#4E0000] via-[#4E0000]/60 to-transparent md:via-transparent"></div>

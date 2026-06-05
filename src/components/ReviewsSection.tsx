@@ -1,22 +1,10 @@
 'use client';
 
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 export default function ReviewsSection() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const controls = useAnimation();
-
-  useEffect(() => {
-    controls.start({
-      x: [0, "-50%"],
-      transition: {
-        duration: 35,
-        repeat: Infinity,
-        ease: "linear",
-      }
-    });
-  }, [controls]);
 
   const reviews = [
     '/images/otziv_1.jpg',
@@ -51,29 +39,18 @@ export default function ReviewsSection() {
           Натисніть на відгук, щоб розглянути
         </motion.p>
 
-        <div 
-          className="relative overflow-hidden w-full py-4 -mx-4 px-4 lg:mx-0 lg:px-0"
-          onMouseEnter={() => controls.stop()}
-          onMouseLeave={() => controls.start({
-            x: [0, "-50%"],
-            transition: { duration: 35, repeat: Infinity, ease: "linear" }
-          })}
-        >
-          <motion.div 
-            className="flex items-center gap-4 md:gap-8"
-            animate={controls}
-            style={{ width: "max-content" }}
+        <div className="relative overflow-hidden w-full py-4 -mx-4 px-4 lg:mx-0 lg:px-0">
+          <div 
+            className={`animate-marquee gap-4 md:gap-8 ${selectedImage ? 'marquee-paused' : ''}`}
           >
             {[...reviews, ...reviews].map((src, index) => (
-              <motion.div
+              <div
                 key={index}
-                whileHover={{ scale: 1.05 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedImage(src);
-                  controls.stop();
                 }}
-                className="shrink-0 h-[320px] md:h-[500px] w-auto max-w-[85vw] md:max-w-none rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-white/5 cursor-pointer"
+                className="shrink-0 h-[320px] md:h-[500px] w-auto max-w-[85vw] md:max-w-none rounded-2xl overflow-hidden shadow-xl border border-white/5 bg-white/5 cursor-pointer transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
               >
                 <img 
                   src={src} 
@@ -81,9 +58,9 @@ export default function ReviewsSection() {
                   className="h-full w-auto object-contain pointer-events-none"
                   loading="lazy"
                 />
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
 
           {/* Gradient Overlays for smooth edges */}
           <div className="absolute top-0 left-0 h-full w-12 md:w-32 bg-gradient-to-r from-[#2D0000] to-transparent z-10 pointer-events-none"></div>
@@ -100,10 +77,6 @@ export default function ReviewsSection() {
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedImage(null);
-                controls.start({
-                  x: [0, "-50%"],
-                  transition: { duration: 35, repeat: Infinity, ease: "linear" }
-                });
               }}
               className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 cursor-zoom-out"
             >
@@ -135,3 +108,4 @@ export default function ReviewsSection() {
     </section>
   );
 }
+

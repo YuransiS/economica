@@ -17,3 +17,28 @@
     @apply bg-[#FCFAF8] text-gray-900 font-montserrat antialiased;
   }
 }
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.marquee-paused {
+  animation-play-state: paused !important;
+}
+

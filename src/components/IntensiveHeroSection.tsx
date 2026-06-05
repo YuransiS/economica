@@ -14,7 +14,7 @@ export default function IntensiveHeroSection({ onOpenLeadAction }: { onOpenLeadA
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_30%] opacity-40 mix-blend-luminosity"
+          className="object-cover object-[center_30%] opacity-25 grayscale"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#4E0000] via-[#4E0000]/80 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#4E0000] via-transparent to-transparent"></div>
