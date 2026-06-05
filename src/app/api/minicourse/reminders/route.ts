@@ -96,7 +96,7 @@ async function handleReminders(req: Request) {
           // Send reminder if user opened the lesson >= 18 hours ago
           if (elapsedHours >= 18) {
             if (student.telegram_chat_id) {
-              const success = await sendTelegramNotification(
+              const res = await sendTelegramNotification(
                 student.telegram_chat_id,
                 'reminder',
                 {
@@ -105,7 +105,7 @@ async function handleReminders(req: Request) {
                 }
               );
 
-              if (success) {
+              if (res.success) {
                 updatedLessons[lessonIdStr] = {
                   ...lessonProgress,
                   reminderSent: true

@@ -50,6 +50,12 @@ export async function POST(req: Request) {
 
     const lesson = progress.lessons[lessonNum];
 
+    // At-Least-Once Webhook Deduplication Guard
+    if (lesson.notificationStatus === 'sent') {
+      console.log(`[QStash Webhook] Notification already sent for user ${userId}, lesson ${lessonNum} (At-Least-Once deduplication).`);
+      return NextResponse.json({ success: true, message: 'Notification already sent (deduplicated)' });
+    }
+
     // If homework has already been submitted or is approved, cancel reminder execution
     if (lesson.hwSubmitted || lesson.hwStatus === 'accepted' || lesson.hwStatus === 'pending') {
       console.log(`[QStash Webhook] Student ${userId} has already submitted or cleared Lesson ${lessonNum}. Cancelling notification.`);
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
     }
 
     if (student.telegram_chat_id) {
-      const sent = await sendTelegramNotification(
+      const res = await sendTelegramNotification(
         student.telegram_chat_id,
         'reminder',
         {
@@ -78,10 +84,21 @@ export async function POST(req: Request) {
         }
       );
 
-      if (!sent) {
-        // Return 500 error so QStash retries notification delivery automatically
-        console.error(`[QStash Webhook] Telegram API failed to deliver message to user ${userId}. Triggering retry.`);
-        return NextResponse.json({ success: false, error: 'Telegram message delivery failed' }, { status: 500 });
+      if (!res.success) {
+        if (res.isPermanent) {
+          console.error(`[QStash Webhook] Permanent Telegram API failure (Forbidden/Blocked) for user ${userId}: ${res.description}. Cancelling future tasks.`);
+          
+          await updateProgress(userId, lessonNum, {
+            qstashMsgId: null,
+            notificationStatus: 'cancelled'
+          });
+          
+          return NextResponse.json({ success: false, error: `Permanent Telegram API failure: ${res.description}` });
+        } else {
+          // Return 500 so QStash retries
+          console.error(`[QStash Webhook] Temporary Telegram API failure for user ${userId}. Retrying. Details: ${res.description}`);
+          return NextResponse.json({ success: false, error: `Temporary Telegram delivery failure: ${res.description}` }, { status: 500 });
+        }
       }
     } else {
       console.warn(`[QStash Webhook] User ${userId} has no telegram_chat_id linked. Skipping notification.`);

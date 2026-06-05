@@ -17,16 +17,16 @@ export async function sendTelegramNotification(
     comment?: string;
     actionUrl?: string;
   }
-) {
+): Promise<{ success: boolean; isPermanent?: boolean; errorCode?: number; description?: string }> {
   // If user hasn't linked their Telegram chat ID, skip notification silently
   if (!chatId) {
     console.log(`[Telegram Bot] Skipping notification of type ${messageType}: No chat_id linked.`);
-    return false;
+    return { success: false, isPermanent: true, description: 'No chat_id linked' };
   }
 
   if (!BOT_TOKEN) {
     console.error('[Telegram Bot] Missing TELEGRAM_BOT_TOKEN environment variable.');
-    return false;
+    return { success: false, isPermanent: false, description: 'Missing TELEGRAM_BOT_TOKEN' };
   }
 
   let text = '';
@@ -109,13 +109,23 @@ export async function sendTelegramNotification(
     const result = await response.json();
     if (!result.ok) {
       console.error('[Telegram Bot] Send message API returned error:', result);
-      return false;
+      const isPermanent = result.error_code === 403 || result.error_code === 400;
+      return {
+        success: false,
+        isPermanent,
+        errorCode: result.error_code,
+        description: result.description || 'Unknown Telegram error'
+      };
     }
 
     console.log(`[Telegram Bot] Successfully sent notification of type ${messageType} to chat ID ${chatId}`);
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.error('[Telegram Bot] Network error sending notification:', err);
-    return false;
+    return {
+      success: false,
+      isPermanent: false,
+      description: err.message || 'Network error'
+    };
   }
 }

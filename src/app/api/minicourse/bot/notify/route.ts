@@ -9,9 +9,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'chatId is required' }, { status: 400 });
     }
 
-    const success = await sendTelegramNotification(chatId, messageType, templateData);
-
-    return NextResponse.json({ success });
+    const res = await sendTelegramNotification(chatId, messageType, templateData);
+    return NextResponse.json({ success: res.success });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
