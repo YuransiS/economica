@@ -339,7 +339,6 @@ export async function POST(req: Request) {
     const orderDate = Math.floor(Date.now() / 1000); // Unix timestamp
 
     // Sync to Supabase leads table with smart customer journey tracking & aggregation in the background
-    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
     after(async () => {
       if (supabase) {
         try {
