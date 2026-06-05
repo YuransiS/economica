@@ -124,6 +124,25 @@ export default function AdminDashboard() {
         reviewComment.trim()
       );
       
+      // Reschedule or cancel QStash reminders depending on review status
+      if (status === 'accepted') {
+        fetch('/api/homework/cancel-reminder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: selectedSub.userId, lessonId: selectedSub.lessonId })
+        }).catch(err => console.error("Failed to cancel reminder on homework accept:", err));
+      } else if (status === 'needs_improvement') {
+        fetch('/api/homework/assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: selectedSub.userId,
+            lessonId: selectedSub.lessonId,
+            deadlineAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          })
+        }).catch(err => console.error("Failed to reschedule reminder on homework rejection:", err));
+      }
+      
       // Look up student to get their telegram_chat_id
       const student = students.find(s => s.id === selectedSub.userId);
       if (student && student.telegram_chat_id) {

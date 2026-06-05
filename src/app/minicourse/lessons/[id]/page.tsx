@@ -257,10 +257,22 @@ export default function LessonPage() {
     const recordOpenTime = async () => {
       if (user && progress && lessonProgress && !lessonProgress.openedAt) {
         try {
+          const openTime = new Date().toISOString();
           await updateProgress(user.id, lessonId, {
-            openedAt: new Date().toISOString()
+            openedAt: openTime
           });
           refreshProgress();
+
+          // Schedule QStash deadline reminder (24 hours from opening)
+          fetch('/api/homework/assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              lessonId,
+              deadlineAt: new Date(new Date(openTime).getTime() + 24 * 60 * 60 * 1000).toISOString()
+            })
+          }).catch(err => console.error("Failed to schedule QStash reminder:", err));
         } catch (err) {
           console.error("Failed to update lesson opened timestamp:", err);
         }
@@ -380,6 +392,16 @@ export default function LessonPage() {
       });
       setSuccessMsg("Домашнє завдання успішно надіслано на перевірку! 🎉");
       refreshProgress();
+
+      // Cancel QStash deadline reminder
+      fetch('/api/homework/cancel-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          lessonId
+        })
+      }).catch(err => console.error("Failed to cancel QStash reminder:", err));
 
       // Trigger Telegram notification to the student about submission receipt
       if (user.telegram_chat_id) {

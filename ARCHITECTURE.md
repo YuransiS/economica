@@ -107,11 +107,11 @@ economica/
 
 ## 7. Homework Confirmation & Reminders
 - **Submission Notification (`hw_submitted`):** When a student submits homework in the lesson interface, the client calls `/api/minicourse/bot/notify` with message type `'hw_submitted'`. This triggers a Telegram bot message thanking the student and confirming that the curator is reviewing their homework (normally within 24 hours).
-- **Automated Deadline Reminders (`/api/minicourse/reminders`):**
-  - **Cron Schedule:** Triggered hourly via Vercel Cron configured in `vercel.json` (`schedule: "0 * * * *"`).
-  - **Logic:** Queries active and paid students within their 14-day minicourse access period.
-  - **Conditions:** For each student, if a lesson is unlocked and opened (`openedAt` is recorded) but homework is not yet submitted, it checks the elapsed time.
-  - **Trigger:** If $\ge 18$ hours have passed since opening the lesson, a `'reminder'` notification is sent to their `telegram_chat_id`, and `reminderSent: true` is set in the `minicourse_progress` JSONB data structure to guarantee the reminder is sent exactly once.
+- **Event-Driven QStash Reminders:**
+  - **Scheduling (`/api/homework/assign`):** When a lesson is first opened by a student, the client schedules a deadline reminder via Upstash QStash. The dispatch is delayed by `Upstash-Not-Before` header to trigger exactly 3 hours before the 24-hour deadline (21 hours from opening).
+  - **Cancellation (`/api/homework/cancel-reminder`):** If a student submits their homework before the reminder fires, a cancel request is made to remove the message from the QStash queue by its `qstashMsgId` and set its status to `cancelled` in Supabase.
+  - **Delivery Webhook (`/api/notifications/send`):** QStash invokes this endpoint to trigger the reminder. The signature is validated using the `@upstash/qstash` SDK. The route checks Supabase progress first: if the homework has already been submitted, the delivery is skipped; otherwise, the Telegram Bot API sends the reminder message, and the notification status is set to `sent`.
+  - **Rejections/Rescheduling:** If a curator rejects a homework submission (`needs_improvement`), the admin dashboard triggers a fresh 24-hour assign/rescheduling operation to give the student another reminder window. If accepted (`accepted`), the reminder is permanently cancelled.
 
 
 

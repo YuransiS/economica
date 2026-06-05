@@ -31,6 +31,8 @@ export interface LessonProgress {
   videoDurationSec?: number;
   videoCompleted?: boolean;
   videoCompletedAt?: string;
+  qstashMsgId?: string | null;
+  notificationStatus?: 'pending' | 'sent' | 'cancelled' | null;
 }
 
 export interface MinicourseProgress {
