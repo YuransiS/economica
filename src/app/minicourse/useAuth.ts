@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { MinicourseUser, MinicourseProgress } from './types';
-import { getProfile, getProgress } from './supabase';
+import { getProfile, getProgress, syncProgressStates } from './supabase';
 
 export function useAuth(requireAdmin = false) {
   const [user, setUser] = useState<MinicourseUser | null>(null);
@@ -15,7 +15,7 @@ export function useAuth(requireAdmin = false) {
   const refreshState = async (userId: string) => {
     try {
       const u = await getProfile(userId);
-      const p = await getProgress(userId);
+      const p = await syncProgressStates(userId, u || undefined);
       if (u) {
         setUser(u);
         // Save back updated user to session
@@ -69,7 +69,7 @@ export function useAuth(requireAdmin = false) {
 
         // Fetch fresh profile and progress from Database/LocalStorage
         const freshUser = await getProfile(sessionUser.id);
-        const freshProgress = await getProgress(sessionUser.id);
+        const freshProgress = await syncProgressStates(sessionUser.id, freshUser || undefined);
 
         if (!freshUser) {
           // Session stale or deleted

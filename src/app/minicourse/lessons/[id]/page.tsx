@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../useAuth';
 import { updateProgress, getLessonsConfig, uploadHomeworkFile } from '../../supabase';
@@ -26,10 +26,182 @@ export default function LessonPage() {
     : 0;
   const isFeedbackExpired = user?.role === 'student' && feedbackElapsedDays > 7;
 
+  // State definitions
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
+  const [hwUrlInput, setHwUrlInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [lessonConfigs, setLessonConfigs] = useState<MinicourseLessonConfig[]>([]);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [telegramCountdown, setTelegramCountdown] = useState(5);
+
+  const currentProgressRef = useRef<{ currentTime: number; duration: number; isCompletedNow: boolean } | null>(null);
+
+  // Lesson Metadata Config loaded dynamically
+  const currentConfig = lessonConfigs.find(c => c.lesson_id === lessonId);
+  
+  const currentLesson = currentConfig ? {
+    title: currentConfig.title,
+    description: currentConfig.description,
+    youtubeId: currentConfig.youtube_id,
+    mindmapUrl: currentConfig.mindmap_url,
+    hwSpreadsheetUrl: currentConfig.hw_spreadsheet_url,
+    notionUrl: currentConfig.notion_url,
+    hwInstructions: currentConfig.hw_instructions,
+    bonusVideoTitle: currentConfig.bonus_video_title,
+    bonusVideoYoutubeId: currentConfig.bonus_video_youtube_id
+  } : {
+    // Fallback if not loaded yet
+    title: lessonId === 1 ? "Перший ефір" : lessonId === 2 ? "Другий ефір" : "Третій ефір",
+    description: lessonId === 1 ? "Створення першого інвестиційного плану" : lessonId === 2 ? "Робота з капіталом та брокерськими рахунками" : "Купівля першої акції та диверсифікація",
+    youtubeId: lessonId === 1 ? "SnyxALmvvnE" : lessonId === 2 ? "l4p1F9oy3ko" : "-p6u77YkyCw",
+    mindmapUrl: lessonId === 1 ? "https://mm.tt/map/3978357799?t=cIsPiI7Jsq" : lessonId === 2 ? "https://mm.tt/map/3979303280?t=HfkclCi41H" : "https://mm.tt/map/3663819169?t=B79jLpx0HT",
+    hwSpreadsheetUrl: lessonId === 1 ? "https://docs.google.com/spreadsheets/d/1xptWzJrSQ8aW2pOyuWpSH7P-4_tOJ6i04iB2-roF9kw/edit?usp=sharing" : lessonId === 2 ? "https://docs.google.com/spreadsheets/d/1UhFeWJyezb4W_t5jkesOvjiAe6l5SNDf/edit?gid=1880085387#gid=1880085387" : undefined,
+    notionUrl: lessonId === 3 ? "https://soapy-floss-c69.notion.site/33f9215c3f2180cf93e7e4f3bc7527d4" : undefined,
+    hwInstructions: lessonId === 1 ? `ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці❗️
+      
+1. Зробіть копію таблиці за посиланням нижче.
+2. Заповніть її по відповідним критеріям відповідно до ефіру.
+3. Після заповнення таблиці відкрийте доступ «всім у кого є посилання».
+4. Надішліть посилання у вікно праворуч для перевірки.` : lessonId === 2 ? `❗️ ВАЖЛИВО! Працюємо лише в скопійованій таблиці.
+    
+1. Зробіть копію таблиці за посиланням нижче.
+2. Ваше завдання — заповнити таблицю відповідно до критеріїв.
+3. Після виконання відкрийте доступ «всім, у кого є посилання».
+4. Надішліть посилання на перевірку.` : `Виконайте фінальні кроки для завершення курсу:
+ 
+1. Пройдіть тест і визначте свій ризик-профіль в інвестиціях.
+2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
+3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
+4. Купіть свою першу акцію.
+5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`,
+    bonusVideoTitle: lessonId === 3 ? "Покрокова інструкція, як придбати першу акцію" : undefined,
+    bonusVideoYoutubeId: lessonId === 3 ? "BB0EeSsSM4s" : undefined
+  };
+
+  const lessonProgress = progress?.lessons[lessonId];
+
+  // Load YouTube Player API and initialize
+  useEffect(() => {
+    if (!currentLesson.youtubeId) return;
+
+    // 1. Inject YouTube Iframe Player API script if not already loaded
+    if (!(window as any).YT) {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    let player: any = null;
+    let intervalId: NodeJS.Timeout | null = null;
+    let localVideoCompleted = lessonProgress?.videoCompleted || false;
+
+    const initializePlayer = () => {
+      player = new (window as any).YT.Player('youtube-player', {
+        height: '100%',
+        width: '100%',
+        videoId: currentLesson.youtubeId,
+        playerVars: {
+          autoplay: 0,
+          rel: 0,
+          modestbranding: 1,
+          controls: 1
+        },
+        events: {
+          onStateChange: (event: any) => {
+            if (event.data === (window as any).YT.PlayerState.PLAYING) {
+              startTracking();
+            } else {
+              stopTracking();
+              saveProgressToDb();
+            }
+          }
+        }
+      });
+    };
+
+    if ((window as any).YT && (window as any).YT.Player) {
+      initializePlayer();
+    } else {
+      const previousCallback = (window as any).onYouTubeIframeAPIReady;
+      (window as any).onYouTubeIframeAPIReady = () => {
+        if (previousCallback) previousCallback();
+        initializePlayer();
+      };
+    }
+
+    const startTracking = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => {
+        if (!player || typeof player.getCurrentTime !== 'function') return;
+
+        const currentTime = Math.round(player.getCurrentTime());
+        const duration = Math.round(player.getDuration());
+
+        if (duration > 0) {
+          const progressPercent = (currentTime / duration) * 100;
+          const isCompletedNow = progressPercent >= 80;
+
+          if (isCompletedNow && !localVideoCompleted) {
+            localVideoCompleted = true;
+            triggerVideoCompletion(currentTime, duration);
+          }
+
+          currentProgressRef.current = { currentTime, duration, isCompletedNow };
+        }
+      }, 3000);
+    };
+
+    const stopTracking = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const saveProgressToDb = async () => {
+      const current = currentProgressRef.current;
+      if (!current || !user || !progress) return;
+
+      try {
+        await updateProgress(user.id, lessonId, {
+          videoWatchedSec: current.currentTime,
+          videoDurationSec: current.duration,
+          videoCompleted: current.isCompletedNow || lessonProgress?.videoCompleted || false,
+          ...(current.isCompletedNow && !lessonProgress?.videoCompleted ? { videoCompletedAt: new Date().toISOString() } : {})
+        });
+      } catch (err) {
+        console.error("Failed to auto-save video progress:", err);
+      }
+    };
+
+    const triggerVideoCompletion = async (watchedSec: number, durationSec: number) => {
+      if (!user) return;
+      try {
+        await updateProgress(user.id, lessonId, {
+          videoWatchedSec: watchedSec,
+          videoDurationSec: durationSec,
+          videoCompleted: true,
+          videoCompletedAt: new Date().toISOString()
+        });
+        refreshProgress();
+      } catch (err) {
+        console.error("Failed to update video completion status:", err);
+      }
+    };
+
+    return () => {
+      stopTracking();
+      if (player && typeof player.destroy === 'function') {
+        player.destroy();
+      }
+    };
+  }, [currentLesson.youtubeId, lessonId, user, progress]);
 
   const formatInstructions = (text: string) => {
     if (!text) return null;
@@ -60,13 +232,6 @@ export default function LessonPage() {
   };
 
   
-  const [hwUrlInput, setHwUrlInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [lessonConfigs, setLessonConfigs] = useState<MinicourseLessonConfig[]>([]);
-  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  const [telegramCountdown, setTelegramCountdown] = useState(5);
 
   // Fetch lesson configurations dynamically
   useEffect(() => {
@@ -85,7 +250,7 @@ export default function LessonPage() {
   const [timeLeftStr, setTimeLeftStr] = useState('');
   const [timerWarning, setTimerWarning] = useState(false);
 
-  const lessonProgress = progress?.lessons[lessonId];
+
 
   // Auto-record "Opened At" timestamp if not set
   useEffect(() => {
@@ -187,48 +352,6 @@ export default function LessonPage() {
     );
   }
 
-  // Lesson Metadata Config loaded dynamically
-  const currentConfig = lessonConfigs.find(c => c.lesson_id === lessonId);
-  
-  const currentLesson = currentConfig ? {
-    title: currentConfig.title,
-    description: currentConfig.description,
-    youtubeId: currentConfig.youtube_id,
-    mindmapUrl: currentConfig.mindmap_url,
-    hwSpreadsheetUrl: currentConfig.hw_spreadsheet_url,
-    notionUrl: currentConfig.notion_url,
-    hwInstructions: currentConfig.hw_instructions,
-    bonusVideoTitle: currentConfig.bonus_video_title,
-    bonusVideoYoutubeId: currentConfig.bonus_video_youtube_id
-  } : {
-    // Fallback if not loaded yet
-    title: lessonId === 1 ? "Перший ефір" : lessonId === 2 ? "Другий ефір" : "Третій ефір",
-    description: lessonId === 1 ? "Створення першого інвестиційного плану" : lessonId === 2 ? "Робота з капіталом та брокерськими рахунками" : "Купівля першої акції та диверсифікація",
-    youtubeId: lessonId === 1 ? "SnyxALmvvnE" : lessonId === 2 ? "l4p1F9oy3ko" : "-p6u77YkyCw",
-    mindmapUrl: lessonId === 1 ? "https://mm.tt/map/3978357799?t=cIsPiI7Jsq" : lessonId === 2 ? "https://mm.tt/map/3979303280?t=HfkclCi41H" : "https://mm.tt/map/3663819169?t=B79jLpx0HT",
-    hwSpreadsheetUrl: lessonId === 1 ? "https://docs.google.com/spreadsheets/d/1xptWzJrSQ8aW2pOyuWpSH7P-4_tOJ6i04iB2-roF9kw/edit?usp=sharing" : lessonId === 2 ? "https://docs.google.com/spreadsheets/d/1UhFeWJyezb4W_t5jkesOvjiAe6l5SNDf/edit?gid=1880085387#gid=1880085387" : undefined,
-    notionUrl: lessonId === 3 ? "https://soapy-floss-c69.notion.site/33f9215c3f2180cf93e7e4f3bc7527d4" : undefined,
-    hwInstructions: lessonId === 1 ? `ВАЖЛИВО! Починаємо роботу лише в скопійованій таблиці❗️
-      
-1. Зробіть копію таблиці за посиланням нижче.
-2. Заповніть її по відповідним критеріям відповідно до ефіру.
-3. Після заповнення таблиці відкрийте доступ «всім у кого є посилання».
-4. Надішліть посилання у вікно праворуч для перевірки.` : lessonId === 2 ? `❗️ ВАЖЛИВО! Працюємо лише в скопійованій таблиці.
-    
-1. Зробіть копію таблиці за посиланням нижче.
-2. Ваше завдання — заповнити таблицю відповідно до критеріїв.
-3. Після виконання відкрийте доступ «всім, у кого є посилання».
-4. Надішліть посилання на перевірку.` : `Виконайте фінальні кроки для завершення курсу:
- 
-1. Пройдіть тест і визначте свій ризик-профіль в інвестиціях.
-2. Відкрийте 2 брокерські рахунки (InteractiveBrokers та Freedom Finance Europe).
-3. Поповніть свій рахунок (сума будь-яка). Для розіграшу акцій від 100€.
-4. Купіть свою першу акцію.
-5. Надішліть посилання на ваш Notion, скріншот або текстовий звіт про купівлю.`,
-    bonusVideoTitle: lessonId === 3 ? "Покрокова інструкція, як придбати першу акцію" : undefined,
-    bonusVideoYoutubeId: lessonId === 3 ? "BB0EeSsSM4s" : undefined
-  };
-
   const notionUrl = currentLesson.notionUrl;
   const hwSpreadsheetUrl = currentLesson.hwSpreadsheetUrl;
 
@@ -257,6 +380,23 @@ export default function LessonPage() {
       });
       setSuccessMsg("Домашнє завдання успішно надіслано на перевірку! 🎉");
       refreshProgress();
+
+      // Trigger Telegram notification to the student about submission receipt
+      if (user.telegram_chat_id) {
+        fetch('/api/minicourse/bot/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: user.telegram_chat_id,
+            messageType: 'hw_submitted',
+            templateData: {
+              userName: user.name,
+              lessonId: lessonId,
+              actionUrl: `${window.location.origin}/minicourse`
+            }
+          })
+        }).catch(err => console.error("Failed to trigger homework submit telegram notification:", err));
+      }
 
       // Trigger Telegram invite modal if it's Lesson 1
       if (lessonId === 1) {
@@ -298,13 +438,9 @@ export default function LessonPage() {
           {/* Cinema YouTube Container */}
           <section className="bg-black/40 border border-white/10 rounded-3xl overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
             <div className="relative aspect-video w-full bg-black">
-              <iframe
-                src={`https://www.youtube.com/embed/${currentLesson.youtubeId}?autoplay=0&rel=0&modestbranding=1`}
-                title={currentLesson.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full border-0"
-              ></iframe>
+              <div className="absolute inset-0 w-full h-full">
+                <div id="youtube-player" className="w-full h-full"></div>
+              </div>
             </div>
             <div className="p-6 sm:p-8">
               <h2 className="text-2xl font-black uppercase text-white">{currentLesson.title}</h2>

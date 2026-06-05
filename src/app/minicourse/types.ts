@@ -1,6 +1,6 @@
 export type UserRole = 'student' | 'admin';
 
-export type HomeworkStatus = 'not_started' | 'pending' | 'accepted' | 'needs_improvement';
+export type HomeworkStatus = 'not_started' | 'pending' | 'accepted' | 'needs_improvement' | 'expired_not_submitted';
 
 export interface MinicourseUser {
   id: string;
@@ -26,6 +26,11 @@ export interface LessonProgress {
   hwStatus: HomeworkStatus;
   hwComment?: string;
   hwSubmittedAt?: string; // ISO string
+  reminderSent?: boolean;
+  videoWatchedSec?: number;
+  videoDurationSec?: number;
+  videoCompleted?: boolean;
+  videoCompletedAt?: string;
 }
 
 export interface MinicourseProgress {
@@ -52,5 +57,9 @@ export interface MinicourseLessonConfig {
   updated_at: string;
   bonus_video_title?: string;
   bonus_video_youtube_id?: string;
+}
+
+export interface StudentWithProgress extends MinicourseUser {
+  progress?: MinicourseProgress;
 }
 

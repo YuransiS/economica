@@ -9,7 +9,7 @@ async function generateAutologinLink(chatId: number, targetPath: string): Promis
 
 export async function sendTelegramNotification(
   chatId: number | null | undefined,
-  messageType: 'hw_accepted' | 'hw_needs_improvement' | 'new_lesson_unlocked' | 'payment_success' | 'reminder',
+  messageType: 'hw_accepted' | 'hw_needs_improvement' | 'new_lesson_unlocked' | 'payment_success' | 'reminder' | 'hw_submitted',
   templateData: {
     userName?: string;
     lessonId?: number;
@@ -52,6 +52,10 @@ export async function sendTelegramNotification(
     case 'reminder':
       text = `⏳ **Час зробити наступний крок!**\n\nВітаємо, ${templateData.userName || ''}! Нагадуємо, що Урок ${templateData.lessonId || ''} вже чекає на Вас. Виділіть трохи часу сьогодні для роботи зі своїми фінансами та інвестиціями.\n\nУспіхів! 💪`;
       break;
+
+    case 'hw_submitted':
+      text = `📥 **Домашнє завдання надіслано на перевірку!**\n\nДякуємо, ${templateData.userName || 'шановний ученю'}! Ваше завдання до Уроку ${templateData.lessonId || ''} успішно отримано.\n\n⏳ Куратор вже взявся за перевірку. Зазвичай вона займає до 24 годин. Щойно з'являться результати, я одразу Вам про це повідомлю!`;
+      break;
       
     default:
       text = `Повідомлення від компаньйона Sofia Finsight!`;
@@ -67,6 +71,8 @@ export async function sendTelegramNotification(
     const nextL = templateData.lessonId + 1;
     targetPath = nextL <= 3 ? `/minicourse/lessons/${nextL}` : '/minicourse';
   } else if (messageType === 'reminder' && templateData.lessonId) {
+    targetPath = `/minicourse/lessons/${templateData.lessonId}`;
+  } else if (messageType === 'hw_submitted' && templateData.lessonId) {
     targetPath = `/minicourse/lessons/${templateData.lessonId}`;
   } else if (messageType === 'payment_success') {
     targetPath = `/minicourse/lessons/1`;

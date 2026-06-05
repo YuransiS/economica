@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { MinicourseUser, MinicourseProgress, HomeworkStatus, LessonProgress, MinicourseLessonConfig } from './types';
+import { MinicourseUser, MinicourseProgress, HomeworkStatus, LessonProgress, MinicourseLessonConfig, StudentWithProgress } from './types';
 
 // Read keys from environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -168,14 +168,14 @@ function saveLocalLessonsConfig(config: MinicourseLessonConfig[]) {
 // Calculate total progress percentage out of 100
 export function calculateProgressPercent(lessons: MinicourseProgress['lessons']): number {
   let points = 0;
-  // 6 checkpoints: 3 views, 3 homework approvals
-  if (lessons[1].openedAt) points += 1;
+  // 6 checkpoints: 3 video completions (80%+ watched), 3 homework approvals
+  if (lessons[1].videoCompleted) points += 1;
   if (lessons[1].hwStatus === 'accepted') points += 1;
   
-  if (lessons[2].openedAt) points += 1;
+  if (lessons[2].videoCompleted) points += 1;
   if (lessons[2].hwStatus === 'accepted') points += 1;
   
-  if (lessons[3].openedAt) points += 1;
+  if (lessons[3].videoCompleted) points += 1;
   if (lessons[3].hwStatus === 'accepted') points += 1;
 
   return Math.round((points / 6) * 100);
@@ -408,6 +408,18 @@ export async function getProgress(userId: string): Promise<MinicourseProgress | 
 }
 
 export async function updateProgress(userId: string, lessonId: 1 | 2 | 3, updates: Partial<LessonProgress>): Promise<MinicourseProgress> {
+  // If the student is submitting homework, verify the 7-day feedback limit
+  if (updates.hwSubmitted) {
+    const user = await getProfile(userId);
+    const accessStart = user?.access_opened_at || user?.created_at;
+    if (user && user.role === 'student' && accessStart) {
+      const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
+      if (elapsedDays > 7) {
+        throw new Error("Термін здачі домашнього завдання (7 днів) закінчився. Здача більше недоступна.");
+      }
+    }
+  }
+
   if (IS_MOCK_MODE) {
     const progressList = getLocalProgress();
     const idx = progressList.findIndex(p => p.userId === userId);
@@ -769,6 +781,175 @@ export async function updateLessonConfig(lessonId: number, updates: Partial<Mini
     }
 
     return data as any as MinicourseLessonConfig;
+  }
+}
+
+export function calculateSyncedProgress(user: MinicourseUser, progress: MinicourseProgress): MinicourseProgress {
+  if (user.role !== 'student') return progress;
+
+  const accessStart = user.access_opened_at || user.created_at;
+  if (!accessStart) return progress;
+
+  const now = Date.now();
+  const accessStartMs = new Date(accessStart).getTime();
+  const elapsedMsSinceAccess = now - accessStartMs;
+  const elapsedDaysSinceAccess = elapsedMsSinceAccess / (1000 * 60 * 60 * 24);
+
+  const syncedLessons = {
+    1: { ...progress.lessons[1] },
+    2: { ...progress.lessons[2] },
+    3: { ...progress.lessons[3] }
+  };
+
+  // Lesson 2 Unlock Conditions:
+  // - Lesson 1 Homework accepted
+  // - OR 24 hours have passed since Lesson 1 opened
+  // - OR 2 days have passed since access start
+  const lesson1 = syncedLessons[1];
+  const lesson2 = syncedLessons[2];
+  if (lesson2 && !lesson2.unlocked) {
+    const isL1HwAccepted = lesson1.hwStatus === 'accepted';
+    const isL1Opened24h = lesson1.openedAt && (now - new Date(lesson1.openedAt).getTime() >= 24 * 3600 * 1000);
+    const isAccess2Days = elapsedDaysSinceAccess >= 2;
+
+    if (isL1HwAccepted || isL1Opened24h || isAccess2Days) {
+      lesson2.unlocked = true;
+      if (!lesson1.hwSubmitted && lesson1.hwStatus === 'not_started' && isL1Opened24h) {
+        lesson1.hwStatus = 'expired_not_submitted';
+      }
+    }
+  }
+
+  // Lesson 3 Unlock Conditions:
+  // - Lesson 2 Homework accepted
+  // - OR 24 hours have passed since Lesson 2 opened
+  // - OR 4 days have passed since access start
+  const lesson3 = syncedLessons[3];
+  if (lesson3 && !lesson3.unlocked) {
+    const isL2HwAccepted = lesson2.hwStatus === 'accepted';
+    const isL2Opened24h = lesson2.openedAt && (now - new Date(lesson2.openedAt).getTime() >= 24 * 3600 * 1000);
+    const isAccess4Days = elapsedDaysSinceAccess >= 4;
+
+    if (isL2HwAccepted || isL2Opened24h || isAccess4Days) {
+      lesson3.unlocked = true;
+      if (!lesson2.hwSubmitted && lesson2.hwStatus === 'not_started' && isL2Opened24h) {
+        lesson2.hwStatus = 'expired_not_submitted';
+      }
+    }
+  }
+
+  // Check Lesson 3 opened time expiration
+  if (lesson3 && lesson3.unlocked && !lesson3.hwSubmitted && lesson3.hwStatus === 'not_started') {
+    const isL3Opened24h = lesson3.openedAt && (now - new Date(lesson3.openedAt).getTime() >= 24 * 3600 * 1000);
+    if (isL3Opened24h) {
+      lesson3.hwStatus = 'expired_not_submitted';
+    }
+  }
+
+  return {
+    ...progress,
+    lessons: syncedLessons,
+    progressPercent: calculateProgressPercent(syncedLessons)
+  };
+}
+
+export async function syncProgressStates(userId: string, user?: MinicourseUser): Promise<MinicourseProgress | null> {
+  let activeUser: MinicourseUser | null | undefined = user;
+  if (!activeUser) {
+    activeUser = await getProfile(userId);
+  }
+  if (!activeUser || activeUser.role !== 'student') {
+    return await getProgress(userId);
+  }
+
+  const progress = await getProgress(userId);
+  if (!progress) return null;
+
+  const synced = calculateSyncedProgress(activeUser, progress);
+  const changed = JSON.stringify(progress.lessons) !== JSON.stringify(synced.lessons);
+
+  if (changed) {
+    if (IS_MOCK_MODE) {
+      const progressList = getLocalProgress();
+      const idx = progressList.findIndex(p => p.userId === userId);
+      if (idx !== -1) {
+        progressList[idx].lessons = synced.lessons;
+        progressList[idx].progressPercent = synced.progressPercent;
+        progressList[idx].updatedAt = new Date().toISOString();
+        saveLocalProgress(progressList);
+      }
+      return progressList.find(p => p.userId === userId) || null;
+    } else {
+      const { data, error } = await supabase!
+        .from('minicourse_progress')
+        .update({
+          lessons: synced.lessons,
+          progress_percent: synced.progressPercent,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      return {
+        id: data.id,
+        userId: data.user_id,
+        progressPercent: data.progress_percent,
+        lessons: data.lessons,
+        updatedAt: data.updated_at
+      };
+    }
+  }
+
+  return progress;
+}
+
+export async function getAllStudentsWithProgress(): Promise<StudentWithProgress[]> {
+  if (IS_MOCK_MODE) {
+    const users = getLocalUsers().filter(u => u.role === 'student');
+    const progressList = getLocalProgress();
+    return users.map(user => {
+      const prog = progressList.find(p => p.userId === user.id);
+      return {
+        ...user,
+        progress: prog ? calculateSyncedProgress(user, prog) : undefined
+      };
+    });
+  } else {
+    const { data: users, error: uErr } = await supabase!
+      .from('minicourse_users')
+      .select('*')
+      .eq('role', 'student')
+      .order('created_at', { ascending: false });
+
+    if (uErr) throw uErr;
+
+    const { data: progress, error: pErr } = await supabase!
+      .from('minicourse_progress')
+      .select('*');
+
+    if (pErr) throw pErr;
+
+    return users.map(u => {
+      const prog = progress.find(p => p.user_id === u.id);
+      let appProgress: MinicourseProgress | undefined = undefined;
+      if (prog) {
+        appProgress = calculateSyncedProgress(u as MinicourseUser, {
+          id: prog.id,
+          userId: prog.user_id,
+          progressPercent: prog.progress_percent,
+          lessons: prog.lessons,
+          updatedAt: prog.updated_at
+        });
+      }
+
+      return {
+        ...u,
+        progress: appProgress
+      };
+    });
   }
 }
 

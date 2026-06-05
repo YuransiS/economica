@@ -61,7 +61,7 @@ economica/
 - **id:** `UUID PRIMARY KEY DEFAULT gen_random_uuid()`
 - **user_id:** `UUID NOT NULL REFERENCES public.minicourse_users(id) ON DELETE CASCADE UNIQUE`
 - **progress_percent:** `INTEGER NOT NULL DEFAULT 0`
-- **lessons:** `JSONB NOT NULL` (maps status of lessons 1, 2, 3: unlocked, openedAt, hwSubmitted, hwUrl, hwStatus, hwComment, hwSubmittedAt)
+- **lessons:** `JSONB NOT NULL` (maps status of lessons 1, 2, 3: `unlocked`, `openedAt`, `hwSubmitted`, `hwUrl`, `hwStatus` ('not_started' | 'pending' | 'accepted' | 'needs_improvement' | 'expired_not_submitted'), `hwComment`, `hwSubmittedAt`, `reminderSent`, `videoWatchedSec`, `videoDurationSec`, `videoCompleted`, `videoCompletedAt`)
 - **updated_at:** `TIMESTAMPTZ NOT NULL DEFAULT now()`
 
 ### Table: `public.minicourse_lessons_config`
@@ -102,6 +102,17 @@ economica/
 - **Instant Status Update:** The backend `/api/lead` registers the user directly in `minicourse_users` with `is_paid = true` and `payment_status = 'paid'`, granting immediate access.
 - **Analytics & Sheets Sync:** Google Sheets webhook is updated instantly to mark the lead as `Оплачено`, while B&W Analytics Gateway registers the conversion with `status = 'closed_won'` and `amount = 0`.
 - **Client Redirection:** The client is redirected immediately to the success thank you page (`/thank-you/[orderId]?tariff=Безкоштовно`), which provides the Telegram bot start command linking to their activated account.
+
+---
+
+## 7. Homework Confirmation & Reminders
+- **Submission Notification (`hw_submitted`):** When a student submits homework in the lesson interface, the client calls `/api/minicourse/bot/notify` with message type `'hw_submitted'`. This triggers a Telegram bot message thanking the student and confirming that the curator is reviewing their homework (normally within 24 hours).
+- **Automated Deadline Reminders (`/api/minicourse/reminders`):**
+  - **Cron Schedule:** Triggered hourly via Vercel Cron configured in `vercel.json` (`schedule: "0 * * * *"`).
+  - **Logic:** Queries active and paid students within their 14-day minicourse access period.
+  - **Conditions:** For each student, if a lesson is unlocked and opened (`openedAt` is recorded) but homework is not yet submitted, it checks the elapsed time.
+  - **Trigger:** If $\ge 18$ hours have passed since opening the lesson, a `'reminder'` notification is sent to their `telegram_chat_id`, and `reminderSent: true` is set in the `minicourse_progress` JSONB data structure to guarantee the reminder is sent exactly once.
+
 
 
 
