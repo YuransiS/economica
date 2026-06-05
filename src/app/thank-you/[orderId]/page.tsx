@@ -15,7 +15,9 @@ export default async function ThankYouPage({
   const { tariff } = await searchParams;
   const isValidOrder = orderId.startsWith('ORDER_');
 
-  const currentTelegramLink = `https://t.me/sofifmc_bot?start=pay_${orderId}`;
+  const currentTelegramLink = (tariff === 'Безкоштовно' || tariff === 'Інтенсив')
+    ? 'https://t.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6'
+    : `https://t.me/sofifmc_bot?start=pay_${orderId}`;
 
   if (!isValidOrder) {
     return (
