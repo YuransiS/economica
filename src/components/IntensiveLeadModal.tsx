@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import 'react-phone-number-input/style.css';
-import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+
 
 export default function IntensiveLeadModal({
   isOpen,
@@ -18,7 +16,6 @@ export default function IntensiveLeadModal({
   selectedTariff?: string;
   selectedPrice?: number;
 }) {
-  const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState<any>();
   const [telegram, setTelegram] = useState('');
@@ -69,7 +66,10 @@ export default function IntensiveLeadModal({
       setError('Введіть ваше ім\'я');
       return;
     }
-    if (!phone || !isValidPhoneNumber(phone)) {
+    
+    // Clean and validate phone number
+    const cleanPhone = phone ? phone.trim().replace(/\D/g, '') : '';
+    if (!cleanPhone || cleanPhone.length < 9 || cleanPhone.length > 15) {
       setError('Введіть коректний номер телефону');
       return;
     }
@@ -96,13 +96,16 @@ export default function IntensiveLeadModal({
       pageUrl: typeof window !== 'undefined' ? window.location.href : ''
     };
 
+    // Format phone to have + prefix for API
+    const formattedPhone = phone.trim().startsWith('+') ? phone.trim() : `+${phone.trim()}`;
+
     try {
       const response = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          phone,
+          phone: formattedPhone,
           telegram,
           tariff: selectedTariff,
           price: selectedPrice,
@@ -120,7 +123,7 @@ export default function IntensiveLeadModal({
       if (result.success) {
         // Save user data to localStorage
         localStorage.setItem('user_name', name);
-        localStorage.setItem('user_phone', phone);
+        localStorage.setItem('user_phone', formattedPhone);
         localStorage.setItem('user_telegram', telegram);
 
         // Track Facebook Lead Event
@@ -128,8 +131,10 @@ export default function IntensiveLeadModal({
           (window as any).fbq('track', 'Lead');
         }
 
-        // Redirect immediately to thank you page
-        router.push(`/thank-you/${result.orderId}?tariff=Безкоштовно`);
+        // Redirect directly to the Telegram bot with a small delay for pixel tracking
+        setTimeout(() => {
+          window.location.href = 'https://t.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6';
+        }, 500);
       } else {
         setError('Помилка при реєстрації. Спробуйте пізніше.');
         setIsLoading(false);
@@ -182,15 +187,14 @@ export default function IntensiveLeadModal({
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">Номер телефону</label>
-                  <div className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base transition-colors focus-within:border-[#81D8D0] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#81D8D0]">
-                    <PhoneInput
-                      international
-                      defaultCountry="UA"
-                      value={phone}
-                      onChange={setPhone}
-                      className="PhoneInput-custom w-full bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
-                    />
-                  </div>
+                  <input
+                    type="tel"
+                    required
+                    value={phone || ''}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+380991234567"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#81D8D0] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#81D8D0]"
+                  />
                 </div>
 
                 <div>

@@ -101,7 +101,7 @@ economica/
 - **Direct Access Activation:** Because registration for the intensive program is free, submitting the form at `/intensive` bypasses payment gateways completely.
 - **Instant Status Update:** The backend `/api/lead` registers the user directly in `minicourse_users` with `is_paid = true` and `payment_status = 'paid'`, granting immediate access.
 - **Analytics & Sheets Sync:** Google Sheets webhook is updated instantly to mark the lead as `Оплачено`, while B&W Analytics Gateway registers the conversion with `status = 'closed_won'` and `amount = 0`.
-- **Client Redirection:** The client is redirected immediately to the success thank you page (`/thank-you/[orderId]?tariff=Безкоштовно`), which provides the Telegram bot start command linking to their activated account.
+- **Client Redirection:** To ensure a frictionless user experience and prevent payment-checking page errors, the client is redirected directly to the Telegram bot (`https://t.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6`) with a 500ms delay to allow Facebook Pixel tracking to complete.
 
 ---
 
