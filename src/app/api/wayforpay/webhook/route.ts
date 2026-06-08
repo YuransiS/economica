@@ -49,6 +49,19 @@ export async function POST(req: Request) {
       // Update paid status in Supabase minicourse database
       if (supabase) {
         try {
+          // 1. Update status in leads table
+          const { error: leadDbErr } = await supabase
+            .from('leads')
+            .update({ status: 'approved' })
+            .eq('order_id', orderId);
+
+          if (leadDbErr) {
+            console.error("Failed to update lead status in Supabase leads table:", leadDbErr);
+          } else {
+            console.log(`Successfully updated lead status to approved for order ${orderId} in Supabase`);
+          }
+
+          // 2. Update minicourse_users access
           const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
           const phoneClean = (phone || '').trim().replace(/\D/g, '');
 

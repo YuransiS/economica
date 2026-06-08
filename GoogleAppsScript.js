@@ -149,13 +149,15 @@ function doPost(e) {
       var rowData = [];
 
       if (sheetName === "Заявки на практикум") {
-        headers = ["Дата", "Ім'я", "Телефон", "Телеграм", "Тариф", "Номер заказу", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус Оплати"];
+        headers = ["Дата", "Ім'я", "Телефон", "Телеграм", "Тариф", "Amout", "Currency", "Номер заказу", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "Статус Оплати"];
         rowData = [
           new Date(),
           data.name || "",
           data.phone || "",
           data.telegram || "",
           data.tariff || "",
+          data.price || 9.00,
+          data.currency || "USD",
           (data.orderId || "").toString().trim(),
           data.utm_source || "",
           data.utm_medium || "",
@@ -511,16 +513,48 @@ function updateFieldInSheet(sheet, targetOrderId, fieldName, newValue) {
 
   for (var i = 1; i < values.length; i++) {
     var match = false;
+    var isShifted = false;
+
     if (orderColIdx !== -1) {
-      if (values[i][orderColIdx].toString().trim() === targetOrderId) match = true;
+      if (values[i][orderColIdx].toString().trim() === targetOrderId) {
+        match = true;
+      } else if (values[i][5] && values[i][5].toString().trim() === targetOrderId) {
+        // Shifted row match: targetOrderId is found in "Amout" column instead of "Номер замовлення"
+        match = true;
+        isShifted = true;
+      }
     } else {
       for (var j = 0; j < values[i].length; j++) {
-        if (values[i][j].toString().trim() === targetOrderId) { match = true; break; }
+        if (values[i][j].toString().trim() === targetOrderId) { 
+          match = true; 
+          if (j === 5) isShifted = true;
+          break; 
+        }
       }
     }
 
     if (match) {
-      sheet.getRange(i + 1, targetColIdx + 1).setValue(newValue);
+      if (isShifted) {
+        var rowNum = i + 1;
+        var orderId = values[i][5].toString().trim();
+        var utmSource = values[i][6] || "";
+        var utmMedium = values[i][7] || "";
+        var utmCampaign = values[i][8] || "";
+        var utmContent = values[i][9] || "";
+        var utmTerm = values[i][10] || "";
+        
+        sheet.getRange(rowNum, 6).setValue(9.00); // Amount (Column F)
+        sheet.getRange(rowNum, 7).setValue("USD"); // Currency (Column G)
+        sheet.getRange(rowNum, 8).setValue(orderId); // Order ID (Column H)
+        sheet.getRange(rowNum, 9).setValue(utmSource);
+        sheet.getRange(rowNum, 10).setValue(utmMedium);
+        sheet.getRange(rowNum, 11).setValue(utmCampaign);
+        sheet.getRange(rowNum, 12).setValue(utmContent);
+        sheet.getRange(rowNum, 13).setValue(utmTerm);
+        sheet.getRange(rowNum, 14).setValue(newValue); // Status (Column N)
+      } else {
+        sheet.getRange(i + 1, targetColIdx + 1).setValue(newValue);
+      }
       return true;
     }
   }
@@ -809,5 +843,37 @@ function recordGlobalLead(ss, data, sourceSheetName) {
       else rowData.push("");
     }
     sheet.appendRow(rowData);
+  }
+}
+
+function fixAllShiftedRows() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Заявки на практикум");
+  if (!sheet) return;
+  
+  var values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return;
+  
+  for (var i = 1; i < values.length; i++) {
+    var possibleOrderId = (values[i][5] || "").toString().trim();
+    if (possibleOrderId.indexOf("ORDER_") === 0) {
+      var rowNum = i + 1;
+      var utmSource = values[i][6] || "";
+      var utmMedium = values[i][7] || "";
+      var utmCampaign = values[i][8] || "";
+      var utmContent = values[i][9] || "";
+      var utmTerm = values[i][10] || "";
+      var status = values[i][11] || "Не оплачено";
+
+      sheet.getRange(rowNum, 6).setValue(9.00); // Amount
+      sheet.getRange(rowNum, 7).setValue("USD"); // Currency
+      sheet.getRange(rowNum, 8).setValue(possibleOrderId); // Order ID
+      sheet.getRange(rowNum, 9).setValue(utmSource);
+      sheet.getRange(rowNum, 10).setValue(utmMedium);
+      sheet.getRange(rowNum, 11).setValue(utmCampaign);
+      sheet.getRange(rowNum, 12).setValue(utmContent);
+      sheet.getRange(rowNum, 13).setValue(utmTerm);
+      sheet.getRange(rowNum, 14).setValue(status);
+    }
   }
 }

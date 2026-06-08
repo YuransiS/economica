@@ -218,6 +218,7 @@ export async function POST(req: Request) {
                 telegram,
                 tariff,
                 price: 0,
+                currency: 'USD',
                 orderId: orderReference,
                 visitorId: analytics?.visitorId,
                 journey: analytics?.journey?.join(' -> '),
@@ -479,6 +480,7 @@ export async function POST(req: Request) {
             telegram,
             tariff,
             price, // Pass current price for reference
+            currency,
             orderId: orderReference,
             visitorId: analytics?.visitorId,
             journey: analytics?.journey?.join(' -> '),

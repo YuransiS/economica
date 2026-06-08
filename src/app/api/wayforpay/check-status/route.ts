@@ -44,6 +44,19 @@ export async function GET(req: Request) {
     // 2. Direct database update: mark user as paid in Supabase ONLY if status is Approved!
     if (status.toLowerCase() === 'approved' && supabase) {
       try {
+        // A. Update status in leads table
+        const { error: leadDbErr } = await supabase
+          .from('leads')
+          .update({ status: 'approved' })
+          .eq('order_id', orderReference);
+
+        if (leadDbErr) {
+          console.error("Failed to update lead status in Supabase leads table via check-status:", leadDbErr);
+        } else {
+          console.log(`Successfully updated lead status to approved for order ${orderReference} in Supabase via check-status`);
+        }
+
+        // B. Update minicourse_users access
         const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
         const phoneClean = (phone || '').trim().replace(/\D/g, '');
 
