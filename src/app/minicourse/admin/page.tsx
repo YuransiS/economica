@@ -587,380 +587,420 @@ export default function AdminDashboard() {
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
               </div>
-              <div className="bg-white/5 border border-red-500/20 rounded-2xl p-5 backdrop-blur-sm flex items-center justify-between">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-red-300 uppercase tracking-widest font-narrow">Заблоковані учні (Security Alert)</span>
-                  <h4 className="text-2xl font-black text-red-400 mt-1">{blockedStudentsCount}</h4>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-widest font-narrow">Заблоковано (Шаринг пристроїв)</span>
+                  <h4 className="text-2xl font-black text-red-500 mt-1">{blockedStudentsCount}</h4>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-red-950/20 flex items-center justify-center text-red-400">
-                  <Lock className="w-5 h-5" />
-                </div>
-              </div>
-            </div>
-
-            {/* Filter and Search Bar for student directory */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="relative w-full md:max-w-md">
-                <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-500" />
-                <input 
-                  type="text"
-                  value={studentSearchQuery}
-                  onChange={(e) => setStudentSearchQuery(e.target.value)}
-                  placeholder="Шукати учня за ім'ям, TG або телефоном..."
-                  className="w-full pl-11 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all placeholder-gray-500"
-                />
-              </div>
-
-              <div className="flex items-center space-x-3 w-full md:w-auto">
-                <span className="text-xs text-gray-500 font-narrow uppercase tracking-wider font-bold">Оплата:</span>
-                <div className="flex bg-black/20 rounded-xl p-1 border border-white/5 w-full md:w-auto">
-                  {[
-                    { value: 'all', label: 'Усі' },
-                    { value: 'paid', label: 'Тільки Оплачені' },
-                    { value: 'unpaid', label: 'Неоплачені / Помилки' }
-                  ].map(tab => (
-                    <button
-                      key={tab.value}
-                      onClick={() => setStudentFilterPaid(tab.value as any)}
-                      className={`px-4 py-2 rounded-lg font-bold text-xs uppercase transition-all whitespace-nowrap ${
-                        studentFilterPaid === tab.value
-                          ? 'bg-[#81D8D0] text-[#1A0000]'
-                          : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-red-500">
+                  <ShieldAlert className="w-5 h-5" />
                 </div>
               </div>
             </div>
 
-            {/* Students List Table */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-black/30 font-narrow text-[10px] uppercase tracking-wider text-gray-400">
-                      <th className="p-4 pl-6">Учень / Контакти</th>
-                      <th className="p-4">Доступ (Сплачено)</th>
-                      <th className="p-4 text-center">Прогрес</th>
-                      <th className="p-4">Активні пристрої</th>
-                      <th className="p-4">Дата реєстрації</th>
-                      <th className="p-4">Безпека (Статус)</th>
-                      <th className="p-4 pr-6 text-right">Деталі</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5 text-xs">
-                    {studentsLoading ? (
-                      <tr>
-                        <td colSpan={7} className="p-12 text-center">
-                          <div className="w-8 h-8 border-3 border-[#81D8D0] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                          <p className="text-xs text-gray-500 font-narrow uppercase tracking-widest">Завантаження профілів учнів...</p>
-                        </td>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            {/* Left Column: Status Legend */}
+            <div className="lg:col-span-1 bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm space-y-4">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-[#81D8D0] border-b border-white/10 pb-2">Легенда статусів ефірів</h4>
+              <div className="space-y-3.5 text-[11px] text-gray-300">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-gray-800 flex-shrink-0" />
+                  <span>Ефір заблоковано</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-blue-600 flex-shrink-0" />
+                  <span>Ефір відкрито (відео не переглянуто)</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-green-600 flex-shrink-0" />
+                  <span>Відео переглянуто (&ge;80%)</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                  <span>ДЗ на перевірці ⏳</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                  <span>ДЗ прийнято 🎉</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-red-500 flex-shrink-0" />
+                  <span>ДЗ потребує змін ⚠️</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3.5 h-3.5 rounded-full bg-red-950 border border-red-500/30 flex-shrink-0" />
+                  <span>ДЗ не здано вчасно ⏱️</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Search, Filters and Table */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Filter and Search Bar for student directory */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="relative w-full md:max-w-md">
+                  <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-500" />
+                  <input 
+                    type="text"
+                    value={studentSearchQuery}
+                    onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    placeholder="Шукати учня за ім'ям, TG або телефоном..."
+                    className="w-full pl-11 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all placeholder-gray-500"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-3 w-full md:w-auto">
+                  <span className="text-xs text-gray-500 font-narrow uppercase tracking-wider font-bold">Оплата:</span>
+                  <div className="flex bg-black/20 rounded-xl p-1 border border-white/5 w-full md:w-auto">
+                    {[
+                      { value: 'all', label: 'Усі' },
+                      { value: 'paid', label: 'Тільки Оплачені' },
+                      { value: 'unpaid', label: 'Неоплачені / Помилки' }
+                    ].map(tab => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setStudentFilterPaid(tab.value as any)}
+                        className={`px-4 py-2 rounded-lg font-bold text-xs uppercase transition-all whitespace-nowrap ${
+                          studentFilterPaid === tab.value
+                            ? 'bg-[#81D8D0] text-[#1A0000]'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Students List Table */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-black/30 font-narrow text-[10px] uppercase tracking-wider text-gray-400">
+                        <th className="p-4 pl-6">Учень / Контакти</th>
+                        <th className="p-4">Доступ (Сплачено)</th>
+                        <th className="p-4 text-center">Прогрес</th>
+                        <th className="p-4">Активні пристрої</th>
+                        <th className="p-4">Дата реєстрації</th>
+                        <th className="p-4">Безпека (Статус)</th>
+                        <th className="p-4 pr-6 text-right">Деталі</th>
                       </tr>
-                    ) : filteredStudents.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="p-12 text-center text-gray-500">
-                          Немає учнів за вказаними параметрами пошуку
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredStudents.map(student => {
-                        const isPaid = student.is_paid || student.payment_status === 'paid';
-                        const deviceCount = student.device_uuids?.length || 0;
-                        const isBlocked = student.status === 'under_investigation';
-                        const isExpanded = expandedStudentId === student.id;
-                        const progressPercent = student.progress?.progressPercent || 0;
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-xs">
+                      {studentsLoading ? (
+                        <tr>
+                          <td colSpan={7} className="p-12 text-center">
+                            <div className="w-8 h-8 border-3 border-[#81D8D0] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                            <p className="text-xs text-gray-500 font-narrow uppercase tracking-widest">Завантаження профілів учнів...</p>
+                          </td>
+                        </tr>
+                      ) : filteredStudents.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="p-12 text-center text-gray-500">
+                            Немає учнів за вказаними параметрами пошуку
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredStudents.map(student => {
+                          const isPaid = student.is_paid || student.payment_status === 'paid';
+                          const deviceCount = student.device_uuids?.length || 0;
+                          const isBlocked = student.status === 'under_investigation';
+                          const isExpanded = expandedStudentId === student.id;
+                          const progressPercent = student.progress?.progressPercent || 0;
 
-                        return (
-                          <Fragment key={student.id}>
-                            <tr className="hover:bg-white/5 transition-colors border-b border-white/5">
-                              {/* Profile details */}
-                              <td className="p-4 pl-6 space-y-1">
-                                <p className="font-bold text-white">{student.name}</p>
-                                <div className="space-y-0.5 text-[10px] text-gray-400 font-arimo">
-                                  <p className="flex items-center space-x-2">
-                                    {student.telegram && (
-                                      <>
-                                        <span className="text-gray-500">TG:</span>
-                                        <span className="text-[#81D8D0]">@{student.telegram}</span>
-                                      </>
-                                    )}
-                                    {student.phone && (
-                                      <>
-                                        <span className="text-gray-500">• Тел:</span>
-                                        <span className="text-gray-300">{student.phone}</span>
-                                      </>
-                                    )}
-                                  </p>
-                                </div>
-                              </td>
-
-                              {/* Access/payment state */}
-                              <td className="p-4">
-                                <span className={`px-2.5 py-1 rounded border text-[9px] font-bold uppercase ${
-                                  isPaid 
-                                    ? 'text-green-400 bg-green-950/20 border-green-500/20' 
-                                    : 'text-red-400 bg-red-950/20 border-red-500/20'
-                                }`}>
-                                  {isPaid ? 'Доступ дозволено 🟢' : 'Неоплачено / Блоковано 🔴'}
-                                </span>
-                              </td>
-
-                              {/* Miniature Progress Timeline */}
-                              <td className="p-4">
-                                <div className="flex flex-col items-center space-y-1.5">
-                                  <span className="font-bold text-[#81D8D0] text-xs">{progressPercent}%</span>
-                                  <div className="flex space-x-1.5">
-                                    {[1, 2, 3].map(lessonId => {
-                                      const lesson = student.progress?.lessons[lessonId as 1 | 2 | 3];
-                                      if (!lesson) {
-                                        return <div key={lessonId} className="w-2.5 h-2.5 rounded-full bg-gray-800" title={`Ефір ${lessonId}: Закрито`} />;
-                                      }
-                                      
-                                      let color = "bg-gray-800";
-                                      let title = `Ефір ${lessonId}: Заблоковано`;
-
-                                      if (lesson.unlocked) {
-                                        color = "bg-blue-600";
-                                        title = `Ефір ${lessonId}: Відкрито (перегляд відео)`;
-                                        
-                                        if (lesson.videoCompleted) {
-                                          color = "bg-green-600";
-                                          title = `Ефір ${lessonId}: Відео переглянуто`;
-                                        }
-
-                                        if (lesson.hwStatus === 'pending') {
-                                          color = "bg-amber-500 animate-pulse";
-                                          title = `Ефір ${lessonId}: ДЗ на перевірці`;
-                                        } else if (lesson.hwStatus === 'accepted') {
-                                          color = "bg-emerald-500";
-                                          title = `Ефір ${lessonId}: ДЗ прийнято`;
-                                        } else if (lesson.hwStatus === 'needs_improvement') {
-                                          color = "bg-red-500";
-                                          title = `Ефір ${lessonId}: ДЗ потребує доопрацювання`;
-                                        } else if (lesson.hwStatus === 'expired_not_submitted') {
-                                          color = "bg-red-950 border border-red-500/30";
-                                          title = `Ефір ${lessonId}: ДЗ не здано вчасно`;
-                                        }
-                                      }
-                                      
-                                      return (
-                                        <div 
-                                          key={lessonId} 
-                                          className={`w-2.5 h-2.5 rounded-full ${color}`} 
-                                          title={title}
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </td>
-
-                              {/* Devices list and count */}
-                              <td className="p-4">
-                                <div className="flex items-center space-x-2">
-                                  <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-narrow ${
-                                    deviceCount >= 4 
-                                      ? 'bg-red-950/30 text-red-400 border border-red-500/30' 
-                                      : deviceCount > 1 
-                                      ? 'bg-amber-950/30 text-amber-300 border border-amber-500/20' 
-                                      : 'bg-white/5 text-gray-400'
-                                  }`}>
-                                    {deviceCount} / 4 пристроїв
-                                  </span>
-                                </div>
-                              </td>
-
-                              {/* Registered date */}
-                              <td className="p-4 text-gray-400 font-narrow">
-                                {student.created_at ? new Date(student.created_at).toLocaleDateString('uk-UA') : 'Дані відсутні'}
-                              </td>
-
-                              {/* Safety state */}
-                              <td className="p-4">
-                                {isBlocked ? (
-                                  <span className="px-2.5 py-1 rounded-lg bg-red-950/20 border border-red-500/30 text-red-400 font-bold text-[9px] uppercase flex items-center space-x-1.5 w-max animate-pulse">
-                                    <ShieldAlert className="w-3 h-3" />
-                                    <span>Блокування пристроїв 🚫</span>
-                                  </span>
-                                ) : (
-                                  <span className="px-2.5 py-1 rounded-lg bg-green-950/20 border border-green-500/20 text-green-400 font-bold text-[9px] uppercase flex items-center space-x-1.5 w-max">
-                                    <Check className="w-3 h-3" />
-                                    <span>Безпечно (Активний)</span>
-                                  </span>
-                                )}
-                              </td>
-
-                              {/* Action details expander */}
-                              <td className="p-4 pr-6 text-right">
-                                <button
-                                  onClick={() => setExpandedStudentId(isExpanded ? null : student.id)}
-                                  className="p-2 border border-white/5 hover:border-[#81D8D0]/40 hover:bg-[#81D8D0]/10 text-gray-400 hover:text-[#81D8D0] rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ml-auto"
-                                  title="Показати детальний прогрес"
-                                >
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                  <span className="font-narrow text-[10px] uppercase font-bold">Деталі</span>
-                                </button>
-                              </td>
-                            </tr>
-
-                            {/* Collapsible Details Drawer */}
-                            {isExpanded && (
-                              <tr className="bg-black/30">
-                                <td colSpan={7} className="p-6 border-b border-white/10">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {[1, 2, 3].map(lessonId => {
-                                      const lesson = student.progress?.lessons[lessonId as 1 | 2 | 3];
-                                      const hasVideoProgress = lesson && lesson.videoDurationSec && lesson.videoWatchedSec !== undefined;
-                                      const watchedPercent = hasVideoProgress ? Math.min(100, Math.round((lesson.videoWatchedSec! / lesson.videoDurationSec!) * 100)) : 0;
-                                      
-                                      let hwStatusText = 'Не розпочато';
-                                      let hwStatusColor = 'text-gray-500';
-                                      
-                                      if (lesson) {
-                                        if (lesson.hwStatus === 'pending') {
-                                          hwStatusText = 'Очікує перевірки ⏳';
-                                          hwStatusColor = 'text-amber-400';
-                                        } else if (lesson.hwStatus === 'accepted') {
-                                          hwStatusText = 'Зараховано 🎉';
-                                          hwStatusColor = 'text-emerald-400';
-                                        } else if (lesson.hwStatus === 'needs_improvement') {
-                                          hwStatusText = 'На доопрацюванні ⚠️';
-                                          hwStatusColor = 'text-red-400';
-                                        } else if (lesson.hwStatus === 'expired_not_submitted') {
-                                          hwStatusText = 'Не здано вчасно ⏱️';
-                                          hwStatusColor = 'text-red-500 font-bold';
-                                        } else if (lesson.hwSubmitted) {
-                                          hwStatusText = 'Надіслано';
-                                          hwStatusColor = 'text-blue-400';
-                                        }
-                                      }
-
-                                      const formatTime = (secs?: number) => {
-                                        if (secs === undefined) return '0:00';
-                                        const m = Math.floor(secs / 60);
-                                        const s = Math.floor(secs % 60);
-                                        return `${m}:${s < 10 ? '0' : ''}${s}`;
-                                      };
-
-                                      return (
-                                        <div key={lessonId} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
-                                          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                                            <span className="font-bold text-xs uppercase tracking-wider text-[#81D8D0]">Ефір {lessonId}</span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${lesson?.unlocked ? 'bg-blue-950 text-blue-400' : 'bg-gray-800 text-gray-400'}`}>
-                                              {lesson?.unlocked ? 'Відкрито' : 'Закрито'}
-                                            </span>
-                                          </div>
-                                          
-                                          <div className="space-y-2 text-xs">
-                                            {/* Video Info */}
-                                            <div>
-                                              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-narrow mb-1">Перегляд відео:</p>
-                                              {lesson?.unlocked ? (
-                                                <div className="space-y-1">
-                                                  <div className="flex justify-between text-[11px] font-arimo">
-                                                    <span className="text-gray-300">
-                                                      {hasVideoProgress ? `${formatTime(lesson.videoWatchedSec)} / ${formatTime(lesson.videoDurationSec)}` : '0:00 / --:--'}
-                                                    </span>
-                                                    <span className="text-[#81D8D0] font-bold">{watchedPercent}%</span>
-                                                  </div>
-                                                  <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
-                                                    <div 
-                                                      className={`h-full rounded-full transition-all duration-500 ${lesson.videoCompleted ? 'bg-emerald-500' : 'bg-[#81D8D0]'}`}
-                                                      style={{ width: `${watchedPercent}%` }}
-                                                    ></div>
-                                                  </div>
-                                                  {lesson.videoCompleted && (
-                                                    <p className="text-[10px] text-emerald-400 flex items-center gap-1 font-narrow uppercase mt-1">
-                                                      <Check className="w-3 h-3" /> Відео зараховано (&ge;80%)
-                                                    </p>
-                                                  )}
-                                                </div>
-                                              ) : (
-                                                <p className="text-gray-500 italic font-arimo">Доступ до відео заблоковано</p>
-                                              )}
-                                            </div>
-
-                                            {/* Homework Info */}
-                                            <div className="pt-1">
-                                              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-narrow mb-1">Домашнє завдання:</p>
-                                              {lesson?.unlocked ? (
-                                                <div className="space-y-1">
-                                                  <p className={`font-bold ${hwStatusColor}`}>{hwStatusText}</p>
-                                                  {lesson.hwUrl && (
-                                                    <a 
-                                                      href={lesson.hwUrl} 
-                                                      target="_blank" 
-                                                      rel="noopener noreferrer" 
-                                                      className="text-[#81D8D0] hover:underline flex items-center gap-1 mt-1 font-arimo"
-                                                    >
-                                                      <span>Посилання на звіт</span>
-                                                      <ExternalLink className="w-3 h-3" />
-                                                    </a>
-                                                  )}
-                                                </div>
-                                              ) : (
-                                                <p className="text-gray-500 italic font-arimo">Доступ до ДЗ заблоковано</p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-
-                                  {/* Admin Actions inside expanded panel */}
-                                  <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-white/5">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-400">ID користувача:</span>
-                                      <code className="text-[10px] bg-black/50 px-2.5 py-1 rounded text-gray-300 font-mono select-all">{student.id}</code>
-                                    </div>
-                                    
-                                    <div className="flex items-center space-x-3">
-                                      {isBlocked ? (
-                                        <button
-                                          onClick={() => handleToggleBlock(student.id, true)}
-                                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-montserrat font-bold text-[10px] uppercase rounded-xl flex items-center space-x-1.5 transition-all shadow-[0_4px_12px_rgba(34,197,94,0.2)] cursor-pointer"
-                                          title="Розблокувати та повністю обнулити ліміт пристроїв"
-                                        >
-                                          <Unlock className="w-3.5 h-3.5" />
-                                          <span>Розблокувати</span>
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={() => handleToggleBlock(student.id, false)}
-                                          className="px-4 py-2 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 font-montserrat font-bold text-[10px] uppercase rounded-xl flex items-center space-x-1.5 bg-red-950/10 transition-all cursor-pointer"
-                                          title="Заблокувати доступ до практикуму"
-                                        >
-                                          <Lock className="w-3.5 h-3.5" />
-                                          <span>Заблокувати</span>
-                                        </button>
+                          return (
+                            <Fragment key={student.id}>
+                              <tr className="hover:bg-white/5 transition-colors border-b border-white/5">
+                                {/* Profile details */}
+                                <td className="p-4 pl-6 space-y-1">
+                                  <p className="font-bold text-white">{student.name}</p>
+                                  <div className="space-y-0.5 text-[10px] text-gray-400 font-arimo">
+                                    <p className="flex items-center space-x-2">
+                                      {student.telegram && (
+                                        <>
+                                          <span className="text-gray-500">TG:</span>
+                                          <span className="text-[#81D8D0]">@{student.telegram}</span>
+                                        </>
                                       )}
-                                      
-                                      <button
-                                        onClick={() => handleDeleteStudent(student.id, student.name)}
-                                        className="px-4 py-2 border border-white/5 hover:border-red-500/40 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5"
-                                        title="Видалити користувача назавжди"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                        <span>Видалити учня</span>
-                                      </button>
+                                      {student.phone && (
+                                        <>
+                                          <span className="text-gray-500">• Тел:</span>
+                                          <span className="text-gray-300">{student.phone}</span>
+                                        </>
+                                      )}
+                                    </p>
+                                  </div>
+                                </td>
+
+                                {/* Access/payment state */}
+                                <td className="p-4">
+                                  <span className={`px-2.5 py-1 rounded border text-[9px] font-bold uppercase ${
+                                    isPaid 
+                                      ? 'text-green-400 bg-green-950/20 border-green-500/20' 
+                                      : 'text-red-400 bg-red-950/20 border-red-500/20'
+                                  }`}>
+                                    {isPaid ? 'Доступ дозволено 🟢' : 'Неоплачено / Блоковано 🔴'}
+                                  </span>
+                                </td>
+
+                                {/* Miniature Progress Timeline */}
+                                <td className="p-4">
+                                  <div className="flex flex-col items-center space-y-1.5">
+                                    <span className="font-bold text-[#81D8D0] text-xs">{progressPercent}%</span>
+                                    <div className="flex space-x-1.5">
+                                      {[1, 2, 3].map(lessonId => {
+                                        const lesson = student.progress?.lessons[lessonId as 1 | 2 | 3];
+                                        if (!lesson) {
+                                          return <div key={lessonId} className="w-2.5 h-2.5 rounded-full bg-gray-800" title={`Ефір ${lessonId}: Закрито`} />;
+                                        }
+                                        
+                                        let color = "bg-gray-800";
+                                        let title = `Ефір ${lessonId}: Заблоковано`;
+
+                                        if (lesson.unlocked) {
+                                          color = "bg-blue-600";
+                                          title = `Ефір ${lessonId}: Відкрито (перегляд відео)`;
+                                          
+                                          if (lesson.videoCompleted) {
+                                            color = "bg-green-600";
+                                            title = `Ефір ${lessonId}: Відео переглянуто`;
+                                          }
+
+                                          if (lesson.hwStatus === 'pending') {
+                                            color = "bg-amber-500 animate-pulse";
+                                            title = `Ефір ${lessonId}: ДЗ на перевірці`;
+                                          } else if (lesson.hwStatus === 'accepted') {
+                                            color = "bg-emerald-500";
+                                            title = `Ефір ${lessonId}: ДЗ прийнято`;
+                                          } else if (lesson.hwStatus === 'needs_improvement') {
+                                            color = "bg-red-500";
+                                            title = `Ефір ${lessonId}: ДЗ потребує доопрацювання`;
+                                          } else if (lesson.hwStatus === 'expired_not_submitted') {
+                                            color = "bg-red-950 border border-red-500/30";
+                                            title = `Ефір ${lessonId}: ДЗ не здано вчасно`;
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div 
+                                            key={lessonId} 
+                                            className={`w-2.5 h-2.5 rounded-full ${color}`} 
+                                            title={title}
+                                          />
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 </td>
+
+                                {/* Devices list and count */}
+                                <td className="p-4">
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-narrow ${
+                                      deviceCount >= 4 
+                                        ? 'bg-red-950/30 text-red-400 border border-red-500/30' 
+                                        : deviceCount > 1 
+                                        ? 'bg-amber-950/30 text-amber-300 border border-amber-500/20' 
+                                        : 'bg-white/5 text-gray-400'
+                                    }`}>
+                                      {deviceCount} / 4 пристроїв
+                                    </span>
+                                  </div>
+                                </td>
+
+                                {/* Registered date */}
+                                <td className="p-4 text-gray-400 font-narrow">
+                                  {student.created_at ? new Date(student.created_at).toLocaleDateString('uk-UA') : 'Дані відсутні'}
+                                </td>
+
+                                {/* Safety state */}
+                                <td className="p-4">
+                                  {isBlocked ? (
+                                    <span className="px-2.5 py-1 rounded-lg bg-red-950/20 border border-red-500/30 text-red-400 font-bold text-[9px] uppercase flex items-center space-x-1.5 w-max animate-pulse">
+                                      <ShieldAlert className="w-3 h-3" />
+                                      <span>Блокування пристроїв 🚫</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-1 rounded-lg bg-green-950/20 border border-green-500/20 text-green-400 font-bold text-[9px] uppercase flex items-center space-x-1.5 w-max">
+                                      <Check className="w-3 h-3" />
+                                      <span>Безпечно (Активний)</span>
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Action details expander */}
+                                <td className="p-4 pr-6 text-right">
+                                  <button
+                                    onClick={() => setExpandedStudentId(isExpanded ? null : student.id)}
+                                    className="p-2 border border-white/5 hover:border-[#81D8D0]/40 hover:bg-[#81D8D0]/10 text-gray-400 hover:text-[#81D8D0] rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ml-auto"
+                                    title="Показати детальний прогрес"
+                                  >
+                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                    <span className="font-narrow text-[10px] uppercase font-bold">Деталі</span>
+                                  </button>
+                                </td>
                               </tr>
-                            )}
-                          </Fragment>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+
+                              {/* Collapsible Details Drawer */}
+                              {isExpanded && (
+                                <tr className="bg-black/30">
+                                  <td colSpan={7} className="p-6 border-b border-white/10">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                      {[1, 2, 3].map(lessonId => {
+                                        const lesson = student.progress?.lessons[lessonId as 1 | 2 | 3];
+                                        const hasVideoProgress = lesson && lesson.videoDurationSec && lesson.videoWatchedSec !== undefined;
+                                        const watchedPercent = hasVideoProgress ? Math.min(100, Math.round((lesson.videoWatchedSec! / lesson.videoDurationSec!) * 100)) : 0;
+                                        
+                                        let hwStatusText = 'Не розпочато';
+                                        let hwStatusColor = 'text-gray-500';
+                                        
+                                        if (lesson) {
+                                          if (lesson.hwStatus === 'pending') {
+                                            hwStatusText = 'Очікує перевірки ⏳';
+                                            hwStatusColor = 'text-amber-400';
+                                          } else if (lesson.hwStatus === 'accepted') {
+                                            hwStatusText = 'Зараховано 🎉';
+                                            hwStatusColor = 'text-emerald-400';
+                                          } else if (lesson.hwStatus === 'needs_improvement') {
+                                            hwStatusText = 'На доопрацюванні ⚠️';
+                                            hwStatusColor = 'text-red-400';
+                                          } else if (lesson.hwStatus === 'expired_not_submitted') {
+                                            hwStatusText = 'Не здано вчасно ⏱️';
+                                            hwStatusColor = 'text-red-500 font-bold';
+                                          } else if (lesson.hwSubmitted) {
+                                            hwStatusText = 'Надіслано';
+                                            hwStatusColor = 'text-blue-400';
+                                          }
+                                        }
+
+                                        const formatTime = (secs?: number) => {
+                                          if (secs === undefined) return '0:00';
+                                          const m = Math.floor(secs / 60);
+                                          const s = Math.floor(secs % 60);
+                                          return `${m}:${s < 10 ? '0' : ''}${s}`;
+                                        };
+
+                                        return (
+                                          <div key={lessonId} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                                            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                              <span className="font-bold text-xs uppercase tracking-wider text-[#81D8D0]">Ефір {lessonId}</span>
+                                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${lesson?.unlocked ? 'bg-blue-950 text-blue-400' : 'bg-gray-800 text-gray-400'}`}>
+                                                {lesson?.unlocked ? 'Відкрито' : 'Закрито'}
+                                              </span>
+                                            </div>
+                                            
+                                            <div className="space-y-2 text-xs">
+                                              {/* Video Info */}
+                                              <div>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-narrow mb-1">Перегляд відео:</p>
+                                                {lesson?.unlocked ? (
+                                                  <div className="space-y-1">
+                                                    <div className="flex justify-between text-[11px] font-arimo">
+                                                      <span className="text-gray-300">
+                                                        {hasVideoProgress ? `${formatTime(lesson.videoWatchedSec)} / ${formatTime(lesson.videoDurationSec)}` : '0:00 / --:--'}
+                                                      </span>
+                                                      <span className="text-[#81D8D0] font-bold">{watchedPercent}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
+                                                      <div 
+                                                        className={`h-full rounded-full transition-all duration-500 ${lesson.videoCompleted ? 'bg-emerald-500' : 'bg-[#81D8D0]'}`}
+                                                        style={{ width: `${watchedPercent}%` }}
+                                                      ></div>
+                                                    </div>
+                                                    {lesson.videoCompleted && (
+                                                      <p className="text-[10px] text-emerald-400 flex items-center gap-1 font-narrow uppercase mt-1">
+                                                        <Check className="w-3 h-3" /> Відео зараховано (&ge;80%)
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <p className="text-gray-500 italic font-arimo">Доступ до відео заблоковано</p>
+                                                )}
+                                              </div>
+
+                                              {/* Homework Info */}
+                                              <div className="pt-1">
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-narrow mb-1">Домашнє завдання:</p>
+                                                {lesson?.unlocked ? (
+                                                  <div className="space-y-1">
+                                                    <p className={`font-bold ${hwStatusColor}`}>{hwStatusText}</p>
+                                                    {lesson.hwUrl && (
+                                                      <a 
+                                                        href={lesson.hwUrl} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="text-[#81D8D0] hover:underline flex items-center gap-1 mt-1 font-arimo"
+                                                      >
+                                                        <span>Посилання на звіт</span>
+                                                        <ExternalLink className="w-3 h-3" />
+                                                      </a>
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <p className="text-gray-500 italic font-arimo">Доступ до ДЗ заблоковано</p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+
+                                    {/* Admin Actions inside expanded panel */}
+                                    <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-white/5">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-400">ID користувача:</span>
+                                        <code className="text-[10px] bg-black/50 px-2.5 py-1 rounded text-gray-300 font-mono select-all">{student.id}</code>
+                                      </div>
+                                      
+                                      <div className="flex items-center space-x-3">
+                                        {isBlocked ? (
+                                          <button
+                                            onClick={() => handleToggleBlock(student.id, true)}
+                                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-montserrat font-bold text-[10px] uppercase rounded-xl flex items-center space-x-1.5 transition-all shadow-[0_4px_12px_rgba(34,197,94,0.2)] cursor-pointer"
+                                            title="Розблокувати та повністю обнулити ліміт пристроїв"
+                                          >
+                                            <Unlock className="w-3.5 h-3.5" />
+                                            <span>Розблокувати</span>
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleToggleBlock(student.id, false)}
+                                            className="px-4 py-2 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 font-montserrat font-bold text-[10px] uppercase rounded-xl flex items-center space-x-1.5 bg-red-950/10 transition-all cursor-pointer"
+                                            title="Заблокувати доступ до практикуму"
+                                          >
+                                            <Lock className="w-3.5 h-3.5" />
+                                            <span>Заблокувати</span>
+                                          </button>
+                                        )}
+                                        
+                                        <button
+                                          onClick={() => handleDeleteStudent(student.id, student.name)}
+                                          className="px-4 py-2 border border-white/5 hover:border-red-500/40 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5"
+                                          title="Видалити користувача назавжди"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                          <span>Видалити учня</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* TAB 3: DYNAMIC LESSON CONFIGURATIONS EDITOR */}
         {activeTab === 'lessons' && (

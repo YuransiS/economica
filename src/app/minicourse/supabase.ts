@@ -907,6 +907,12 @@ export async function syncProgressStates(userId: string, user?: MinicourseUser):
 }
 
 export async function getAllStudentsWithProgress(): Promise<StudentWithProgress[]> {
+  const defaultLessons = {
+    1: { unlocked: true, hwSubmitted: false, hwStatus: 'not_started' as HomeworkStatus },
+    2: { unlocked: false, hwSubmitted: false, hwStatus: 'not_started' as HomeworkStatus },
+    3: { unlocked: false, hwSubmitted: false, hwStatus: 'not_started' as HomeworkStatus }
+  };
+
   if (IS_MOCK_MODE) {
     const users = getLocalUsers().filter(u => u.role === 'student');
     const progressList = getLocalProgress();
@@ -914,7 +920,15 @@ export async function getAllStudentsWithProgress(): Promise<StudentWithProgress[
       const prog = progressList.find(p => p.userId === user.id);
       return {
         ...user,
-        progress: prog ? calculateSyncedProgress(user, prog) : undefined
+        progress: prog 
+          ? calculateSyncedProgress(user, prog) 
+          : calculateSyncedProgress(user, {
+              id: 'temp-' + user.id,
+              userId: user.id,
+              progressPercent: 0,
+              lessons: defaultLessons,
+              updatedAt: user.created_at
+            })
       };
     });
   } else {
@@ -942,6 +956,14 @@ export async function getAllStudentsWithProgress(): Promise<StudentWithProgress[
           progressPercent: prog.progress_percent,
           lessons: prog.lessons,
           updatedAt: prog.updated_at
+        });
+      } else {
+        appProgress = calculateSyncedProgress(u as MinicourseUser, {
+          id: 'temp-' + u.id,
+          userId: u.id,
+          progressPercent: 0,
+          lessons: defaultLessons,
+          updatedAt: u.created_at
         });
       }
 
