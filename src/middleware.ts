@@ -13,11 +13,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 
-  // 2. Protect all /admin and /api/admin routes except login
+  // 2. Protect all /admin and /api/admin routes except login and link generation
   const isProtectedRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
-  const isLoginRoute = pathname === '/admin/login' || pathname === '/api/admin/login';
+  const isExemptedRoute = 
+    pathname === '/admin/login' || 
+    pathname === '/api/admin/login' || 
+    pathname === '/api/admin/generate-link';
 
-  if (isProtectedRoute && !isLoginRoute && !isAuthenticated) {
+  if (isProtectedRoute && !isExemptedRoute && !isAuthenticated) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

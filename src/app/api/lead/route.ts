@@ -26,6 +26,8 @@ export async function POST(req: Request) {
       clientOrigin
     } = body;
 
+    const finalCurrency = isTest ? 'UAH' : (inputCurrency || 'USD');
+
     const detectedOrigin = new URL(req.url).origin;
     const baseSiteUrl = clientOrigin || process.env.NEXT_PUBLIC_SITE_URL || detectedOrigin;
     const siteUrl = baseSiteUrl.includes('localhost') ? baseSiteUrl : baseSiteUrl.replace('http://', 'https://');
@@ -196,7 +198,8 @@ export async function POST(req: Request) {
               },
               metadata: {
                 tariff: tariff,
-                target_sheet: sheetName
+                target_sheet: sheetName,
+                currency: finalCurrency
               }
             })
           }).catch(err => console.error("Failed to forward free lead to B&W Analytics Gateway:", err));
@@ -443,7 +446,8 @@ export async function POST(req: Request) {
               },
               metadata: {
                 tariff: tariff,
-                target_sheet: sheetName
+                target_sheet: sheetName,
+                currency: finalCurrency
               }
             })
           }).catch(err => console.error("Failed to forward lead to B&W Analytics Gateway:", err));

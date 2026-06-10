@@ -105,6 +105,9 @@ export async function POST(req: Request) {
                   utm_source: data.utm_source || null,
                   utm_medium: data.utm_medium || null,
                   utm_campaign: data.utm_campaign || null
+                },
+                metadata: {
+                  currency: data.currency || 'USD'
                 }
               })
             }).catch(err => console.error("Failed to sync payment callback with B&W Analytics:", err));
