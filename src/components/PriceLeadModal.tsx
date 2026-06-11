@@ -182,12 +182,6 @@ export default function PriceLeadModal({
       const result = await response.json();
 
       if (result.success) {
-        if (result.alreadyPaid) {
-          setAlreadyPaidInfo({ tariff: result.paidTariff, amount: result.paidAmount });
-          setIsLoading(false);
-          return;
-        }
-
         // Save user data to localStorage
         if (typeof window !== 'undefined') {
           localStorage.setItem('user_name', name);
@@ -200,7 +194,10 @@ export default function PriceLeadModal({
           (window as any).fbq('track', 'Lead');
         }
         
-        setWayForPayData(result.data);
+        // Auto delivery of the video
+        setTimeout(() => {
+          window.location.href = 'https://youtu.be/d-TCdHfYob4';
+        }, 500);
       } else {
         setError('Помилка при створенні замовлення. Спробуйте пізніше.');
         setIsLoading(false);
@@ -234,13 +231,13 @@ export default function PriceLeadModal({
                   onClick={handleTitleClick}
                   className="cursor-pointer font-montserrat text-2xl font-bold uppercase text-[#4E0000] select-none"
                 >
-                  Бронювання місця
+                  Залишити заявку
                   {isTestMode && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-red-400 animate-pulse" title="Test Mode Active" />}
                 </h3>
                 <p className="mt-2 text-sm text-gray-500">
                   {alreadyPaidInfo 
-                    ? "Місце вже заброньовано" 
-                    : `Тариф ${selectedTariff} — ${isTestMode ? '1 грн' : `${selectedPrice} грн`}`}
+                    ? "Заявку вже залишено" 
+                    : `Тариф ${selectedTariff}`}
                 </p>
               </div>
 
@@ -252,9 +249,9 @@ export default function PriceLeadModal({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h4 className="text-xl font-bold text-green-800 mb-2">Дякуємо за оплату!</h4>
+                    <h4 className="text-xl font-bold text-green-800 mb-2">Дякуємо за заявку!</h4>
                     <p className="text-green-700">
-                      Ви вже забронювали місце за тарифом <span className="font-bold">{alreadyPaidInfo.tariff}</span>. 
+                      Ви вже залишили заявку за тарифом <span className="font-bold">{alreadyPaidInfo.tariff}</span>. 
                       Очікуйте на повідомлення від нашої команди.
                     </p>
                   </div>
@@ -367,7 +364,7 @@ export default function PriceLeadModal({
                   {isLoading || wayForPayData ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    'Оплатити'
+                    'Хочу дізнатися умови участі'
                   )}
                 </button>
               </form>

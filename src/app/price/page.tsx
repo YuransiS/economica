@@ -3,14 +3,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import AnimatedCheck from "@/components/icons/AnimatedCheck";
-import CountdownTimer from "@/components/CountdownTimer";
 import PriceLeadModal from "@/components/PriceLeadModal";
 
 export default function PricePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTariff, setSelectedTariff] = useState('Invest Baby');
-  // Fixed reservation price is 1000 UAH
-  const reservationPrice = 1000;
 
   const openLeadModal = (tariff: string) => {
     setSelectedTariff(tariff);
@@ -42,16 +39,12 @@ export default function PricePage() {
   const tariffs = [
     {
       name: "Invest Baby",
-      oldPrice: 790,
-      price: 490,
       color: "bg-white/5",
       buttonColor: "bg-[#81D8D0] text-[#4E0000]",
       disabledModules: [5, 6, 7]
     },
     {
       name: "Business Baby",
-      oldPrice: 1190,
-      price: 890,
       color: "bg-[#4E0000]",
       buttonColor: "bg-[#81D8D0] text-[#4E0000]",
       badge: "Популярний вибір",
@@ -59,8 +52,6 @@ export default function PricePage() {
     },
     {
       name: "Finance Baby",
-      oldPrice: 2290,
-      price: 1990,
       color: "bg-white/5",
       buttonColor: "bg-[#81D8D0] text-[#4E0000]",
       disabledModules: []
@@ -79,7 +70,7 @@ export default function PricePage() {
             animate={{ opacity: 1, y: 0 }}
             className="font-montserrat text-4xl md:text-6xl lg:text-7xl font-black uppercase text-[#81D8D0] mb-6 leading-tight"
           >
-            Як розбагатіти назавжди?
+            ПЕРШИЙ МІЛЬЙОН
           </motion.h1>
           
           <motion.p 
@@ -88,7 +79,7 @@ export default function PricePage() {
             transition={{ delay: 0.1 }}
             className="font-arimo text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto"
           >
-            Система інвестицій для накопичення перших 100 000$ капіталу у 2026 році
+            За 10 тижнів отримаєте персональну стратегію досягнення першого мільйону на інвестиціях
           </motion.p>
 
           <motion.div 
@@ -103,11 +94,7 @@ export default function PricePage() {
             </div>
             <div className="flex items-center gap-3">
               <AnimatedCheck className="text-[#81D8D0] w-6 h-6" />
-              <span className="font-arimo text-lg">без досвіду в фінансах</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <AnimatedCheck className="text-[#81D8D0] w-6 h-6" />
-              <span className="font-arimo text-lg">почати можна з 30$/місяць</span>
+              <span className="font-arimo text-lg">навіть без досвіду в фінансах та інвестуванні</span>
             </div>
           </motion.div>
 
@@ -120,7 +107,7 @@ export default function PricePage() {
             <div className="flex flex-col sm:flex-row gap-6 text-center sm:text-left">
               <div>
                 <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Старт</p>
-                <p className="text-xl font-bold text-[#FBCBDA]">вже зараз</p>
+                <p className="text-xl font-bold text-[#FBCBDA]">10 липня</p>
               </div>
               <div className="hidden sm:block w-px bg-white/20"></div>
               <div>
@@ -139,7 +126,7 @@ export default function PricePage() {
               onClick={scrollToTariffs}
               className="bg-[#4E0000] text-white px-10 py-5 rounded-2xl text-xl font-bold uppercase tracking-widest shadow-[0_0_40px_rgba(78,0,0,0.6)] hover:bg-[#600000] hover:scale-105 transition-all"
             >
-              Забронювати місце
+              Хочу дізнатися умови участі
             </button>
           </motion.div>
         </div>
@@ -189,21 +176,14 @@ export default function PricePage() {
                   </ul>
                 </div>
 
-                <div className="text-center mb-8 border-t border-white/10 pt-8">
-                  <span className="font-arimo text-xl line-through mr-3 text-gray-400/50">
-                    ${tariff.oldPrice}
-                  </span>
-                  <span className="font-montserrat text-5xl font-black text-[#81D8D0]">
-                    ${tariff.price}
-                  </span>
+                <div className="border-t border-white/10 pt-8">
+                  <button
+                    onClick={() => openLeadModal(tariff.name)}
+                    className={`w-full rounded-2xl py-4 text-lg font-bold uppercase tracking-widest transition-transform hover:scale-105 shadow-xl ${tariff.buttonColor}`}
+                  >
+                    Хочу дізнатися умови участі
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => openLeadModal(tariff.name)}
-                  className={`w-full rounded-2xl py-4 text-lg font-bold uppercase tracking-widest transition-transform hover:scale-105 shadow-xl ${tariff.buttonColor}`}
-                >
-                  Забронювати за {reservationPrice} грн
-                </button>
               </motion.div>
             ))}
           </div>
@@ -221,35 +201,21 @@ export default function PricePage() {
           >
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#81D8D0] rounded-full blur-[100px] opacity-20"></div>
             
-            <h2 className="font-montserrat text-3xl md:text-4xl font-black text-white uppercase mb-10">
-              Що ви отримуєте за бронювання
+            <h2 className="font-montserrat text-3xl md:text-4xl font-black text-white uppercase mb-8 leading-tight">
+              Що ви отримуєте після того як залишите заявку
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left max-w-2xl mx-auto mb-12">
-              <div className="flex gap-6 items-start">
-                <span className="font-montserrat text-4xl font-black text-[#81D8D0]/50 shrink-0">01</span>
-                <p className="font-arimo text-xl pt-2">Уроки з фінансової грамотності</p>
-              </div>
-              <div className="flex gap-6 items-start">
-                <span className="font-montserrat text-4xl font-black text-[#81D8D0]/50 shrink-0">02</span>
-                <p className="font-arimo text-xl pt-2">Індивідуальний зум з Софією або командою</p>
-              </div>
-            </div>
-
-            <div className="max-w-lg mx-auto mb-14 mt-4 text-center">
-              <p className="text-lg md:text-2xl text-[#FBCBDA] uppercase tracking-widest font-black mb-8">
-                Спеціальна ціна діє 24 години
+            <div className="max-w-2xl mx-auto mb-10 text-center">
+              <p className="font-arimo text-xl md:text-2xl text-gray-200 leading-relaxed">
+                Відео-урок: Як накопичити перші 100 000$ та стабільно отримувати пасивний дохід завдяки інвестиціям
               </p>
-              <div className="scale-110 md:scale-150 transform origin-top mb-16">
-                <CountdownTimer />
-              </div>
             </div>
 
             <button 
               onClick={scrollToTariffs}
               className="bg-[#81D8D0] text-[#4E0000] px-10 py-5 rounded-2xl text-xl font-bold uppercase tracking-widest shadow-[0_0_30px_rgba(129,216,208,0.4)] hover:bg-[#a6e8e2] hover:scale-105 transition-all w-full md:w-auto"
             >
-              Забронювати зараз
+              Хочу дізнатися умови участі
             </button>
           </motion.div>
         </div>
@@ -259,7 +225,7 @@ export default function PricePage() {
         isOpen={isModalOpen}
         onCloseAction={closeLeadModal}
         selectedTariff={selectedTariff}
-        selectedPrice={reservationPrice}
+        selectedPrice={0}
       />
     </main>
   );
