@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../useAuth';
 import { Sparkles, Loader2, AlertTriangle, Send } from 'lucide-react';
-import { loginUser } from '../supabase';
+import { loginUser } from '../actions';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 
 function LoginContent() {

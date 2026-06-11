@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { MinicourseUser, MinicourseProgress } from './types';
-import { getProfile, getProgress, syncProgressStates } from './supabase';
+import { getProfile, getProgress, syncProgressStates } from './actions';
 
 export function useAuth(requireAdmin = false) {
   const [user, setUser] = useState<MinicourseUser | null>(null);

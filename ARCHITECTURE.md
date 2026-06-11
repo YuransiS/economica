@@ -7,7 +7,7 @@ This document describes the project structure, routing, data schema, and key com
 ## 1. Project Overview & Stack
 - **Core Stack:** Next.js (App Router, React 19, TypeScript), Tailwind CSS, Framer Motion, Supabase (PostgreSQL).
 - **Hosting / Deploy:** Vercel.
-- **Database / Storage:** Supabase Database (RLS disabled for seamless client integration), Supabase Storage for files.
+- **Database / Storage:** Supabase Database (secured with strict Row Level Security; leads table allows only INSERT for anonymous users, other tables block anonymous access completely), Supabase Storage for files.
 - **Integrations:** Google Sheets API via Google Apps Script (GAS Webhooks).
 
 ---
@@ -82,6 +82,7 @@ economica/
 - **Minicourse Login Options:** Supports both dynamic one-click widget login (verifying secure signatures via `/api/minicourse/telegram-auth`) and a manual fallback input form where students enter their Telegram handle (checked via the client-side `loginUser` DB querying function).
 - **Anti-Fraud System (Device Limit):** Limits each user to a maximum of 4 unique devices (`device_uuids`). A 5th device triggers `under_investigation` status and blocks access.
 - **Admin Access Control:** CRM and Minicourse administration access are secured via pre-configured admin credentials. The CRM uses standard HTTP-only session cookies validated in the Next.js middleware, while the Minicourse uses credentials mirrored both in database user roles (`admin` role in `minicourse_users`) and secure login routes.
+- **Row Level Security (RLS) & Server Actions:** All Supabase tables (`leads`, `minicourse_users`, `minicourse_progress`, `minicourse_lessons_config`, `minicourse_autologin_tokens`) have RLS enabled. Anonymous public access is blocked for all operations on minicourse tables. The `leads` table permits only public `INSERT` (for client lead form submissions via server-side endpoints). All client components retrieve and mutate minicourse data via Next.js Server Actions (`actions.ts`) executing securely on the server with the service role key, bypassing RLS.
 
 ---
 

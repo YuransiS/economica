@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../useAuth';
-import { updateProgress, getLessonsConfig, uploadHomeworkFile } from '../../supabase';
+import { getLessonsConfig, updateProgress } from '../../actions';
 import { HomeworkStatus, MinicourseLessonConfig } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 

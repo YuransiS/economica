@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { loginUser } from '../../supabase';
+import { loginUser } from '../../actions';
 import { useAuth } from '../../useAuth';
 import { Sparkles, ArrowRight, ShieldCheck, User, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';

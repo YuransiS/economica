@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
-import { getLeaderboard, StudentLeaderboardEntry, getLessonsConfig } from './supabase';
+import { getLeaderboard, getLessonsConfig } from './actions';
+import type { StudentLeaderboardEntry } from './supabase';
 import { MinicourseLessonConfig } from './types';
 import { 
   Trophy, BookOpen, Send, Award, LogOut, CheckCircle, 

@@ -4,15 +4,31 @@ import { MinicourseUser, MinicourseProgress, HomeworkStatus, LessonProgress, Min
 // Read keys from environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// On the server, use service role key to bypass RLS. On the client, use anon key.
+const activeKey = (typeof window === 'undefined' && supabaseServiceKey) 
+  ? supabaseServiceKey 
+  : supabaseAnonKey;
 
 // Initialize actual Supabase client if keys are present
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
+export const supabase = supabaseUrl && activeKey 
+  ? createClient(supabaseUrl, activeKey, {
+      auth: {
+        persistSession: typeof window !== 'undefined'
+      }
+    }) 
   : null;
 
 const IS_MOCK_MODE = !supabase;
 
 if (IS_MOCK_MODE) {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.endsWith('.local')) {
+      throw new Error("CRITICAL: Supabase credentials are missing on this production deployment! LocalStorage fallback disabled for safety.");
+    }
+  }
   console.warn("⚠️ Supabase credentials not found. Mini-Course Platform is running in MOCK MODE (LocalStorage-backed).");
 }
 

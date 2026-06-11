@@ -5,13 +5,13 @@ import { useAuth } from '../useAuth';
 import { 
   getAdminSubmissions, 
   saveHomeworkReview, 
-  AdminSubmissionItem,
   getAllStudentsWithProgress, 
   deleteStudentUser, 
   toggleUserLockout,
   getLessonsConfig, 
   updateLessonConfig
-} from '../supabase';
+} from '../actions';
+import type { AdminSubmissionItem } from '../supabase';
 import { HomeworkStatus, MinicourseUser, MinicourseLessonConfig, StudentWithProgress } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
