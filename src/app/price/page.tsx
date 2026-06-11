@@ -89,11 +89,15 @@ export default function PricePage() {
             className="flex flex-col md:flex-row justify-center items-center gap-6 mb-12"
           >
             <div className="flex items-center gap-3">
-              <AnimatedCheck className="text-[#81D8D0] w-6 h-6" />
+              <AnimatedCheck className="text-[#81D8D0] w-6 h-6 shrink-0" />
               <span className="font-arimo text-lg">навіть під час кризи</span>
             </div>
             <div className="flex items-center gap-3">
-              <AnimatedCheck className="text-[#81D8D0] w-6 h-6" />
+              <AnimatedCheck className="text-[#81D8D0] w-6 h-6 shrink-0" />
+              <span className="font-arimo text-lg">почати можна з будь-якого капіталу</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <AnimatedCheck className="text-[#81D8D0] w-6 h-6 shrink-0" />
               <span className="font-arimo text-lg">навіть без досвіду в фінансах та інвестуванні</span>
             </div>
           </motion.div>
