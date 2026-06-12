@@ -20,7 +20,7 @@ function LoginContent() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tokenVerifying, setTokenVerifying] = useState(!!(tokenParam || tgIdParam));
+  const [tokenVerifying, setTokenVerifying] = useState(!!tokenParam);
   const [deviceUuid, setDeviceUuid] = useState('');
   const [isUnpaid, setIsUnpaid] = useState(false);
   const [telegramInput, setTelegramInput] = useState('');
@@ -73,9 +73,9 @@ function LoginContent() {
     }
   }, [warningParam]);
 
-  // 3. Auto-authenticate when coming from bot with autologin token or tg_id
+  // 3. Auto-authenticate when coming from bot with autologin token
   useEffect(() => {
-    if ((tokenParam || tgIdParam) && deviceUuid) {
+    if (tokenParam && deviceUuid) {
       const performTokenAuth = async () => {
         setLoading(true);
         setTokenVerifying(true);
@@ -85,7 +85,7 @@ function LoginContent() {
           const res = await fetch('/api/minicourse/token-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: tokenParam, tgId: tgIdParam, deviceUuid })
+            body: JSON.stringify({ token: tokenParam, deviceUuid })
           });
           const result = await res.json();
 
@@ -114,7 +114,7 @@ function LoginContent() {
       };
       performTokenAuth();
     }
-  }, [tokenParam, tgIdParam, deviceUuid, login, redirectParam, router]);
+  }, [tokenParam, deviceUuid, login, redirectParam, router]);
 
   if (authLoading) {
     return (

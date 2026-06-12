@@ -41,85 +41,94 @@ export async function POST(req: Request) {
 
     // Map statuses
     let finalStatus = 'Невідомий';
+    let dbStatus = 'pending';
     const sLower = status.toLowerCase();
     
     if (sLower === 'approved' || sLower === 'settled') {
       finalStatus = 'Оплачено';
-      
-      // Update paid status in Supabase minicourse database
-      if (supabase) {
-        try {
-          // 1. Update status in leads table
-          const { error: leadDbErr } = await supabase
-            .from('leads')
-            .update({ status: 'approved' })
-            .eq('order_id', orderId);
-
-          if (leadDbErr) {
-            console.error("Failed to update lead status in Supabase leads table:", leadDbErr);
-          } else {
-            console.log(`Successfully updated lead status to approved for order ${orderId} in Supabase`);
-          }
-
-          // 2. Update minicourse_users access
-          const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
-          const phoneClean = (phone || '').trim().replace(/\D/g, '');
-
-          if (tgClean || phoneClean) {
-            let query = supabase.from('minicourse_users').update({
-              is_paid: true,
-              payment_status: 'paid',
-              access_opened_at: new Date().toISOString()
-            });
-
-            if (tgClean && phoneClean) {
-              query = query.or(`phone.eq.${phoneClean},telegram.ilike.${tgClean}`);
-            } else if (tgClean) {
-              query = query.ilike('telegram', tgClean);
-            } else if (phoneClean) {
-              query = query.eq('phone', phoneClean);
-            }
-
-            const { data: updatedUsers, error: dbErr } = await query.select();
-            if (dbErr) {
-              console.error("Failed to mark minicourse student paid in Supabase:", dbErr);
-            } else {
-              console.log("Successfully marked minicourse student as paid:", updatedUsers);
-            }
-
-            // Дополнительно отправляем статус оплаты в Единую Сквозную Аналитику B&W Analytics
-            await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                project_slug: 'sofia',
-                api_key: 'bw_analytics_sofia_key_112233',
-                lead: {
-                  phone: phoneClean || null,
-                  telegram: tgClean || null,
-                  amount: data.amount ? Number(data.amount) : 0,
-                  status: 'closed_won',
-                  order_id: orderId
-                },
-                marketing: {
-                  utm_source: data.utm_source || null,
-                  utm_medium: data.utm_medium || null,
-                  utm_campaign: data.utm_campaign || null
-                },
-                metadata: {
-                  currency: data.currency || 'USD'
-                }
-              })
-            }).catch(err => console.error("Failed to sync payment callback with B&W Analytics:", err));
-          }
-        } catch (dbErr) {
-          console.error("Database error in wayforpay webhook paid sync:", dbErr);
-        }
-      }
+      dbStatus = 'approved';
     } else if (sLower === 'declined') {
       finalStatus = 'Відхилено';
+      dbStatus = 'declined';
+    } else if (sLower === 'expired') {
+      finalStatus = 'Минув термін';
+      dbStatus = 'expired';
     } else if (sLower) {
       finalStatus = `WFP: ${status}`;
+      dbStatus = `failed: ${status}`;
+    }
+
+    // Update status in Supabase minicourse database
+    if (supabase) {
+      try {
+        // 1. Update status in leads table
+        const { error: leadDbErr } = await supabase
+          .from('leads')
+          .update({ status: dbStatus })
+          .eq('order_id', orderId);
+
+        if (leadDbErr) {
+          console.error("Failed to update lead status in Supabase leads table:", leadDbErr);
+        } else {
+          console.log(`Successfully updated lead status to ${dbStatus} for order ${orderId} in Supabase`);
+        }
+
+        const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
+        const phoneClean = (phone || '').trim().replace(/\D/g, '');
+
+        // 2. Update minicourse_users access on successful payment
+        if ((sLower === 'approved' || sLower === 'settled') && (tgClean || phoneClean)) {
+          let query = supabase.from('minicourse_users').update({
+            is_paid: true,
+            payment_status: 'paid',
+            access_opened_at: new Date().toISOString()
+          });
+
+          if (tgClean && phoneClean) {
+            query = query.or(`phone.eq.${phoneClean},telegram.ilike.${tgClean}`);
+          } else if (tgClean) {
+            query = query.ilike('telegram', tgClean);
+          } else if (phoneClean) {
+            query = query.eq('phone', phoneClean);
+          }
+
+          const { data: updatedUsers, error: dbErr } = await query.select();
+          if (dbErr) {
+            console.error("Failed to mark minicourse student paid in Supabase:", dbErr);
+          } else {
+            console.log("Successfully marked minicourse student as paid:", updatedUsers);
+          }
+        }
+
+        // 3. Sync payment status with central B&W Analytics
+        const gatewayStatus = (sLower === 'approved' || sLower === 'settled') ? 'closed_won' : (sLower === 'declined' || sLower === 'expired' ? 'declined' : 'pending');
+        await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_slug: 'sofia',
+            api_key: 'bw_analytics_sofia_key_112233',
+            lead: {
+              phone: phoneClean || null,
+              telegram: tgClean || null,
+              amount: data.amount ? Number(data.amount) : 0,
+              status: gatewayStatus,
+              order_id: orderId
+            },
+            marketing: {
+              utm_source: data.utm_source || null,
+              utm_medium: data.utm_medium || null,
+              utm_campaign: data.utm_campaign || null
+            },
+            metadata: {
+              currency: data.currency || 'USD'
+            }
+          })
+        }).catch(err => console.error("Failed to sync payment callback with B&W Analytics:", err));
+
+      } catch (dbErr) {
+        console.error("Database error in wayforpay webhook sync:", dbErr);
+      }
     }
 
     // Send webhook to Google Sheets (always log for debugging)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/app/minicourse/supabase';
+import crypto from 'crypto';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -103,10 +104,28 @@ export async function POST(req: Request) {
 
           if (user) {
             const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
+            
+            // Generate a secure one-time login token
+            const tokenUuid = crypto.randomUUID();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+            
+            const { error: tokenInsertErr } = await supabase
+              .from('minicourse_autologin_tokens')
+              .insert({
+                token: tokenUuid,
+                user_id: user.id,
+                expires_at: expiresAt,
+                is_used: false
+              });
+            
+            if (tokenInsertErr) {
+              console.error('[Bot Webhook] Failed to insert autologin token:', tokenInsertErr);
+            }
+
+            const autologinUrl = `${siteUrl}/minicourse/login?token=${tokenUuid}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
 
             // Send successful activation notification message (Message 1: Onboarding Link)
-            const welcomeText = `Дякуємо за купівлю! 🎉\n\nВітаємо на курсі, ${firstName}! Ваш доступ до кабінету міні-курсу успішно активовано. Я — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`;
+            const welcomeText = `Дякуємо за купівлю! 🎉\n\nВітаємо на курсі, ${firstName}! Ваш доступ до кабінету міні-курсу успешно активовано. Я — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`;
             
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
               method: 'POST',
@@ -232,7 +251,25 @@ export async function POST(req: Request) {
             }
 
             const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse')}`;
+            
+            // Generate a secure one-time login token for welcome back
+            const tokenUuid = crypto.randomUUID();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+            
+            const { error: tokenInsertErr } = await supabase
+              .from('minicourse_autologin_tokens')
+              .insert({
+                token: tokenUuid,
+                user_id: linkedUser.id,
+                expires_at: expiresAt,
+                is_used: false
+              });
+            
+            if (tokenInsertErr) {
+              console.error('[Bot Webhook] Failed to insert welcome back token:', tokenInsertErr);
+            }
+
+            const autologinUrl = `${siteUrl}/minicourse/login?token=${tokenUuid}&redirect=${encodeURIComponent('/minicourse')}`;
 
             const welcomeBackText = `Вітаємо, ${firstName}! 👋\n\nРаді бачити Вас знову. Ви можете увійти у свій кабінет практикуму за кнопкою нижче (авторизація відбудеться автоматично):`;
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -277,7 +314,7 @@ export async function POST(req: Request) {
               [
                 {
                   text: '🌐 Відкрити кабінет',
-                  url: `${siteUrl}/minicourse/login?tg_id=${chatId}`
+                  url: `${siteUrl}/minicourse/login`
                 }
               ]
             ]

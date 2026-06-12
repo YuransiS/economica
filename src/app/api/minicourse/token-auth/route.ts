@@ -14,12 +14,11 @@ export async function POST(req: Request) {
     let userId = null;
 
     if (token) {
-      // 1. Fetch the token from database, ensuring it is unused and not expired
+      // 1. Fetch the token from database, ensuring it is not expired
       const { data: tokenData, error: tokenErr } = await supabase
         .from('minicourse_autologin_tokens')
         .select('*')
         .eq('token', token)
-        .eq('is_used', false)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
@@ -32,44 +31,53 @@ export async function POST(req: Request) {
         return NextResponse.json({ 
           success: false, 
           error: 'expired_or_invalid',
-          message: 'Посилання для авто-входу недійсне або вже було використане. Будь ласка, перейдіть за свіжим посиланням з бота.' 
+          message: 'Посилання для авто-входу недійсне або термін його дії закінчився. Будь ласка, перейдіть за свіжим посиланням з бота.' 
         }, { status: 400 });
       }
 
-      // 2. Mark token as used immediately to prevent replay attacks / link sharing
-      const { error: updateTokenErr } = await supabase
-        .from('minicourse_autologin_tokens')
-        .update({ is_used: true })
-        .eq('token', token);
+      let isAllowed = false;
 
-      if (updateTokenErr) {
-        console.error('Failed to mark autologin token as used:', updateTokenErr);
+      if (!tokenData.is_used) {
+        // First time use: allowed!
+        isAllowed = true;
+
+        // Mark token as used immediately
+        const { error: updateTokenErr } = await supabase
+          .from('minicourse_autologin_tokens')
+          .update({ 
+            is_used: true,
+            used_at: new Date().toISOString(),
+            used_device_uuid: deviceUuid || null
+          })
+          .eq('token', token);
+
+        if (updateTokenErr) {
+          console.error('Failed to mark autologin token as used:', updateTokenErr);
+        }
+      } else {
+        // Already used, check 5-minute grace window for the same device
+        if (tokenData.used_at && tokenData.used_device_uuid === deviceUuid) {
+          const usedTime = new Date(tokenData.used_at).getTime();
+          const nowTime = Date.now();
+          const elapsedMinutes = (nowTime - usedTime) / (1000 * 60);
+
+          if (elapsedMinutes <= 5) {
+            isAllowed = true;
+          }
+        }
+      }
+
+      if (!isAllowed) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'expired_or_invalid',
+          message: 'Посилання для авто-входу вже було використане. Будь ласка, отримайте нове посилання в боті.' 
+        }, { status: 400 });
       }
 
       userId = tokenData.user_id;
-    } else if (tgId) {
-      // Look up user by telegram_chat_id (order by newest to handle multiple test entries)
-      const { data: tgUser, error: tgUserErr } = await supabase
-        .from('minicourse_users')
-        .select('*')
-        .eq('telegram_chat_id', Number(tgId))
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (tgUserErr) {
-        console.error('Error fetching user by tgId:', tgUserErr);
-        return NextResponse.json({ success: false, error: 'Помилка бази даних при отриманні профілю' }, { status: 500 });
-      }
-
-      if (!tgUser) {
-        return NextResponse.json({ success: false, error: 'unpaid', message: 'Користувача не знайдено' }, { status: 403 });
-      }
-
-      user = tgUser;
-      userId = tgUser.id;
     } else {
-      return NextResponse.json({ success: false, error: 'Токен або Telegram ID відсутній' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Токен відсутній' }, { status: 400 });
     }
 
     if (!user && userId) {
