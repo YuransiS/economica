@@ -55,8 +55,8 @@ export async function POST(req: Request) {
           console.error('Failed to mark autologin token as used:', updateTokenErr);
         }
       } else {
-        // Already used, check 5-minute grace window for the same device
-        if (tokenData.used_at && tokenData.used_device_uuid === deviceUuid) {
+        // Already used, check 5-minute grace window (allows Mobile -> PC transition within 5 minutes without device uuid lockdown)
+        if (tokenData.used_at) {
           const usedTime = new Date(tokenData.used_at).getTime();
           const nowTime = Date.now();
           const elapsedMinutes = (nowTime - usedTime) / (1000 * 60);
