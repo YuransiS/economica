@@ -34,14 +34,20 @@ function LoginContent() {
     setIsUnpaid(false);
     try {
       const result = await loginUser(telegramInput.trim(), undefined, deviceUuid);
-      login(result.user, result.progress);
+      if (!result.success) {
+        const errMsg = result.error || 'Не вдалося авторизуватися.';
+        if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
+          setIsUnpaid(true);
+        }
+        setError(errMsg);
+        return;
+      }
+      if (result.user) {
+        login(result.user, result.progress);
+      }
     } catch (err: any) {
       console.error("Manual login failed:", err);
-      const errMsg = err.message || '';
-      if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
-        setIsUnpaid(true);
-      }
-      setError(errMsg || "Не вдалося авторизуватися. Будь ласка, перевірте свій нікнейм.");
+      setError("Не вдалося авторизуватися. Будь ласка, спробуйте пізніше.");
     } finally {
       setLoading(false);
     }

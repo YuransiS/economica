@@ -1,10 +1,44 @@
 import { supabase } from '@/app/minicourse/supabase';
+import crypto from 'crypto';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 async function generateAutologinLink(chatId: number, targetPath: string): Promise<string> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-  return `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent(targetPath)}`;
+  
+  if (supabase) {
+    try {
+      const { data: user } = await supabase
+        .from('minicourse_users')
+        .select('id')
+        .eq('telegram_chat_id', chatId)
+        .maybeSingle();
+
+      if (user) {
+        const tokenUuid = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        const { error } = await supabase
+          .from('minicourse_autologin_tokens')
+          .insert({
+            token: tokenUuid,
+            user_id: user.id,
+            expires_at: expiresAt,
+            is_used: false
+          });
+
+        if (!error) {
+          return `${siteUrl}/minicourse/login?token=${tokenUuid}&redirect=${encodeURIComponent(targetPath)}`;
+        }
+        console.error('[Bot Autologin Link] Failed to insert token:', error);
+      }
+    } catch (err) {
+      console.error('[Bot Autologin Link] Error generating token link:', err);
+    }
+  }
+
+  // Fallback to manual entry redirect if database fails
+  return `${siteUrl}/minicourse/login?redirect=${encodeURIComponent(targetPath)}`;
 }
 
 export async function sendTelegramNotification(

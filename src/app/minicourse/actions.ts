@@ -4,7 +4,13 @@ import * as db from './supabase';
 import { MinicourseUser, MinicourseProgress, HomeworkStatus } from './types';
 
 export async function loginUser(telegramUsername: string, name?: string, deviceUuid?: string) {
-  return db.loginUser(telegramUsername, name, deviceUuid);
+  try {
+    const result = await db.loginUser(telegramUsername, name, deviceUuid);
+    return { success: true, user: result.user, progress: result.progress };
+  } catch (err: any) {
+    console.error("loginUser Server Action error:", err);
+    return { success: false, error: err.message || "Не вдалося авторизуватися." };
+  }
 }
 
 export async function getProfile(userId: string) {

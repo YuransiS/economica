@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
-import { loginUser } from "@/app/minicourse/supabase";
+import { loginUser } from "@/app/minicourse/actions";
 import InAppBrowserOverlay from "@/components/InAppBrowserOverlay";
 
 function getFriendlyErrorReason(reason: string): string {
@@ -96,8 +96,12 @@ export default function CheckingPaymentPage() {
                 const loginInput = savedTelegram || savedPhone;
                 if (loginInput) {
                   const deviceUuid = localStorage.getItem('minicourse_device_uuid') || '';
-                  const { user } = await loginUser(loginInput, localStorage.getItem('user_name') || undefined, deviceUuid);
-                  localStorage.setItem('minicourse_session', JSON.stringify(user));
+                  const result = await loginUser(loginInput, localStorage.getItem('user_name') || undefined, deviceUuid);
+                  if (result.success && result.user) {
+                    localStorage.setItem('minicourse_session', JSON.stringify(result.user));
+                  } else {
+                    console.error("Auto-login failed on checker page:", result.error);
+                  }
                 }
               } catch (loginErr) {
                 console.error("Auto-login error on checker page:", loginErr);
