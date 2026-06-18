@@ -34,6 +34,7 @@ export async function POST(req: Request) {
           let user = null;
           let phoneToMatch = null;
           let leadName = 'Учасник';
+          let leadIdToUpdate = null;
 
           // 1. If token is phone number, match directly
           const isPhone = /^\d+$/.test(token);
@@ -50,6 +51,9 @@ export async function POST(req: Request) {
             if (leadData) {
               phoneToMatch = leadData.phone;
               leadName = leadData.name || 'Учасник';
+              if (token.startsWith('gift_')) {
+                leadIdToUpdate = leadData.id;
+              }
             }
           }
 
@@ -120,6 +124,20 @@ export async function POST(req: Request) {
             
             if (tokenInsertErr) {
               console.error('[Bot Webhook] Failed to insert autologin token:', tokenInsertErr);
+            }
+
+            // If it's a gift token, mark it as used by changing order_id to used_gift_...
+            if (leadIdToUpdate && token.startsWith('gift_')) {
+              const { error: updateLeadErr } = await supabase
+                .from('leads')
+                .update({ order_id: `used_${token}` })
+                .eq('id', leadIdToUpdate);
+              
+              if (updateLeadErr) {
+                console.error('[Bot Webhook] Failed to invalidate gift token:', updateLeadErr);
+              } else {
+                console.log(`[Bot Webhook] Gift token ${token} successfully marked as used.`);
+              }
             }
 
             const autologinUrl = `${siteUrl}/minicourse/login?token=${tokenUuid}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
