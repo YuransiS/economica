@@ -56,6 +56,7 @@ economica/
 - **device_uuids:** `TEXT[] DEFAULT '{}'` (anti-fraud system, limits up to 4 devices)
 - **status:** `TEXT NOT NULL DEFAULT 'active'` ('active' | 'under_investigation')
 - **created_at:** `TIMESTAMPTZ NOT NULL DEFAULT now()`
+- **terms_accepted:** `BOOLEAN NOT NULL DEFAULT false` (indicates student agreed to course terms)
 
 ### Table: `public.minicourse_progress`
 - **id:** `UUID PRIMARY KEY DEFAULT gen_random_uuid()`
