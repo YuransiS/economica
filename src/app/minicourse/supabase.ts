@@ -1078,3 +1078,29 @@ export async function uploadHomeworkFile(file: File, userId: string, lessonId: n
 
   return publicUrl;
 }
+
+export async function acceptTerms(userId: string): Promise<MinicourseUser> {
+  const nowStr = new Date().toISOString();
+  if (IS_MOCK_MODE) {
+    const users = getLocalUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error("User not found");
+    users[idx].terms_accepted = true;
+    users[idx].access_opened_at = nowStr;
+    saveLocalUsers(users);
+    return users[idx];
+  } else {
+    const { data, error } = await supabase!
+      .from('minicourse_users')
+      .update({
+        terms_accepted: true,
+        access_opened_at: nowStr
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as MinicourseUser;
+  }
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
-import { getLeaderboard, getLessonsConfig } from './actions';
+import { getLeaderboard, getLessonsConfig, acceptTerms } from './actions';
 import type { StudentLeaderboardEntry } from './supabase';
 import { MinicourseLessonConfig } from './types';
 import { 
@@ -14,11 +14,27 @@ import {
 import Link from 'next/link';
 
 export default function StudentDashboard() {
-  const { user, progress, loading, logout } = useAuth();
+  const { user, progress, loading, logout, refreshProgress } = useAuth();
   const [leaderboard, setLeaderboard] = useState<StudentLeaderboardEntry[]>([]);
   const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [lessonConfigs, setLessonConfigs] = useState<MinicourseLessonConfig[]>([]);
+  
+  const [agreeChecked, setAgreeChecked] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+
+  const handleAcceptTerms = async () => {
+    if (!agreeChecked || !user) return;
+    setAccepting(true);
+    try {
+      await acceptTerms(user.id);
+      await refreshProgress();
+    } catch (err) {
+      console.error("Failed to accept terms:", err);
+    } finally {
+      setAccepting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchConfigs = async () => {
@@ -281,6 +297,78 @@ export default function StudentDashboard() {
         {/* Right Column (Leaderboard & Quick Help) */}
         <div className="space-y-8">
           
+          {/* Access Terms Widget */}
+          {user.role === 'student' && (
+            <section className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md relative overflow-hidden">
+              <span className="text-[10px] font-bold text-[#81D8D0] uppercase tracking-widest font-narrow">🗓️ Терміни доступу</span>
+              <h4 className="text-lg font-black uppercase text-white mt-1 mb-4">Ваш кабінет</h4>
+
+              <div className="space-y-4">
+                {/* 1. General access */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400 font-narrow uppercase tracking-wider">Загальний доступ</span>
+                    <span className="font-bold text-white font-narrow">
+                      {(() => {
+                        const start = user.access_opened_at || user.created_at;
+                        const elapsedMs = Date.now() - new Date(start).getTime();
+                        const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+                        const remaining = Math.max(0, 14 - elapsedDays);
+                        if (remaining <= 0) return 'Термін вичерпано ⏰';
+                        if (remaining < 1) return `${Math.round(remaining * 24)} год.`;
+                        return `${Math.ceil(remaining)} дн. з 14`;
+                      })()}
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-2 bg-black/40 rounded-full border border-white/5 overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-[#81D8D0] to-[#5ec9bf]"
+                      style={{ 
+                        width: `${Math.max(0, Math.min(100, (Math.max(0, 14 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 14) * 100))}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* 2. Feedback access */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400 font-narrow uppercase tracking-wider">Перевірка домашніх завдань</span>
+                    <span className="font-bold text-white font-narrow">
+                      {(() => {
+                        const start = user.access_opened_at || user.created_at;
+                        const elapsedMs = Date.now() - new Date(start).getTime();
+                        const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+                        const remaining = Math.max(0, 7 - elapsedDays);
+                        if (remaining <= 0) return 'Закінчено ⏰';
+                        if (remaining < 1) return `${Math.round(remaining * 24)} год.`;
+                        return `${Math.ceil(remaining)} дн. з 7`;
+                      })()}
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-2 bg-black/40 rounded-full border border-white/5 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${
+                        (() => {
+                          const start = user.access_opened_at || user.created_at;
+                          const elapsedMs = Date.now() - new Date(start).getTime();
+                          const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+                          const remaining = Math.max(0, 7 - elapsedDays);
+                          return remaining <= 2 ? 'bg-amber-500' : 'bg-gradient-to-r from-[#81D8D0] to-[#5ec9bf]';
+                        })()
+                      }`}
+                      style={{ 
+                        width: `${Math.max(0, Math.min(100, (Math.max(0, 7 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 7) * 100))}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Leaderboard widget */}
           <section className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md flex flex-col h-[400px]">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
@@ -441,6 +529,99 @@ export default function StudentDashboard() {
                   Закрити
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Terms Agreement Modal */}
+        {user.role === 'student' && !user.terms_accepted && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-[#1A0000] border border-white/10 rounded-3xl p-6 sm:p-8 max-w-xl w-full relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden"
+            >
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#81D8D0]/5 rounded-full blur-2xl"></div>
+              
+              <h3 className="font-montserrat font-black text-xl sm:text-2xl uppercase text-white mb-2 text-center">
+                Умови проходження практикуму 📋
+              </h3>
+              <p className="text-xs text-[#81D8D0] font-narrow font-bold uppercase tracking-widest mb-6 text-center">
+                Будь ласка, ознайомтеся перед початком
+              </p>
+
+              <div className="space-y-5 text-xs font-arimo text-gray-300 leading-relaxed mb-6">
+                <p>
+                  Для того щоб розпочати навчання на міні-курсі Софії, вам необхідно погодитися з регламентом та правилами нашої платформи:
+                </p>
+                
+                <div className="space-y-4">
+                  {/* Rule 1 */}
+                  <div className="flex items-start space-x-3 bg-white/5 border border-white/5 rounded-2xl p-4">
+                    <div className="w-8 h-8 rounded-lg bg-[#81D8D0]/10 border border-[#81D8D0]/20 flex items-center justify-center flex-shrink-0 text-[#81D8D0] font-bold">
+                      14
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-0.5">14 днів загального доступу</h4>
+                      <p className="text-gray-400 text-[11px]">
+                        Доступ до кабінету практикуму надається рівно на 14 днів з моменту підтвердження умов (сьогодні). Після этого терміну кабінет буде автоматично закрито.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Rule 2 */}
+                  <div className="flex items-start space-x-3 bg-white/5 border border-white/5 rounded-2xl p-4">
+                    <div className="w-8 h-8 rounded-lg bg-[#81D8D0]/10 border border-[#81D8D0]/20 flex items-center justify-center flex-shrink-0 text-[#81D8D0] font-bold">
+                      7
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-0.5">7 днів зворотного зв'язку</h4>
+                      <p className="text-gray-400 text-[11px]">
+                        Перевірка домашніх робіт куратором та надання фідбеку доступні протягом перших 7 днів. Намагайтеся не відкладати ефіри та надсилати роботи вчасно!
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Rule 3 */}
+                  <div className="flex items-start space-x-3 bg-white/5 border border-white/5 rounded-2xl p-4">
+                    <div className="w-8 h-8 rounded-lg bg-red-950/20 border border-red-500/20 flex items-center justify-center flex-shrink-0 text-red-400 font-bold">
+                      ⚠️
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-0.5">Ліміт пристроїв (Антишаринг)</h4>
+                      <p className="text-gray-400 text-[11px]">
+                        Дозволено авторизацію не більше ніж на 4 унікальних пристроях. Вхід з 5-го пристрою автоматично заблокує ваш акаунт до з'ясування обставин куратором.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Checkbox */}
+              <div className="flex items-center space-x-3 mb-6 bg-black/20 p-3 rounded-xl border border-white/5">
+                <input 
+                  type="checkbox" 
+                  id="agree-checkbox"
+                  checked={agreeChecked}
+                  onChange={(e) => setAgreeChecked(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#81D8D0] focus:ring-[#81D8D0] cursor-pointer"
+                />
+                <label htmlFor="agree-checkbox" className="text-[11px] text-gray-300 cursor-pointer font-arimo select-none">
+                  Я ознайомився(-лася) з усіма правилами та погоджуюся з умовами навчання
+                </label>
+              </div>
+
+              <button
+                onClick={handleAcceptTerms}
+                disabled={!agreeChecked || accepting}
+                className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl transition-all shadow-[0_0_20px_rgba(129,216,208,0.2)] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {accepting ? 'Запуск платформи...' : 'Почати навчання'}
+              </button>
             </motion.div>
           </motion.div>
         )}

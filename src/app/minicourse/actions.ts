@@ -61,3 +61,7 @@ export async function getAdminSubmissions() {
   return db.getAdminSubmissions();
 }
 
+export async function acceptTerms(userId: string) {
+  return db.acceptTerms(userId);
+}
+

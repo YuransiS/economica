@@ -280,7 +280,9 @@ export default function LessonPage() {
     };
 
     if (!loading && user && progress) {
-      if (!lessonProgress || !lessonProgress.unlocked) {
+      if (user.role === 'student' && !user.terms_accepted) {
+        router.push('/minicourse');
+      } else if (!lessonProgress || !lessonProgress.unlocked) {
         // Redirect if trying to access a locked lesson
         router.push('/minicourse');
       } else {
