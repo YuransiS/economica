@@ -287,13 +287,20 @@ export async function loginUser(telegramUsername: string, name?: string, deviceU
       queryFilter += `,phone.eq.${digitsOnly}`;
     }
 
-    let { data: user, error } = await supabase!
+    let { data: users, error } = await supabase!
       .from('minicourse_users')
       .select('*')
       .or(queryFilter)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    let user = null;
+    if (users && users.length > 0) {
+      user = users.find(u => u.is_paid && u.status !== 'under_investigation') ||
+             users.find(u => u.is_paid) ||
+             users[0];
+    }
 
     if (!user) {
       throw new Error("Вхід заборонено. Користувача не знайдено. Будь ласка, придбайте практикум на головній сторінці.");

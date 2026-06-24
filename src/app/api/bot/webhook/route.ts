@@ -59,13 +59,25 @@ export async function POST(req: Request) {
 
           if (phoneToMatch) {
             const phoneClean = phoneToMatch.trim().replace(/\D/g, '');
-            const { data: existingUser } = await supabase
+            let { data: existingUser } = await supabase
               .from('minicourse_users')
               .select('*')
               .eq('phone', phoneClean)
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
+
+            if (!existingUser && username) {
+              const cleanUsername = username.trim().replace(/^@/, '');
+              const { data: byUsername } = await supabase
+                .from('minicourse_users')
+                .select('*')
+                .ilike('telegram', cleanUsername)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              existingUser = byUsername;
+            }
 
             if (existingUser) {
               // Update existing user, mark paid, set access open time
