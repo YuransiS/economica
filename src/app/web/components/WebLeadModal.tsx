@@ -157,7 +157,7 @@ export default function WebLeadModal({
                     Ви вже зареєстровані!
                   </h3>
                   <a
-                    href="https://t.me/+NAcZ4dcRKdVlZDky"
+                    href="https://t.me/+omVaRnq7pqVjNzNi"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex w-full items-center justify-center rounded-xl bg-[#81D8D0] py-4 text-center font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
