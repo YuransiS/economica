@@ -311,6 +311,7 @@ export default function StudentDashboard() {
                     <span className="font-bold text-white font-narrow">
                       {(() => {
                         const start = user.access_opened_at || user.created_at;
+                        if (start && new Date(start).getFullYear() > 2900) return 'Безлімітний 💎';
                         const elapsedMs = Date.now() - new Date(start).getTime();
                         const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
                         const remaining = Math.max(0, 14 - elapsedDays);
@@ -325,7 +326,9 @@ export default function StudentDashboard() {
                     <div 
                       className="h-full rounded-full bg-gradient-to-r from-[#81D8D0] to-[#5ec9bf]"
                       style={{ 
-                        width: `${Math.max(0, Math.min(100, (Math.max(0, 14 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 14) * 100))}%` 
+                        width: `${user.access_opened_at && new Date(user.access_opened_at).getFullYear() > 2900
+                          ? 100
+                          : Math.max(0, Math.min(100, (Math.max(0, 14 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 14) * 100))}%` 
                       }}
                     ></div>
                   </div>
@@ -338,6 +341,7 @@ export default function StudentDashboard() {
                     <span className="font-bold text-white font-narrow">
                       {(() => {
                         const start = user.access_opened_at || user.created_at;
+                        if (start && new Date(start).getFullYear() > 2900) return 'Безлімітна 💎';
                         const elapsedMs = Date.now() - new Date(start).getTime();
                         const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
                         const remaining = Math.max(0, 7 - elapsedDays);
@@ -353,6 +357,7 @@ export default function StudentDashboard() {
                       className={`h-full rounded-full ${
                         (() => {
                           const start = user.access_opened_at || user.created_at;
+                          if (start && new Date(start).getFullYear() > 2900) return 'bg-gradient-to-r from-[#81D8D0] to-[#5ec9bf]';
                           const elapsedMs = Date.now() - new Date(start).getTime();
                           const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
                           const remaining = Math.max(0, 7 - elapsedDays);
@@ -360,7 +365,9 @@ export default function StudentDashboard() {
                         })()
                       }`}
                       style={{ 
-                        width: `${Math.max(0, Math.min(100, (Math.max(0, 7 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 7) * 100))}%` 
+                        width: `${user.access_opened_at && new Date(user.access_opened_at).getFullYear() > 2900
+                          ? 100
+                          : Math.max(0, Math.min(100, (Math.max(0, 7 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 7) * 100))}%` 
                       }}
                     ></div>
                   </div>
