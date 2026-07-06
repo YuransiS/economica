@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
+import { validatePhoneNumber, getCallingCodeForCountry } from '@/utils/phone';
 
 
 export default function PriceLeadModal({
@@ -61,8 +62,24 @@ export default function PriceLeadModal({
       const savedTelegram = localStorage.getItem('user_telegram');
 
       if (savedName) setName(savedName);
-      if (savedPhone) setPhone(savedPhone);
       if (savedTelegram) setTelegram(savedTelegram);
+
+      if (savedPhone) {
+        setPhone(savedPhone);
+      } else {
+        // Prefill default calling code based on Vercel country code
+        fetch('/api/country')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.country) {
+              const callingCode = getCallingCodeForCountry(data.country);
+              setPhone(`+${callingCode}`);
+            } else {
+              setPhone('+380');
+            }
+          })
+          .catch(() => setPhone('+380'));
+      }
     }
   }, [isOpen]);
 
@@ -121,9 +138,8 @@ export default function PriceLeadModal({
     }
     
     // Clean and validate phone number
-    const cleanPhone = phone ? phone.trim().replace(/\D/g, '') : '';
-    if (!cleanPhone || cleanPhone.length < 9 || cleanPhone.length > 15) {
-      setError('Введіть коректний номер телефону');
+    if (!phone || !validatePhoneNumber(phone.trim())) {
+      setError('Введіть коректний номер телефону з кодом країни (наприклад, +380...)');
       return;
     }
     if (!telegram.trim()) {

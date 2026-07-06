@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useUTMs } from "@/hooks/useUTMs";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { validatePhoneNumber } from "@/utils/phone";
 import { Loader2, ArrowRight, Play, ArrowDown, CalendarCheck, CheckCircle2, Info, Star, X, Check } from 'lucide-react';
 
 export default function SofiaInvestLessonPage() {
@@ -35,17 +36,17 @@ export default function SofiaInvestLessonPage() {
   }, []);
 
   useEffect(() => {
-    fetch("https://ipapi.co/json/")
+    fetch("/api/country")
       .then((res) => res.json())
       .then((data) => {
-        if (data.country_code) {
-          setCountry(data.country_code.toLowerCase());
+        if (data.country) {
+          setCountry(data.country.toLowerCase());
         }
       })
       .catch(() => setCountry("ua"));
   }, []);
 
-  const validatePhone = (phone: string) => phone.length >= 10;
+  const validatePhone = (phone: string) => validatePhoneNumber(phone);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

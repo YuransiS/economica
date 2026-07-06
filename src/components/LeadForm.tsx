@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Loader2, Send, CheckCircle, AlertCircle } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { validatePhoneNumber } from "@/utils/phone";
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYe3BwbCjBwKPpTq5UR8HKJ2wtunOn97tWzDaY3pbJVCkGXto5jxOYgtnmwemavEW7ow/exec";
 const SHEET_ID = "1717964025";
@@ -41,11 +42,11 @@ export default function LeadForm({
 
   useEffect(() => {
     // Detect country by IP
-    fetch("https://ipapi.co/json/")
+    fetch("/api/country")
       .then((res) => res.json())
       .then((data) => {
-        if (data.country_code) {
-          setCountry(data.country_code.toLowerCase());
+        if (data.country) {
+          setCountry(data.country.toLowerCase());
         }
       })
       .catch(() => {
@@ -55,8 +56,7 @@ export default function LeadForm({
   }, []);
 
   const validatePhone = (phone: string) => {
-    // Basic validation: must be longer than 10 digits
-    return phone.length >= 10;
+    return validatePhoneNumber(phone);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
