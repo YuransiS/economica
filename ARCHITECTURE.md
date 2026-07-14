@@ -57,6 +57,16 @@ economica/
 - **status:** `TEXT NOT NULL DEFAULT 'active'` ('active' | 'under_investigation')
 - **created_at:** `TIMESTAMPTZ NOT NULL DEFAULT now()`
 - **terms_accepted:** `BOOLEAN NOT NULL DEFAULT false` (indicates student agreed to course terms)
+- **homework_access_opened_at:** `TIMESTAMPTZ` (timestamp marking when homework review access started; used for the 7-day review limit)
+
+### Table: `public.minicourse_prize_codes`
+- **code:** `TEXT PRIMARY KEY` (unique prize activation code, e.g. `prize-xxxx-xxxx`)
+- **description:** `TEXT` (campaign description or details, e.g. "Instagram Contest 14.07")
+- **status:** `TEXT NOT NULL DEFAULT 'active'` ('active' | 'used' | 'cancelled')
+- **created_at:** `TIMESTAMPTZ NOT NULL DEFAULT now()`
+- **created_by:** `TEXT NOT NULL` (admin username who generated the link)
+- **used_at:** `TIMESTAMPTZ`
+- **used_by_id:** `UUID REFERENCES public.minicourse_users(id)` (reference to user who redeemed the code)
 
 ### Table: `public.minicourse_progress`
 - **id:** `UUID PRIMARY KEY DEFAULT gen_random_uuid()`
@@ -84,7 +94,10 @@ economica/
 - **Anti-Fraud System (Device Limit):** Limits each user to a maximum of 4 unique devices (`device_uuids`). A 5th device triggers `under_investigation` status and blocks access.
 - **Unlimited/Indefinite Access Bypass:** Student access is normally limited to 14 days. If the `access_opened_at` (or `created_at`) timestamp is set to a far-future date (year > 2900, e.g. `3000-01-01`), the limit check is bypassed, and the student receives lifetime access marked as "Безлімітний 💎" on their dashboard.
 - **Admin Access Control:** CRM and Minicourse administration access are secured via pre-configured admin credentials. The CRM uses standard HTTP-only session cookies validated in the Next.js middleware, while the Minicourse uses credentials mirrored both in database user roles (`admin` role in `minicourse_users`) and secure login routes.
-- **Row Level Security (RLS) & Server Actions:** All Supabase tables (`leads`, `minicourse_users`, `minicourse_progress`, `minicourse_lessons_config`, `minicourse_autologin_tokens`) have RLS enabled. Anonymous public access is blocked for all operations on minicourse tables. The `leads` table permits only public `INSERT` (for client lead form submissions via server-side endpoints). All client components retrieve and mutate minicourse data via Next.js Server Actions (`actions.ts`) executing securely on the server with the service role key, bypassing RLS.
+- **Row Level Security (RLS) & Server Actions:** All Supabase tables (`leads`, `minicourse_users`, `minicourse_progress`, `minicourse_lessons_config`, `minicourse_autologin_tokens`, `minicourse_prize_codes`) have RLS enabled (except `minicourse_prize_codes` which has RLS bypassed/matching local configurations). Anonymous public access is blocked for all operations on minicourse tables. The `leads` table permits only public `INSERT` (for client lead form submissions via server-side endpoints). All client components retrieve and mutate minicourse data via Next.js Server Actions (`actions.ts`) executing securely on the server with the service role key, bypassing RLS.
+- **Student Access Extension & Prize Claiming:**
+  - **Access Extensions:** Admins can extend a student's lessons access and homework review access independently. Lesson access limits are validated against `access_opened_at || created_at` (14 days), while homework reviews are validated against `homework_access_opened_at || access_opened_at || created_at` (7 days). Extending homework access shifts the respective timestamp forward and resets any single lesson homework deadlines (`expired_not_submitted` status reset back to `not_started` and `openedAt` cleared).
+  - **Prize Claiming:** Administrators can generate unique prize codes (saved in `minicourse_prize_codes`). A contest winner visits `/minicourse/claim?code=prize-xxxx-xxxx`, which validates the code using an API check. On form submission (Name, Telegram, Phone), a student record is created or updated with standard 14 days + 7 days homework review limits, status is marked paid, the code is redeemed (`used`), and the user is automatically logged into the minicourse dashboard.
 
 ---
 

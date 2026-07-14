@@ -9,15 +9,20 @@ import {
   deleteStudentUser, 
   toggleUserLockout,
   getLessonsConfig, 
-  updateLessonConfig
+  updateLessonConfig,
+  extendStudentAccess,
+  createPrizeCode,
+  getPrizeCodes,
+  cancelPrizeCode
 } from '../actions';
 import type { AdminSubmissionItem } from '../supabase';
-import { HomeworkStatus, MinicourseUser, MinicourseLessonConfig, StudentWithProgress } from '../types';
+import { HomeworkStatus, MinicourseUser, MinicourseLessonConfig, StudentWithProgress, MinicoursePrizeCode } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, ClipboardCheck, Award, LogOut, Search, Filter, 
   ExternalLink, Check, MessageSquare, Send, CheckCircle2, AlertTriangle, AlertCircle, HelpCircle,
-  Settings, Lock, Unlock, Trash2, Save, BookOpen, ShieldAlert, ChevronDown, ChevronUp
+  Settings, Lock, Unlock, Trash2, Save, BookOpen, ShieldAlert, ChevronDown, ChevronUp,
+  Clock, Gift, Copy, Plus, X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,7 +31,7 @@ export default function AdminDashboard() {
   const { user, loading, logout } = useAuth(true);
   
   // Navigation tabs state
-  const [activeTab, setActiveTab] = useState<'submissions' | 'students' | 'lessons'>('submissions');
+  const [activeTab, setActiveTab] = useState<'submissions' | 'students' | 'lessons' | 'prize-links'>('submissions');
   
   // Data states
   const [submissions, setSubmissions] = useState<AdminSubmissionItem[]>([]);
@@ -38,6 +43,21 @@ export default function AdminDashboard() {
   
   const [lessons, setLessons] = useState<MinicourseLessonConfig[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(true);
+
+  // Prize links data states
+  const [prizeCodes, setPrizeCodes] = useState<MinicoursePrizeCode[]>([]);
+  const [prizeCodesLoading, setPrizeCodesLoading] = useState(false);
+  const [prizeDescription, setPrizeDescription] = useState('');
+  const [generatingPrize, setGeneratingPrize] = useState(false);
+
+  // Access Extension Modal States
+  const [isExtendModalOpen, setIsExtendModalOpen] = useState(false);
+  const [selectedExtendStudent, setSelectedExtendStudent] = useState<StudentWithProgress | null>(null);
+  const [lessonsExtendOption, setLessonsExtendOption] = useState<'none' | 'reset' | 'extend7' | 'unlimited' | 'custom'>('none');
+  const [homeworkExtendOption, setHomeworkExtendOption] = useState<'none' | 'reset' | 'extend7' | 'unlimited' | 'custom'>('none');
+  const [customLessonsDays, setCustomLessonsDays] = useState(7);
+  const [customHomeworkDays, setCustomHomeworkDays] = useState(7);
+  const [savingAccess, setSavingAccess] = useState(false);
   
   // Filter/Search states
   const [hwFilterStatus, setHwFilterStatus] = useState<HomeworkStatus | 'all'>('all');
@@ -82,6 +102,19 @@ export default function AdminDashboard() {
       setStudentsLoading(false);
     }
   };
+  
+  // Fetch prize links
+  const fetchPrizeCodes = async () => {
+    try {
+      setPrizeCodesLoading(true);
+      const data = await getPrizeCodes();
+      setPrizeCodes(data);
+    } catch (err) {
+      console.error("Error fetching prize codes:", err);
+    } finally {
+      setPrizeCodesLoading(false);
+    }
+  };
 
   // Fetch dynamic lesson configurations
   const fetchLessons = async () => {
@@ -102,8 +135,65 @@ export default function AdminDashboard() {
       fetchSubmissions();
       fetchStudents();
       fetchLessons();
+      fetchPrizeCodes();
     }
   }, [user]);
+
+  // Action handlers for access extension
+  const handleOpenExtendAccess = (student: StudentWithProgress) => {
+    setSelectedExtendStudent(student);
+    setLessonsExtendOption('none');
+    setHomeworkExtendOption('none');
+    setCustomLessonsDays(7);
+    setCustomHomeworkDays(7);
+    setIsExtendModalOpen(true);
+  };
+
+  const handleSaveExtendAccess = async () => {
+    if (!selectedExtendStudent) return;
+    setSavingAccess(true);
+    try {
+      await extendStudentAccess(
+        selectedExtendStudent.id,
+        lessonsExtendOption,
+        homeworkExtendOption,
+        lessonsExtendOption === 'custom' ? customLessonsDays : undefined,
+        homeworkExtendOption === 'custom' ? customHomeworkDays : undefined
+      );
+      setIsExtendModalOpen(false);
+      fetchStudents();
+    } catch (err: any) {
+      alert(err.message || "Помилка при збереженні доступу");
+    } finally {
+      setSavingAccess(false);
+    }
+  };
+
+  // Action handlers for prize codes
+  const handleGeneratePrizeCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prizeDescription.trim()) return;
+    setGeneratingPrize(true);
+    try {
+      await createPrizeCode(prizeDescription.trim(), user?.telegram || 'admin');
+      setPrizeDescription('');
+      fetchPrizeCodes();
+    } catch (err: any) {
+      alert(err.message || "Помилка при створенні призового посилання");
+    } finally {
+      setGeneratingPrize(false);
+    }
+  };
+
+  const handleCancelPrizeCode = async (code: string) => {
+    if (!confirm(`Ви впевнені, що хочете анулювати призове посилання: ${code}?`)) return;
+    try {
+      await cancelPrizeCode(code);
+      fetchPrizeCodes();
+    } catch (err: any) {
+      alert(err.message || "Помилка при анулюванні призового посилання");
+    }
+  };
 
   // Open single submission for review modal
   const handleOpenReview = (sub: AdminSubmissionItem) => {
@@ -374,6 +464,17 @@ export default function AdminDashboard() {
             >
               <Settings className="w-4 h-4" />
               <span>⚙️ Налаштування Уроків</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('prize-links')}
+              className={`flex items-center space-x-2 px-5 py-3 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${
+                activeTab === 'prize-links'
+                  ? 'bg-[#81D8D0] text-[#1A0000] shadow-[0_0_15px_rgba(129,216,208,0.3)]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Gift className="w-4 h-4" />
+              <span>🎁 Призові посилання ({prizeCodes.filter(c => c.status === 'active').length})</span>
             </button>
           </div>
 
@@ -678,7 +779,7 @@ export default function AdminDashboard() {
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left">
                     <thead>
-                      <tr className="border-b border-white/10 bg-black/30 font-narrow text-[10px] uppercase tracking-wider text-gray-400">
+<tr className="border-b border-white/10 bg-black/30 font-narrow text-[10px] uppercase tracking-wider text-gray-400">
                         <th className="p-4 pl-6">Учень / Контакти</th>
                         <th className="p-4">Доступ (Сплачено)</th>
                         <th className="p-4 text-center">Прогрес</th>
@@ -710,6 +811,17 @@ export default function AdminDashboard() {
                           const isExpanded = expandedStudentId === student.id;
                           const progressPercent = student.progress?.progressPercent || 0;
 
+                          // Calculate Remaining Time for Lectures and Homework
+                          const lessonsStart = student.access_opened_at || student.created_at;
+                          const isLessonsUnlimited = student.access_opened_at && new Date(student.access_opened_at).getFullYear() > 2900;
+                          const lessonsElapsedDays = (Date.now() - new Date(lessonsStart).getTime()) / (1000 * 60 * 60 * 24);
+                          const lessonsDaysLeft = isLessonsUnlimited ? 9999 : 14 - lessonsElapsedDays;
+
+                          const hwStart = student.homework_access_opened_at || student.access_opened_at || student.created_at;
+                          const isHwUnlimited = hwStart && new Date(hwStart).getFullYear() > 2900;
+                          const hwElapsedDays = (Date.now() - new Date(hwStart).getTime()) / (1000 * 60 * 60 * 24);
+                          const hwDaysLeft = isHwUnlimited ? 9999 : 7 - hwElapsedDays;
+
                           return (
                             <Fragment key={student.id}>
                               <tr className="hover:bg-white/5 transition-colors border-b border-white/5">
@@ -735,14 +847,38 @@ export default function AdminDashboard() {
                                 </td>
 
                                 {/* Access/payment state */}
-                                <td className="p-4">
-                                  <span className={`px-2.5 py-1 rounded border text-[9px] font-bold uppercase ${
+                                <td className="p-4 space-y-1.5">
+                                  <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase inline-block ${
                                     isPaid 
                                       ? 'text-green-400 bg-green-950/20 border-green-500/20' 
                                       : 'text-red-400 bg-red-950/20 border-red-500/20'
                                   }`}>
-                                    {isPaid ? 'Доступ дозволено 🟢' : 'Неоплачено / Блоковано 🔴'}
+                                    {isPaid ? 'Оплачено 🟢' : 'Неоплачено 🔴'}
                                   </span>
+                                  {isPaid && (
+                                    <div className="text-[10px] font-arimo space-y-0.5 text-gray-400">
+                                      <p className="flex items-center gap-1.5">
+                                        <span className="text-gray-500">Лекції:</span>
+                                        {isLessonsUnlimited ? (
+                                          <span className="text-purple-300 font-bold">Безліміт 💎</span>
+                                        ) : lessonsDaysLeft <= 0 ? (
+                                          <span className="text-red-400 font-bold">Закрито ⏱️</span>
+                                        ) : (
+                                          <span className="text-green-400 font-bold">{Math.ceil(lessonsDaysLeft)}дн.</span>
+                                        )}
+                                      </p>
+                                      <p className="flex items-center gap-1.5">
+                                        <span className="text-gray-500">ДЗ:</span>
+                                        {isHwUnlimited ? (
+                                          <span className="text-purple-300 font-bold">Безліміт 💎</span>
+                                        ) : hwDaysLeft <= 0 ? (
+                                          <span className="text-red-400 font-bold">Закрито ⏱️</span>
+                                        ) : (
+                                          <span className="text-green-400 font-bold">{Math.ceil(hwDaysLeft)}дн.</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  )}
                                 </td>
 
                                 {/* Miniature Progress Timeline */}
@@ -977,6 +1113,15 @@ export default function AdminDashboard() {
                                         )}
                                         
                                         <button
+                                          onClick={() => handleOpenExtendAccess(student)}
+                                          className="px-4 py-2 bg-[#81D8D0]/10 border border-[#81D8D0]/30 hover:bg-[#81D8D0]/20 text-[#81D8D0] font-montserrat font-bold text-[10px] uppercase rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
+                                          title="Продовжити або кастомізувати час доступу учня"
+                                        >
+                                          <Clock className="w-3.5 h-3.5" />
+                                          <span>Продовжити доступ</span>
+                                        </button>
+
+                                        <button
                                           onClick={() => handleDeleteStudent(student.id, student.name)}
                                           className="px-4 py-2 border border-white/5 hover:border-red-500/40 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5"
                                           title="Видалити користувача назавжди"
@@ -1035,7 +1180,289 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* TAB 4: PRIZE CLAIM LINKS */}
+        {activeTab === 'prize-links' && (
+          <div className="space-y-8">
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+              <h3 className="font-montserrat font-black uppercase text-base text-white flex items-center space-x-2">
+                <Gift className="w-5 h-5 text-[#81D8D0]" />
+                <span>Генератор Призових Посилань</span>
+              </h3>
+              <p className="text-xs text-gray-400 font-arimo mt-2 leading-relaxed">
+                Створюйте унікальні посилання для безкоштовного доступу для переможців конкурсів та акцій.
+                При переході за посиланням переможець зможе безкоштовно зареєструватися й миттєво отримати стандартний доступ на 14 днів (7 днів перевірки ДЗ).
+              </p>
+            </div>
+
+            {/* Create Prize Code Form */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-sm max-w-xl">
+              <form onSubmit={handleGeneratePrizeCode} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] mb-2 font-narrow">
+                    Опис призу / Кампанія (наприклад: "Розіграш Instagram 14.07") *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={prizeDescription}
+                    onChange={(e) => setPrizeDescription(e.target.value)}
+                    placeholder="Введіть опис для кого або якого розіграшу створюється доступ"
+                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:border-[#81D8D0] focus:ring-1 focus:ring-[#81D8D0] outline-none text-xs font-arimo text-white transition-all placeholder-gray-600"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={generatingPrize || !prizeDescription.trim()}
+                  className="w-full sm:w-auto px-6 py-3 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold text-xs uppercase rounded-xl transition-all shadow-[0_0_15px_rgba(129,216,208,0.2)] disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{generatingPrize ? 'Генерація...' : 'Згенерувати посилання'}</span>
+                </button>
+              </form>
+            </div>
+
+            {/* Prize Links Table */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-black/30 font-narrow text-[10px] uppercase tracking-wider text-gray-400">
+                      <th className="p-4 pl-6">Призовий код</th>
+                      <th className="p-4">Опис кампанії</th>
+                      <th className="p-4">Посилання для активації</th>
+                      <th className="p-4">Створено</th>
+                      <th className="p-4">Статус</th>
+                      <th className="p-4">Використав</th>
+                      <th className="p-4 pr-6 text-right">Дії</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs">
+                    {prizeCodesLoading ? (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center">
+                          <div className="w-8 h-8 border-3 border-[#81D8D0] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <p className="text-xs text-gray-500 font-narrow uppercase tracking-widest">Завантаження кодів...</p>
+                        </td>
+                      </tr>
+                    ) : prizeCodes.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center text-gray-500">
+                          Призових посилань ще не створено.
+                        </td>
+                      </tr>
+                    ) : (
+                      prizeCodes.map(item => {
+                        const claimUrl = typeof window !== 'undefined'
+                          ? `${window.location.origin}/minicourse/claim?code=${item.code}`
+                          : `/minicourse/claim?code=${item.code}`;
+
+                        const isUsed = item.status === 'used';
+                        const isCancelled = item.status === 'cancelled';
+                        const isActive = item.status === 'active';
+
+                        const handleCopy = () => {
+                          navigator.clipboard.writeText(claimUrl);
+                          alert("Призове посилання скопійовано!");
+                        };
+
+                        return (
+                          <tr key={item.code} className="hover:bg-white/5 transition-colors border-b border-white/5">
+                            <td className="p-4 pl-6 font-mono text-[#81D8D0] font-bold">
+                              {item.code}
+                            </td>
+                            <td className="p-4 font-bold">
+                              {item.description || 'Без опису'}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center space-x-2">
+                                <code className="text-[10px] bg-black/40 px-2 py-1 rounded text-gray-400 select-all font-mono">
+                                  {claimUrl}
+                                </code>
+                                {isActive && (
+                                  <button
+                                    onClick={handleCopy}
+                                    className="p-1.5 bg-[#81D8D0]/10 hover:bg-[#81D8D0]/20 text-[#81D8D0] rounded-lg transition-all"
+                                    title="Скопіювати посилання"
+                                  >
+                                    <Copy className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 text-gray-400 font-narrow">
+                              {new Date(item.created_at).toLocaleDateString('uk-UA')}
+                            </td>
+                            <td className="p-4">
+                              {isActive && (
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-green-950/30 text-green-400 border border-green-500/20 uppercase">
+                                  Активне
+                                </span>
+                              )}
+                              {isUsed && (
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-950/30 text-blue-400 border border-blue-500/20 uppercase">
+                                  Використане
+                                </span>
+                              )}
+                              {isCancelled && (
+                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-red-950/30 text-red-400 border border-red-500/20 uppercase">
+                                  Анульоване
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {isUsed ? (
+                                <div className="space-y-0.5 text-xs">
+                                  <p className="text-white font-bold">{item.used_by_name}</p>
+                                  {item.used_by_telegram && (
+                                    <p className="text-[10px] text-gray-400 font-mono">@{item.used_by_telegram}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </td>
+                            <td className="p-4 pr-6 text-right">
+                              {isActive && (
+                                <button
+                                  onClick={() => handleCancelPrizeCode(item.code)}
+                                  className="px-3 py-1.5 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 font-montserrat font-bold text-[10px] uppercase rounded-lg transition-all"
+                                  title="Анулювати посилання"
+                                >
+                                  Деактивувати
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
+
+      {/* EXTEND ACCESS MODAL */}
+      <AnimatePresence>
+        {isExtendModalOpen && selectedExtendStudent && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-[#1A0000] border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full relative shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-y-auto max-h-[90vh]"
+            >
+              <button 
+                onClick={() => setIsExtendModalOpen(false)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <h3 className="font-montserrat font-black uppercase text-base text-white flex items-center space-x-2 border-b border-white/10 pb-4 mb-4">
+                <Clock className="w-5 h-5 text-[#81D8D0]" />
+                <span>Управління доступом</span>
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-gray-400">Учень:</p>
+                  <p className="font-bold text-white text-sm">{selectedExtendStudent.name}</p>
+                  <p className="text-[10px] text-[#81D8D0] font-mono">@{selectedExtendStudent.telegram}</p>
+                </div>
+
+                {/* Lessons Options */}
+                <div className="space-y-2 border-t border-white/5 pt-4">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] font-narrow">
+                    Доступ до Лекцій / Кабінету:
+                  </label>
+                  <select
+                    value={lessonsExtendOption}
+                    onChange={(e) => setLessonsExtendOption(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-[#81D8D0]"
+                  >
+                    <option value="none">Без змін</option>
+                    <option value="reset">Повне оновлення (14 днів)</option>
+                    <option value="extend7">Продовжити на 7 днів</option>
+                    <option value="unlimited">Безлімітний доступ 💎</option>
+                    <option value="custom">Інша кількість днів...</option>
+                  </select>
+
+                  {lessonsExtendOption === 'custom' && (
+                    <div className="pt-2 flex items-center space-x-2">
+                      <span className="text-xs text-gray-400">Кількість днів доступу:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={customLessonsDays}
+                        onChange={(e) => setCustomLessonsDays(Number(e.target.value))}
+                        className="w-20 px-2 py-1 bg-black/40 border border-white/10 rounded text-center text-white text-xs"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Homework Options */}
+                <div className="space-y-2 border-t border-white/5 pt-4">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#81D8D0] font-narrow">
+                    Доступ до перевірки ДЗ:
+                  </label>
+                  <select
+                    value={homeworkExtendOption}
+                    onChange={(e) => setHomeworkExtendOption(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-white text-xs outline-none focus:border-[#81D8D0]"
+                  >
+                    <option value="none">Без змін</option>
+                    <option value="reset">Повне оновлення (7 днів)</option>
+                    <option value="extend7">Продовжити на 7 днів</option>
+                    <option value="unlimited">Безлімітний доступ 💎</option>
+                    <option value="custom">Інша кількість днів...</option>
+                  </select>
+
+                  {homeworkExtendOption === 'custom' && (
+                    <div className="pt-2 flex items-center space-x-2">
+                      <span className="text-xs text-gray-400">Кількість днів перевірки:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={customHomeworkDays}
+                        onChange={(e) => setCustomHomeworkDays(Number(e.target.value))}
+                        className="w-20 px-2 py-1 bg-black/40 border border-white/10 rounded text-center text-white text-xs"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-6 flex gap-3">
+                  <button
+                    onClick={handleSaveExtendAccess}
+                    disabled={savingAccess}
+                    className="flex-1 py-3 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold text-xs uppercase rounded-xl transition-all shadow-[0_0_15px_rgba(129,216,208,0.2)] disabled:opacity-50 flex items-center justify-center space-x-2 cursor-pointer"
+                  >
+                    {savingAccess ? <span>Збереження...</span> : <span>Зберегти налаштування</span>}
+                  </button>
+                  <button
+                    onClick={() => setIsExtendModalOpen(false)}
+                    className="py-3 px-6 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white font-montserrat font-bold text-xs uppercase rounded-xl transition-all cursor-pointer"
+                  >
+                    Скасувати
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* DETAILED FEEDBACK REVIEW MODAL (TAB 1) */}
       <AnimatePresence>

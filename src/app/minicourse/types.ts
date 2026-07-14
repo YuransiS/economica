@@ -16,7 +16,20 @@ export interface MinicourseUser {
   device_uuids?: string[];
   status?: 'active' | 'under_investigation';
   access_opened_at?: string;
+  homework_access_opened_at?: string;
   terms_accepted?: boolean;
+}
+
+export interface MinicoursePrizeCode {
+  code: string;
+  description?: string;
+  created_by?: string;
+  created_at: string;
+  used_at?: string;
+  used_by_id?: string;
+  status: 'active' | 'used' | 'cancelled';
+  used_by_name?: string;
+  used_by_telegram?: string;
 }
 
 export interface LessonProgress {

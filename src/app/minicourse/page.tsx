@@ -340,7 +340,7 @@ export default function StudentDashboard() {
                     <span className="text-gray-400 font-narrow uppercase tracking-wider">Перевірка домашніх завдань</span>
                     <span className="font-bold text-white font-narrow">
                       {(() => {
-                        const start = user.access_opened_at || user.created_at;
+                        const start = user.homework_access_opened_at || user.access_opened_at || user.created_at;
                         if (start && new Date(start).getFullYear() > 2900) return 'Безлімітна 💎';
                         const elapsedMs = Date.now() - new Date(start).getTime();
                         const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
@@ -356,7 +356,7 @@ export default function StudentDashboard() {
                     <div 
                       className={`h-full rounded-full ${
                         (() => {
-                          const start = user.access_opened_at || user.created_at;
+                          const start = user.homework_access_opened_at || user.access_opened_at || user.created_at;
                           if (start && new Date(start).getFullYear() > 2900) return 'bg-gradient-to-r from-[#81D8D0] to-[#5ec9bf]';
                           const elapsedMs = Date.now() - new Date(start).getTime();
                           const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
@@ -365,9 +365,9 @@ export default function StudentDashboard() {
                         })()
                       }`}
                       style={{ 
-                        width: `${user.access_opened_at && new Date(user.access_opened_at).getFullYear() > 2900
+                        width: `${(user.homework_access_opened_at || user.access_opened_at) && new Date(user.homework_access_opened_at || user.access_opened_at!).getFullYear() > 2900
                           ? 100
-                          : Math.max(0, Math.min(100, (Math.max(0, 7 - (Date.now() - new Date(user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 7) * 100))}%` 
+                          : Math.max(0, Math.min(100, (Math.max(0, 7 - (Date.now() - new Date(user.homework_access_opened_at || user.access_opened_at || user.created_at).getTime()) / (1000 * 60 * 60 * 24)) / 7) * 100))}%` 
                       }}
                     ></div>
                   </div>

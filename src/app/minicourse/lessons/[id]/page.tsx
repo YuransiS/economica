@@ -20,9 +20,9 @@ export default function LessonPage() {
   
   const { user, progress, loading, refreshProgress } = useAuth();
   
-  const accessStart = user?.access_opened_at || user?.created_at;
-  const feedbackElapsedDays = accessStart 
-    ? (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24) 
+  const hwAccessStart = user?.homework_access_opened_at || user?.access_opened_at || user?.created_at;
+  const feedbackElapsedDays = hwAccessStart 
+    ? (Date.now() - new Date(hwAccessStart).getTime()) / (1000 * 60 * 60 * 24) 
     : 0;
   const isFeedbackExpired = user?.role === 'student' && feedbackElapsedDays > 7;
 

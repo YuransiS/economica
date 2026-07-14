@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { MinicourseUser, MinicourseProgress, HomeworkStatus, LessonProgress, MinicourseLessonConfig, StudentWithProgress } from './types';
+import { MinicourseUser, MinicourseProgress, HomeworkStatus, LessonProgress, MinicourseLessonConfig, StudentWithProgress, MinicoursePrizeCode } from './types';
 
 // Read keys from environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -1111,3 +1111,543 @@ export async function acceptTerms(userId: string): Promise<MinicourseUser> {
     return data as MinicourseUser;
   }
 }
+
+// ----------------------------------------------------
+// Student Access Management & Extension
+// ----------------------------------------------------
+
+export async function extendStudentAccess(
+  userId: string,
+  lessonsOption: 'none' | 'reset' | 'extend7' | 'unlimited' | 'custom',
+  homeworkOption: 'none' | 'reset' | 'extend7' | 'unlimited' | 'custom',
+  customLessonsDays?: number,
+  customHomeworkDays?: number
+): Promise<MinicourseUser> {
+  const user = await getProfile(userId);
+  if (!user) throw new Error("Користувача не знайдено");
+
+  const now = new Date();
+  let newAccessOpenedAt = user.access_opened_at || user.created_at;
+  let newHwAccessOpenedAt = user.homework_access_opened_at || user.access_opened_at || user.created_at;
+
+  // 1. Process Lessons Option
+  if (lessonsOption === 'reset') {
+    newAccessOpenedAt = now.toISOString();
+  } else if (lessonsOption === 'extend7') {
+    const currentStart = new Date(newAccessOpenedAt).getTime();
+    const elapsed = Date.now() - currentStart;
+    const elapsedDays = elapsed / (1000 * 60 * 60 * 24);
+    if (elapsedDays > 14) {
+      // Already expired, set access_opened_at to (now - 7 days) so they have exactly 7 days remaining out of 14
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      newAccessOpenedAt = d.toISOString();
+    } else {
+      // Not expired, add 7 days to their total time (shifting access start forward)
+      const d = new Date(currentStart);
+      d.setDate(d.getDate() + 7);
+      newAccessOpenedAt = d.toISOString();
+    }
+  } else if (lessonsOption === 'unlimited') {
+    newAccessOpenedAt = '3000-01-01T00:00:00.000Z';
+  } else if (lessonsOption === 'custom' && customLessonsDays !== undefined) {
+    const d = new Date();
+    d.setDate(d.getDate() - (14 - customLessonsDays));
+    newAccessOpenedAt = d.toISOString();
+  }
+
+  // 2. Process Homework Option
+  if (homeworkOption === 'reset') {
+    newHwAccessOpenedAt = now.toISOString();
+  } else if (homeworkOption === 'extend7') {
+    const currentStart = new Date(newHwAccessOpenedAt).getTime();
+    const elapsed = Date.now() - currentStart;
+    const elapsedDays = elapsed / (1000 * 60 * 60 * 24);
+    if (elapsedDays > 7) {
+      // Already expired, reset start to now so they get exactly 7 days from now
+      newHwAccessOpenedAt = now.toISOString();
+    } else {
+      // Not expired, add 7 days
+      const d = new Date(currentStart);
+      d.setDate(d.getDate() + 7);
+      newHwAccessOpenedAt = d.toISOString();
+    }
+  } else if (homeworkOption === 'unlimited') {
+    newHwAccessOpenedAt = '3000-01-01T00:00:00.000Z';
+  } else if (homeworkOption === 'custom' && customHomeworkDays !== undefined) {
+    const d = new Date();
+    d.setDate(d.getDate() - (7 - customHomeworkDays));
+    newHwAccessOpenedAt = d.toISOString();
+  }
+
+  // 3. If homework access is extended, automatically reset "expired_not_submitted" statuses
+  if (homeworkOption !== 'none') {
+    const prog = await getProgress(userId);
+    if (prog && prog.lessons) {
+      let changed = false;
+      const updatedLessons = { ...prog.lessons };
+      for (const lessonId of [1, 2, 3]) {
+        const lesson = updatedLessons[lessonId as 1 | 2 | 3];
+        if (lesson && lesson.hwStatus === 'expired_not_submitted') {
+          lesson.hwStatus = 'not_started';
+          delete lesson.openedAt; // Allows fresh 24h timer on open
+          changed = true;
+        }
+      }
+      if (changed) {
+        if (IS_MOCK_MODE) {
+          const progressList = getLocalProgress();
+          const pIdx = progressList.findIndex(p => p.userId === userId);
+          if (pIdx !== -1) {
+            progressList[pIdx].lessons = updatedLessons;
+            saveLocalProgress(progressList);
+          }
+        } else {
+          await supabase!
+            .from('minicourse_progress')
+            .update({ lessons: updatedLessons })
+            .eq('user_id', userId);
+        }
+      }
+    }
+  }
+
+  // 4. Save User Dates
+  if (IS_MOCK_MODE) {
+    const users = getLocalUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error("Користувача не знайдено");
+
+    if (lessonsOption !== 'none') {
+      users[idx].access_opened_at = newAccessOpenedAt;
+    }
+    if (homeworkOption !== 'none') {
+      users[idx].homework_access_opened_at = newHwAccessOpenedAt;
+    }
+    saveLocalUsers(users);
+    return users[idx];
+  } else {
+    const updates: any = {};
+    if (lessonsOption !== 'none') {
+      updates.access_opened_at = newAccessOpenedAt;
+    }
+    if (homeworkOption !== 'none') {
+      updates.homework_access_opened_at = newHwAccessOpenedAt;
+    }
+
+    const { data, error } = await supabase!
+      .from('minicourse_users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as MinicourseUser;
+  }
+}
+
+// ----------------------------------------------------
+// Prize Link Management (Contest Winners)
+// ----------------------------------------------------
+
+function getLocalPrizeCodes(): MinicoursePrizeCode[] {
+  if (typeof window === 'undefined') return [];
+  const data = localStorage.getItem('minicourse_prize_codes');
+  if (!data) return [];
+  try {
+    return JSON.parse(data) as MinicoursePrizeCode[];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalPrizeCodes(codes: MinicoursePrizeCode[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('minicourse_prize_codes', JSON.stringify(codes));
+  }
+}
+
+export async function createPrizeCode(description: string, createdBy: string): Promise<MinicoursePrizeCode> {
+  const code = 'prize-' + Math.random().toString(36).substr(2, 4) + '-' + Math.random().toString(36).substr(2, 4);
+  const now = new Date().toISOString();
+
+  const newCode: MinicoursePrizeCode = {
+    code,
+    description,
+    created_by: createdBy,
+    created_at: now,
+    status: 'active'
+  };
+
+  if (IS_MOCK_MODE) {
+    const list = getLocalPrizeCodes();
+    list.push(newCode);
+    saveLocalPrizeCodes(list);
+    return newCode;
+  } else {
+    const { data, error } = await supabase!
+      .from('minicourse_prize_codes')
+      .insert({
+        code,
+        description,
+        created_by: createdBy
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as MinicoursePrizeCode;
+  }
+}
+
+export async function getPrizeCodes(): Promise<MinicoursePrizeCode[]> {
+  if (IS_MOCK_MODE) {
+    const codes = getLocalPrizeCodes();
+    const users = getLocalUsers();
+    return codes.map(c => {
+      if (c.used_by_id) {
+        const u = users.find(usr => usr.id === c.used_by_id);
+        if (u) {
+          return {
+            ...c,
+            used_by_name: u.name,
+            used_by_telegram: u.telegram
+          };
+        }
+      }
+      return c;
+    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else {
+    // Join used_by details from minicourse_users
+    const { data, error } = await supabase!
+      .from('minicourse_prize_codes')
+      .select(`
+        *,
+        minicourse_users(name, telegram)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map(row => {
+      const u = row.minicourse_users;
+      return {
+        code: row.code,
+        description: row.description,
+        created_by: row.created_by,
+        created_at: row.created_at,
+        used_at: row.used_at,
+        used_by_id: row.used_by_id,
+        status: row.status,
+        used_by_name: u?.name || undefined,
+        used_by_telegram: u?.telegram || undefined
+      } as MinicoursePrizeCode;
+    });
+  }
+}
+
+export async function cancelPrizeCode(code: string): Promise<void> {
+  if (IS_MOCK_MODE) {
+    const list = getLocalPrizeCodes();
+    const idx = list.findIndex(c => c.code === code);
+    if (idx !== -1) {
+      list[idx].status = 'cancelled';
+      saveLocalPrizeCodes(list);
+    }
+  } else {
+    const { error } = await supabase!
+      .from('minicourse_prize_codes')
+      .update({ status: 'cancelled' })
+      .eq('code', code);
+
+    if (error) throw error;
+  }
+}
+
+export async function verifyPrizeCode(code: string): Promise<MinicoursePrizeCode> {
+  if (IS_MOCK_MODE) {
+    const list = getLocalPrizeCodes();
+    const item = list.find(c => c.code === code);
+    if (!item) throw new Error("Код виграшу не знайдено");
+    if (item.status !== 'active') throw new Error("Код виграшу більше недійсний або вже використаний");
+    return item;
+  } else {
+    const { data, error } = await supabase!
+      .from('minicourse_prize_codes')
+      .select('*')
+      .eq('code', code)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Код виграшу не знайдено");
+    if (data.status !== 'active') throw new Error("Код виграшу більше недійсний або вже використаний");
+    return data as MinicoursePrizeCode;
+  }
+}
+
+export async function claimPrizeCode(
+  code: string,
+  name: string,
+  telegram: string,
+  phone?: string
+): Promise<{ user: MinicourseUser; progress: MinicourseProgress }> {
+  // 1. Verify prize code first
+  const pCode = await verifyPrizeCode(code);
+
+  const normInput = telegram.replace(/^@/, '').trim().toLowerCase();
+  const digitsOnly = phone ? phone.replace(/\D/g, '') : '';
+  const now = new Date();
+
+  const defaultLessons: MinicourseProgress['lessons'] = {
+    1: { unlocked: true, hwSubmitted: false, hwStatus: 'not_started' },
+    2: { unlocked: false, hwSubmitted: false, hwStatus: 'not_started' },
+    3: { unlocked: false, hwSubmitted: false, hwStatus: 'not_started' }
+  };
+
+  let targetUser: MinicourseUser | null = null;
+  let targetProgress: MinicourseProgress | null = null;
+
+  // 2. Check if user already exists
+  if (IS_MOCK_MODE) {
+    const users = getLocalUsers();
+    let existingUser = users.find(u => 
+      (u.telegram && u.telegram.toLowerCase() === normInput) ||
+      (digitsOnly && u.phone && u.phone.replace(/\D/g, '') === digitsOnly)
+    );
+
+    if (existingUser) {
+      // Update existing student access
+      existingUser.is_paid = true;
+      existingUser.payment_status = 'paid';
+      existingUser.access_opened_at = now.toISOString();
+      existingUser.homework_access_opened_at = now.toISOString();
+      existingUser.name = name;
+      if (phone) existingUser.phone = phone;
+      targetUser = existingUser;
+
+      // Update progress lessons
+      const progressList = getLocalProgress();
+      let prog = progressList.find(p => p.userId === existingUser.id);
+      if (prog) {
+        // Reset any expired status back to not_started
+        const updatedLessons = { ...prog.lessons };
+        for (const lId of [1, 2, 3]) {
+          const l = updatedLessons[lId as 1 | 2 | 3];
+          if (l && l.hwStatus === 'expired_not_submitted') {
+            l.hwStatus = 'not_started';
+            delete l.openedAt;
+          }
+        }
+        prog.lessons = updatedLessons;
+        prog.updatedAt = now.toISOString();
+        targetProgress = prog;
+      } else {
+        // Create new progress if not found
+        const newProg = {
+          id: 'p-' + Math.random().toString(36).substr(2, 9),
+          userId: existingUser.id,
+          progressPercent: 0,
+          lessons: defaultLessons,
+          updatedAt: now.toISOString()
+        };
+        progressList.push(newProg);
+        targetProgress = newProg;
+      }
+      saveLocalProgress(progressList);
+    } else {
+      // Register new user
+      const newUser: MinicourseUser = {
+        id: 'u-' + Math.random().toString(36).substr(2, 9),
+        name,
+        telegram: normInput,
+        phone: phone || undefined,
+        role: 'student',
+        is_paid: true,
+        payment_status: 'paid',
+        device_uuids: [],
+        status: 'active',
+        created_at: now.toISOString(),
+        access_opened_at: now.toISOString(),
+        homework_access_opened_at: now.toISOString()
+      };
+      users.push(newUser);
+      targetUser = newUser;
+
+      const progressList = getLocalProgress();
+      const newProg = {
+        id: 'p-' + Math.random().toString(36).substr(2, 9),
+        userId: newUser.id,
+        progressPercent: 0,
+        lessons: defaultLessons,
+        updatedAt: now.toISOString()
+      };
+      progressList.push(newProg);
+      targetProgress = newProg;
+
+      saveLocalProgress(progressList);
+    }
+    saveLocalUsers(users);
+
+    // Redeem prize code
+    const codes = getLocalPrizeCodes();
+    const cIdx = codes.findIndex(c => c.code === code);
+    if (cIdx !== -1) {
+      codes[cIdx].status = 'used';
+      codes[cIdx].used_at = now.toISOString();
+      codes[cIdx].used_by_id = targetUser.id;
+      saveLocalPrizeCodes(codes);
+    }
+  } else {
+    // live mode
+    let queryFilter = `telegram.ilike.${normInput}`;
+    if (digitsOnly) {
+      queryFilter += `,phone.eq.${digitsOnly}`;
+    }
+
+    let { data: users, error: fetchErr } = await supabase!
+      .from('minicourse_users')
+      .select('*')
+      .or(queryFilter);
+
+    if (fetchErr) throw fetchErr;
+
+    if (users && users.length > 0) {
+      const existingUser = users[0];
+      
+      const { data: updatedUsr, error: updateUsrErr } = await supabase!
+        .from('minicourse_users')
+        .update({
+          is_paid: true,
+          payment_status: 'paid',
+          access_opened_at: now.toISOString(),
+          homework_access_opened_at: now.toISOString(),
+          name,
+          phone: phone || existingUser.phone
+        })
+        .eq('id', existingUser.id)
+        .select()
+        .single();
+
+      if (updateUsrErr) throw updateUsrErr;
+      targetUser = updatedUsr as MinicourseUser;
+
+      // Update progress lessons
+      let { data: prog, error: progErr } = await supabase!
+        .from('minicourse_progress')
+        .select('*')
+        .eq('user_id', existingUser.id)
+        .maybeSingle();
+
+      if (progErr) throw progErr;
+
+      if (prog) {
+        const updatedLessons = { ...prog.lessons };
+        for (const lId of [1, 2, 3]) {
+          const l = updatedLessons[lId as 1 | 2 | 3];
+          if (l && l.hwStatus === 'expired_not_submitted') {
+            l.hwStatus = 'not_started';
+            delete l.openedAt;
+          }
+        }
+
+        const { data: newProg, error: updateProgErr } = await supabase!
+          .from('minicourse_progress')
+          .update({
+            lessons: updatedLessons,
+            updated_at: now.toISOString()
+          })
+          .eq('id', prog.id)
+          .select()
+          .single();
+
+        if (updateProgErr) throw updateProgErr;
+        targetProgress = {
+          id: newProg.id,
+          userId: newProg.user_id,
+          progressPercent: newProg.progress_percent,
+          lessons: newProg.lessons,
+          updatedAt: newProg.updated_at
+        };
+      } else {
+        const { data: newProg, error: createProgErr } = await supabase!
+          .from('minicourse_progress')
+          .insert({
+            user_id: existingUser.id,
+            progress_percent: 0,
+            lessons: defaultLessons
+          })
+          .select()
+          .single();
+
+        if (createProgErr) throw createProgErr;
+        targetProgress = {
+          id: newProg.id,
+          userId: newProg.user_id,
+          progressPercent: newProg.progress_percent,
+          lessons: newProg.lessons,
+          updatedAt: newProg.updated_at
+        };
+      }
+    } else {
+      // Create user
+      const { data: newUser, error: createUsrErr } = await supabase!
+        .from('minicourse_users')
+        .insert({
+          name,
+          telegram: normInput,
+          phone: phone || null,
+          role: 'student',
+          is_paid: true,
+          payment_status: 'paid',
+          device_uuids: [],
+          status: 'active',
+          access_opened_at: now.toISOString(),
+          homework_access_opened_at: now.toISOString()
+        })
+        .select()
+        .single();
+
+      if (createUsrErr) throw createUsrErr;
+      targetUser = newUser as MinicourseUser;
+
+      // Create progress
+      const { data: newProg, error: createProgErr } = await supabase!
+        .from('minicourse_progress')
+        .insert({
+          user_id: newUser.id,
+          progress_percent: 0,
+          lessons: defaultLessons
+        })
+        .select()
+        .single();
+
+      if (createProgErr) throw createProgErr;
+      targetProgress = {
+        id: newProg.id,
+        userId: newProg.user_id,
+        progressPercent: newProg.progress_percent,
+        lessons: newProg.lessons,
+        updatedAt: newProg.updated_at
+      };
+    }
+
+    // Redeem prize code
+    const { error: codeErr } = await supabase!
+      .from('minicourse_prize_codes')
+      .update({
+        status: 'used',
+        used_at: now.toISOString(),
+        used_by_id: targetUser.id
+      })
+      .eq('code', code);
+
+    if (codeErr) throw codeErr;
+  }
+
+  return {
+    user: targetUser,
+    progress: targetProgress!
+  };
+}
+
