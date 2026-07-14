@@ -18,8 +18,8 @@ export default async function ThankYouPage({
   const isValidOrder = orderId.startsWith('ORDER_');
 
   const currentTelegramLink = (tariff === 'Безкоштовно' || tariff === 'Інтенсив')
-    ? 'https://t.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6'
-    : `https://t.me/sofifmc_bot?start=pay_${orderId}`;
+    ? 'https://telegram.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6'
+    : `https://telegram.me/sofifmc_bot?start=pay_${orderId}`;
 
   if (!isValidOrder) {
     return (
@@ -135,7 +135,7 @@ export default async function ThankYouPage({
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500 font-arimo">
                 Виникли проблеми або оплата не зарахувалась? Зверніться в підтримку:{" "}
-                <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#4E0000] font-bold underline hover:no-underline">
+                <a href="https://telegram.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#4E0000] font-bold underline hover:no-underline">
                   @YuransiS
                 </a>
               </p>

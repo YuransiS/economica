@@ -10,7 +10,7 @@ import { validatePhoneNumber } from "@/utils/phone";
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYe3BwbCjBwKPpTq5UR8HKJ2wtunOn97tWzDaY3pbJVCkGXto5jxOYgtnmwemavEW7ow/exec";
 const SHEET_ID = "1717964025";
-const REDIRECT_URL = "https://t.me/+8YhpUFVIVDExMDcy";
+const REDIRECT_URL = "https://telegram.me/+8YhpUFVIVDExMDcy";
 
 interface LeadFormProps {
   title?: string;

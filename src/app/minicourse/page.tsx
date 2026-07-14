@@ -447,7 +447,7 @@ export default function StudentDashboard() {
               Якщо у вас виникли труднощі з домашнім завданням, таблицями, переказами чи загальними питаннями, пишіть нашому куратору!
             </p>
             <a 
-              href="https://t.me/sofi_finsight" 
+              href="https://telegram.me/sofi_finsight" 
               target="_blank" 
               rel="noopener noreferrer"
               className="w-full py-3.5 bg-[#81D8D0]/10 border border-[#81D8D0]/30 text-[#81D8D0] hover:bg-[#81D8D0]/20 hover:text-white font-montserrat font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all"
@@ -462,7 +462,7 @@ export default function StudentDashboard() {
       {/* Floating Ask-a-Question widget on bottom right */}
       <div className="fixed bottom-6 right-6 z-40 hidden sm:block">
         <a 
-          href="https://t.me/sofi_finsight"
+          href="https://telegram.me/sofi_finsight"
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 rounded-full bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] flex items-center justify-center shadow-[0_4px_25px_rgba(129,216,208,0.5)] transition-all hover:scale-110 group relative"

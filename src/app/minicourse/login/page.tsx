@@ -201,7 +201,7 @@ function LoginContent() {
               <div className="pt-2 text-center border-t border-white/5">
                 <p className="text-[10px] text-gray-400 font-arimo">
                   Вже оплатили і виникла помилка? Напишіть у техпідтримку:{" "}
-                  <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
+                  <a href="https://telegram.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
                     @YuransiS
                   </a>
                 </p>
@@ -268,7 +268,7 @@ function LoginContent() {
                 <div className="pt-2 text-center border-t border-white/5 w-full">
                   <p className="text-[10px] text-gray-400 font-arimo">
                     Виникли проблеми з доступом? Напишіть у техпідтримку:{" "}
-                    <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
+                    <a href="https://telegram.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
                       @YuransiS
                     </a>
                   </p>

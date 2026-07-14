@@ -350,7 +350,7 @@ export default function LessonPage() {
         setTelegramCountdown((prev) => prev - 1);
       }, 1000);
     } else if (isTelegramModalOpen && telegramCountdown === 0) {
-      window.location.href = "https://t.me/+gKmEEjeNar02NDIy";
+      window.location.href = "https://telegram.me/+gKmEEjeNar02NDIy";
     }
     return () => clearInterval(interval);
   }, [isTelegramModalOpen, telegramCountdown]);
@@ -779,7 +779,7 @@ export default function LessonPage() {
 
           {/* Permanent Help Telegram Button */}
           <a 
-            href="https://t.me/YuransiS" 
+            href="https://telegram.me/YuransiS" 
             target="_blank" 
             rel="noopener noreferrer"
             className="w-full py-3.5 bg-white/5 border border-white/10 hover:border-[#81D8D0]/30 text-gray-300 hover:text-white text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center space-x-2 transition-all bg-black/20"
@@ -827,7 +827,7 @@ export default function LessonPage() {
               </div>
 
               <a 
-                href="https://t.me/sofi_finsight"
+                href="https://telegram.me/sofi_finsight"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)]"
@@ -882,18 +882,18 @@ export default function LessonPage() {
                   Посилання на канал
                 </span>
                 <a 
-                  href="https://t.me/+gKmEEjeNar02NDIy" 
+                  href="https://telegram.me/+gKmEEjeNar02NDIy" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-xs sm:text-sm font-semibold text-[#81D8D0] hover:underline font-arimo break-all"
                 >
-                  https://t.me/+gKmEEjeNar02NDIy
+                  https://telegram.me/+gKmEEjeNar02NDIy
                 </a>
               </div>
 
               {/* Action Button */}
               <a 
-                href="https://t.me/+gKmEEjeNar02NDIy"
+                href="https://telegram.me/+gKmEEjeNar02NDIy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)] hover:scale-[1.02] mb-6 inline-flex"

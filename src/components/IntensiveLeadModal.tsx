@@ -149,7 +149,7 @@ export default function IntensiveLeadModal({
 
         // Redirect directly to the Telegram bot with a small delay for pixel tracking
         setTimeout(() => {
-          window.location.href = 'https://t.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6';
+          window.location.href = 'https://telegram.me/SofiaFeduniak_bot?start=6a22e052a6453da635042cc6';
         }, 500);
       } else {
         setError('Помилка при реєстрації. Спробуйте пізніше.');

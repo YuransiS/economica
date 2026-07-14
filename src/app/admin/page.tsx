@@ -590,7 +590,7 @@ export default function AdminDashboard() {
                             const cleanTg = tg.toString().replace('@', '').trim();
                             return (
                               <a 
-                                href={`https://t.me/${cleanTg}`} 
+                                href={`https://telegram.me/${cleanTg}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
@@ -886,7 +886,7 @@ function InfoRow({
   };
 
   const tgLink = isTelegram && value && value !== '—' 
-    ? `https://t.me/${value.toString().replace('@', '').trim()}` 
+    ? `https://telegram.me/${value.toString().replace('@', '').trim()}` 
     : null;
 
   return (

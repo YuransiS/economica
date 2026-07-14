@@ -69,7 +69,7 @@ async function run() {
       index: i,
       token: token,
       phone: phone,
-      link: `https://t.me/${botUsername}?start=pay_${token}`
+      link: `https://telegram.me/${botUsername}?start=pay_${token}`
     });
   }
 

@@ -44,7 +44,7 @@ export default async function PriceFailurePage({
         </div>
 
         <Link 
-          href="https://t.me/YuransiS"
+          href="https://telegram.me/YuransiS"
           target="_blank"
           className="mt-8 inline-block rounded-full bg-[#81D8D0] px-12 py-5 text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] w-full"
         >

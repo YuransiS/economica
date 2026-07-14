@@ -262,7 +262,7 @@ export default function SofiaInvestPage() {
               targetSheet="VSL Трафик"
               pixelEventName="Lead"
               pixelEventContent="Sofia Invest Main"
-              redirectUrl="https://t.me/SofiaFeduniak_bot?start=69b01a17b0523e81800ee835"
+              redirectUrl="https://telegram.me/SofiaFeduniak_bot?start=69b01a17b0523e81800ee835"
               webhookUrl="https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec"
             />
           </div>
