@@ -518,6 +518,12 @@ export async function POST(req: Request) {
     let finalAmount = amount;
     let finalProductName = productName;
 
+    // Use clean English name for Diagnostics product to avoid Cyrillic encoding signature mismatches
+    if (tariff?.includes('Діагностика')) {
+      const offerNum = tariff.includes('2') ? '2' : (tariff.includes('3') ? '3' : '1');
+      finalProductName = `Financial Diagnostics (Offer ${offerNum})`;
+    }
+
     if (isUpgrade && upgradeAmount) {
       finalAmount = Number(upgradeAmount).toFixed(2);
       finalProductName = `Апгрейд: ${body.paidTariff} -> ${tariff}`;
@@ -550,9 +556,9 @@ export async function POST(req: Request) {
         clientPhone: phone,
         merchantSignature: signature,
         clientPaymentMethods: "card;googlePay;applePay",
-        returnUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        approveUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
-        declineUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${tariff}`,
+        returnUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariff)}`,
+        approveUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariff)}`,
+        declineUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariff)}`,
         serviceUrl: `${siteUrl}/api/wayforpay/webhook?orderId=${orderReference}&phone=${encodeURIComponent(phone || '')}&telegram=${encodeURIComponent(telegram || '')}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
       }
     });
