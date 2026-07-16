@@ -260,16 +260,8 @@ export async function POST(req: Request) {
       });
     }
 
-    let merchantDomainName = '';
-    if (clientDomain) {
-      merchantDomainName = clientDomain;
-    } else {
-      try {
-        merchantDomainName = new URL(siteUrl).hostname;
-      } catch {
-        merchantDomainName = 'localhost';
-      }
-    }
+    // WayForPay merchant account 'sofi_finsight' is registered under the domain 'sofifinsight.vercel.app'
+    const merchantDomainName = 'sofifinsight.vercel.app';
 
     const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || '').trim();
     const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '').trim();
@@ -470,46 +462,63 @@ export async function POST(req: Request) {
     }
 
     // 1. Send to Google Sheets (if URL configured)
-    let alreadyPaidData = null;
     if (GOOGLE_SHEET_WEBHOOK_URL) {
-      try {
-        const sheetResponse = await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create_lead',
-            targetSheet: sheetName, // Identifier for Apps Script
-            name,
-            phone,
-            telegram,
-            tariff,
-            price, // Pass current price for reference
-            currency,
-            orderId: orderReference,
-            visitorId: analytics?.visitorId,
-            journey: analytics?.journey?.join(' -> '),
-            utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
-            utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
-            utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
-            utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
-            utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
-            first_utm_source: analytics?.firstUtms?.utm_source,
-            first_utm_medium: analytics?.firstUtms?.utm_medium,
-            first_utm_campaign: analytics?.firstUtms?.utm_campaign,
-          })
-        });
+      const payload = {
+        action: 'create_lead',
+        targetSheet: sheetName, // Identifier for Apps Script
+        name,
+        phone,
+        telegram,
+        tariff,
+        price, // Pass current price for reference
+        currency,
+        orderId: orderReference,
+        visitorId: analytics?.visitorId,
+        journey: analytics?.journey?.join(' -> '),
+        utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
+        utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
+        utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
+        utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
+        utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
+        first_utm_source: analytics?.firstUtms?.utm_source,
+        first_utm_medium: analytics?.firstUtms?.utm_medium,
+        first_utm_campaign: analytics?.firstUtms?.utm_campaign,
+      };
 
-        const sheetResult = await sheetResponse.json();
-        if (sheetResult.status === 'already_paid' && !body.isUpgrade) {
-          return NextResponse.json({
-            success: true,
-            alreadyPaid: true,
-            paidTariff: sheetResult.paidTariff,
-            paidAmount: sheetResult.paidAmount
+      if (tariff?.includes('Діагностика')) {
+        // Run asynchronously in the background to prevent blocking
+        after(async () => {
+          try {
+            await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+          } catch (err) {
+            console.error("Failed to send diagnostics lead to Google Sheets asynchronously:", err);
+          }
+        });
+      } else {
+        // Run synchronously to check for duplicate/pre-existing payment status (other pages)
+        try {
+          const sheetResponse = await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
           });
+
+          const sheetResult = await sheetResponse.json();
+          if (sheetResult.status === 'already_paid' && !body.isUpgrade) {
+            return NextResponse.json({
+              success: true,
+              alreadyPaid: true,
+              paidTariff: sheetResult.paidTariff,
+              paidAmount: sheetResult.paidAmount
+            });
+          }
+        } catch (err) {
+          console.error("Failed to send lead to Google Sheets:", err);
         }
-      } catch (err) {
-        console.error("Failed to send lead to Google Sheets:", err);
       }
     }
 

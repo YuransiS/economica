@@ -126,6 +126,8 @@ export default function CheckingPaymentPage() {
             setTimeout(() => {
               if (isReservation) {
                 router.push(`${basePath}/thank-you/${orderId}?tariff=${tariff}`);
+              } else if (tariff && tariff.includes('Діагностика')) {
+                router.push(`/thank-you/${orderId}?tariff=${tariff}`);
               } else {
                 // Redirect straight to Telegram bot activation link!
                 window.location.href = `https://telegram.me/sofifmc_bot?start=pay_${orderId}`;
