@@ -25,6 +25,7 @@ economica/
     ├── app/
     │   ├── admin/                 # Main Admin CRM panel (Google Sheets integrated)
     │   ├── api/                   # API Routes (Analytics, WayForPay, Web Lead, etc.)
+    │   ├── diagnostics/           # Paid Diagnostics A/B testing landing page (UAH 390)
     │   ├── intensive/             # Free Intensive landing page with custom copywriting
     │   ├── minicourse/            # Sofia Minicourse Platform
     │   │   ├── admin/             # Minicourse Admin panel (submissions, configs)
