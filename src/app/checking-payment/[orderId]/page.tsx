@@ -58,12 +58,16 @@ export default function CheckingPaymentPage() {
         const response = await fetch(`/api/wayforpay/check-status?orderId=${orderId}&phone=${encodeURIComponent(savedPhone)}&telegram=${encodeURIComponent(savedTelegram)}`);
         const data = await response.json();
 
+        const wfpReason = searchParams.get('wfpReason') || '';
+        const wfpCode = searchParams.get('wfpCode') || '';
+
         // Developer Console Diagnostic Report
         console.group("%c💳 WayForPay Developer Report", "color: #ff3b30; font-weight: bold; font-size: 14px;");
         console.log("%cOrder Reference:", "font-weight: bold; color: #0076ff;", orderId);
         console.log("%cTariff:", "font-weight: bold; color: #0076ff;", tariff);
         console.log("%cPayment Status:", "font-weight: bold; color: #0076ff;", data.status);
         console.log("%cReason/Error:", "font-weight: bold; color: #0076ff;", data.reason);
+        console.log("%cRedirect Rejection Reason:", "font-weight: bold; color: #ff9500;", wfpReason ? `${wfpReason} (Code: ${wfpCode})` : 'None (No redirect parameters)');
         console.log("%cRaw Response Payload:", "font-weight: bold; color: #0076ff;", data.raw);
 
         if (data.reasonCode === 1127 || (data.reason && data.reason.includes("Order Not Found"))) {
