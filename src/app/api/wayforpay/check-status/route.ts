@@ -104,7 +104,7 @@ export async function GET(req: Request) {
 
         // Send status update webhook to Google Sheets
         const targetSheet = lead?.target_sheet || 'Заявки на практикум';
-        if (GOOGLE_SHEET_WEBHOOK_URL) {
+        if (GOOGLE_SHEET_WEBHOOK_URL && targetSheet !== 'Заявки на діагностику') {
           try {
             await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
               method: 'POST',

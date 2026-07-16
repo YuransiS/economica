@@ -132,7 +132,7 @@ export async function POST(req: Request) {
     }
 
     // Send webhook to Google Sheets (always log for debugging)
-    if (GOOGLE_SHEET_WEBHOOK_URL) {
+    if (GOOGLE_SHEET_WEBHOOK_URL && targetSheet !== 'Заявки на діагностику') {
       try {
         await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
           method: 'POST',

@@ -486,18 +486,7 @@ export async function POST(req: Request) {
       };
 
       if (tariff?.includes('Діагностика')) {
-        // Run asynchronously in the background to prevent blocking
-        after(async () => {
-          try {
-            await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-          } catch (err) {
-            console.error("Failed to send diagnostics lead to Google Sheets asynchronously:", err);
-          }
-        });
+        // Google Sheets integration is cut out for diagnostics leads (only DB and Pixel)
       } else {
         // Run synchronously to check for duplicate/pre-existing payment status (other pages)
         try {
