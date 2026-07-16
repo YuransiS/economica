@@ -170,6 +170,8 @@ export default function DiagnosticsLeadModal({
         merchantSignature: wayForPayData.merchantSignature,
         clientPaymentMethods: wayForPayData.clientPaymentMethods || "card;googlePay;applePay",
         returnUrl: wayForPayData.returnUrl,
+        approveUrl: wayForPayData.approveUrl,
+        declineUrl: wayForPayData.declineUrl,
         serviceUrl: wayForPayData.serviceUrl
       };
 

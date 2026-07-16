@@ -36,26 +36,30 @@ export default async function ThankYouPage({
     try {
       const { data: lead } = await supabase
         .from('leads')
-        .select('phone, telegram')
+        .select('phone, telegram, status')
         .eq('order_id', orderId)
         .maybeSingle();
 
       if (lead) {
-        const tgClean = (lead.telegram || '').replace(/^@/, '').trim().toLowerCase();
-        const phoneClean = (lead.phone || '').trim().replace(/\D/g, '');
-
-        let query = supabase.from('minicourse_users').select('is_paid');
-        if (tgClean && phoneClean) {
-          query = query.or(`phone.eq.${phoneClean},telegram.ilike.${tgClean}`);
-        } else if (tgClean) {
-          query = query.ilike('telegram', tgClean);
-        } else if (phoneClean) {
-          query = query.eq('phone', phoneClean);
-        }
-
-        const { data: user } = await query.maybeSingle();
-        if (user?.is_paid) {
+        if (lead.status === 'approved' || lead.status === 'paid') {
           isPaid = true;
+        } else {
+          const tgClean = (lead.telegram || '').replace(/^@/, '').trim().toLowerCase();
+          const phoneClean = (lead.phone || '').trim().replace(/\D/g, '');
+
+          let query = supabase.from('minicourse_users').select('is_paid');
+          if (tgClean && phoneClean) {
+            query = query.or(`phone.eq.${phoneClean},telegram.ilike.${tgClean}`);
+          } else if (tgClean) {
+            query = query.ilike('telegram', tgClean);
+          } else if (phoneClean) {
+            query = query.eq('phone', phoneClean);
+          }
+
+          const { data: user } = await query.maybeSingle();
+          if (user?.is_paid) {
+            isPaid = true;
+          }
         }
       }
     } catch (err) {
