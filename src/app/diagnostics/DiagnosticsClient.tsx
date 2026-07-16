@@ -130,7 +130,7 @@ export default function DiagnosticsClient() {
     },
     {
       q: "Якщо зараз я не планую інвестувати?",
-      a: "Діагностика фінансів в будь-якому випадку зайвою не буде, ви зможете розібратись в \"сліпих зонах\" в ваших розходах та скоригувати витрати на накопичення."
+      a: "Діагностика фінансів в будь-котрому випадку зайвою не буде, ви зможете розібратись в \"сліпих зонах\" в ваших розходах та скоригувати витрати на накопичення."
     },
     {
       q: "Якщо я хочу почати інвестувати одразу?",
@@ -148,8 +148,75 @@ export default function DiagnosticsClient() {
       <div className="absolute top-0 left-0 w-full h-[600px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#4E0000]/60 via-[#1A0000]/0 to-transparent -z-10"></div>
       
       {/* 1 & 2. HERO SECTION */}
-      <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 px-4">
-        <div className="container mx-auto max-w-5xl text-center">
+      <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 px-4 overflow-hidden">
+        {/* Dynamic Animated Money Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-20 select-none" aria-hidden="true">
+          <style>{`
+            @keyframes float-money-slow {
+              0% {
+                transform: translateY(110vh) rotate(0deg) translateX(0);
+                opacity: 0;
+              }
+              10% {
+                opacity: 0.3;
+              }
+              90% {
+                opacity: 0.3;
+              }
+              100% {
+                transform: translateY(-10vh) rotate(360deg) translateX(80px);
+                opacity: 0;
+              }
+            }
+            .floating-money {
+              position: absolute;
+              bottom: -100px;
+              animation-name: float-money-slow;
+              animation-iteration-count: infinite;
+              animation-timing-function: linear;
+            }
+          `}</style>
+          {[
+            { left: '5%', delay: '0s', duration: '14s', scale: 0.8, type: 'note' },
+            { left: '15%', delay: '4s', duration: '18s', scale: 1.1, type: 'coin' },
+            { left: '28%', delay: '2s', duration: '16s', scale: 0.9, type: 'note' },
+            { left: '40%', delay: '7s', duration: '13s', scale: 1.2, type: 'note' },
+            { left: '52%', delay: '1s', duration: '15s', scale: 0.7, type: 'coin' },
+            { left: '65%', delay: '9s', duration: '17s', scale: 1.0, type: 'note' },
+            { left: '78%', delay: '3s', duration: '14s', scale: 1.3, type: 'coin' },
+            { left: '90%', delay: '5s', duration: '16s', scale: 0.8, type: 'note' },
+            { left: '10%', delay: '8s', duration: '15s', scale: 1.0, type: 'note' },
+            { left: '33%', delay: '10s', duration: '19s', scale: 0.8, type: 'coin' },
+            { left: '58%', delay: '6s', duration: '14s', scale: 1.2, type: 'note' },
+            { left: '83%', delay: '11s', duration: '16s', scale: 0.9, type: 'coin' },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="floating-money text-[#81D8D0]"
+              style={{
+                left: item.left,
+                animationDelay: item.delay,
+                animationDuration: item.duration,
+                transform: `scale(${item.scale})`,
+              }}
+            >
+              {item.type === 'note' ? (
+                <svg width="60" height="30" viewBox="0 0 100 50" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-40">
+                  <rect x="2" y="2" width="96" height="46" rx="4" />
+                  <circle cx="50" cy="25" r="10" />
+                  <path d="M50 18v14M47 21h5a2.5 2.5 0 0 0 0-5h-4a2.5 2.5 0 0 1 0-5h5" />
+                </svg>
+              ) : (
+                <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-40">
+                  <circle cx="15" cy="15" r="13" />
+                  <path d="M15 8v14M13 10h4a2 2 0 0 0 0-4h-3.2a2 2 0 0 1 0-4h3.2" />
+                </svg>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="container mx-auto max-w-5xl text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -189,7 +256,7 @@ export default function DiagnosticsClient() {
                 key={idx}
                 className="bg-white/5 border border-white/10 backdrop-blur-sm rounded-2xl p-5 text-left flex items-start space-x-3 transition-transform hover:scale-[1.02]"
               >
-                <div className="rounded-full bg-[#81D8D0]/25 p-1 text-[#81D8D0] shrink-0 mt-0.5">
+                <div className="rounded-full bg-[#81D8D0]/25 p-1 text-[#81D8D0] shrink-0 mt-0.5" aria-hidden="true">
                   <Check className="w-4 h-4" />
                 </div>
                 <span className="font-arimo text-sm font-semibold leading-relaxed text-gray-200">{bullet}</span>
@@ -204,7 +271,6 @@ export default function DiagnosticsClient() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="max-w-md mx-auto bg-gradient-to-br from-[#4E0000] to-[#2D0000] border border-[#81D8D0]/30 rounded-3xl p-8 md:p-10 shadow-2xl relative"
           >
-            {/* Glowing accent border */}
             <div className="absolute inset-0 rounded-3xl border border-[#81D8D0]/10 pointer-events-none"></div>
 
             <p className="text-gray-400 font-narrow uppercase tracking-widest text-xs mb-1">
@@ -217,7 +283,7 @@ export default function DiagnosticsClient() {
 
             {/* Countdown timer */}
             <div className="flex items-center justify-center gap-2 text-[#FBCBDA] bg-white/5 border border-white/5 rounded-xl py-2.5 px-4 mb-6 text-xs md:text-sm font-bold uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-[#81D8D0] animate-pulse" />
+              <Clock className="w-4 h-4 text-[#81D8D0] animate-pulse" aria-hidden="true" />
               <span>
                 Ціна збільшиться за: {formatTime(timeLeft.hours)}:{formatTime(timeLeft.minutes)}:{formatTime(timeLeft.seconds)}
               </span>
@@ -225,7 +291,7 @@ export default function DiagnosticsClient() {
 
             <button
               onClick={openLeadModal}
-              className="w-full font-montserrat rounded-xl bg-[#81D8D0] py-4 md:py-5 text-base md:text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] hover:shadow-[0_0_40px_rgba(129,216,208,0.5)]"
+              className="w-full font-montserrat rounded-xl bg-[#81D8D0] py-4 md:py-5 text-base md:text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-all hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] hover:shadow-[0_0_40px_rgba(129,216,208,0.5)] focus:outline-none focus:ring-4 focus:ring-[#81D8D0]"
             >
               Хочу аудит фінансів
             </button>
@@ -277,7 +343,7 @@ export default function DiagnosticsClient() {
                 className="bg-[#1A0000] border border-white/5 rounded-2xl p-6 flex flex-col justify-between hover:border-[#81D8D0]/30 transition-colors"
               >
                 <div>
-                  <div className="h-10 w-10 rounded-xl bg-[#4E0000] flex items-center justify-center text-[#81D8D0] mb-5">
+                  <div className="h-10 w-10 rounded-xl bg-[#4E0000] flex items-center justify-center text-[#81D8D0] mb-5" aria-hidden="true">
                     <AlertCircle className="w-5 h-5" />
                   </div>
                   <h3 className="font-montserrat font-bold text-base md:text-lg text-white mb-3 leading-snug">
@@ -320,7 +386,7 @@ export default function DiagnosticsClient() {
                 className="bg-[#2D0000]/30 border border-white/5 rounded-2xl p-6 flex flex-col justify-between hover:border-[#81D8D0]/20 transition-all hover:bg-[#2D0000]/50"
               >
                 <div>
-                  <div className="text-[#81D8D0] font-black text-3xl font-narrow mb-4">0{idx + 1}</div>
+                  <div className="text-[#81D8D0] font-black text-3xl font-narrow mb-4" aria-hidden="true">0{idx + 1}</div>
                   <h3 className="font-montserrat font-bold text-base md:text-lg text-white mb-2">
                     {item.title}
                   </h3>
@@ -356,7 +422,7 @@ export default function DiagnosticsClient() {
                 key={idx}
                 className="flex items-center space-x-4 bg-white/5 border border-white/5 rounded-xl p-4 transition-all hover:bg-white/10"
               >
-                <div className="w-2.5 h-2.5 rounded-full bg-[#81D8D0] flex-shrink-0"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#81D8D0] flex-shrink-0" aria-hidden="true"></div>
                 <span className="font-arimo text-sm md:text-base font-bold uppercase tracking-wide leading-relaxed text-gray-200">{item}</span>
               </div>
             ))}
@@ -365,7 +431,7 @@ export default function DiagnosticsClient() {
           <div className="text-center">
             <button
               onClick={openLeadModal}
-              className="font-montserrat rounded-xl bg-[#81D8D0] px-12 py-5 text-base md:text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)]"
+              className="font-montserrat rounded-xl bg-[#81D8D0] px-12 py-5 text-base md:text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-all hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] focus:outline-none focus:ring-4 focus:ring-[#81D8D0]"
             >
               Хочу аудит фінансів
             </button>
@@ -408,15 +474,15 @@ export default function DiagnosticsClient() {
                   </p>
                   <ul className="space-y-2 text-xs md:text-sm font-arimo text-gray-300">
                     <li className="flex items-start space-x-2">
-                      <span className="text-[#81D8D0] mt-0.5">•</span>
+                      <span className="text-[#81D8D0] mt-0.5" aria-hidden="true">•</span>
                       <span>Працюю з тими, хто прагне будувати довгостроковий капітал та фінансову свободу.</span>
                     </li>
                     <li className="flex items-start space-x-2">
-                      <span className="text-[#81D8D0] mt-0.5">•</span>
+                      <span className="text-[#81D8D0] mt-0.5" aria-hidden="true">•</span>
                       <span>Я не продаю «легкі гроші» чи сумнівні чарівні схеми швидкого збагачення.</span>
                     </li>
                     <li className="flex items-start space-x-2">
-                      <span className="text-[#81D8D0] mt-0.5">•</span>
+                      <span className="text-[#81D8D0] mt-0.5" aria-hidden="true">•</span>
                       <span>Моя задача — допомогти побудувати систему, яка працюватиме на вас роками.</span>
                     </li>
                   </ul>
@@ -444,15 +510,15 @@ export default function DiagnosticsClient() {
                   </p>
                   <ul className="space-y-2 text-xs md:text-sm font-arimo text-gray-300">
                     <li className="flex items-start space-x-2">
-                      <span className="text-[#81D8D0] mt-0.5">•</span>
+                      <span className="text-[#81D8D0] mt-0.5" aria-hidden="true">•</span>
                       <span>Радниця міжнародної брокерської компанії, ліцензована НБУ.</span>
                     </li>
                     <li className="flex items-start space-x-2">
-                      <span className="text-[#81D8D0] mt-0.5">•</span>
+                      <span className="text-[#81D8D0] mt-0.5" aria-hidden="true">•</span>
                       <span>Активно працює з клієнтами та допомагає будувати персональні фінансові плани.</span>
                     </li>
                     <li className="flex items-start space-x-2">
-                      <span className="text-[#81D8D0] mt-0.5">•</span>
+                      <span className="text-[#81D8D0] mt-0.5" aria-hidden="true">•</span>
                       <span>Після розбору, за потреби, ви зможете продовжити навчання разом із Софією на менторстві.</span>
                     </li>
                   </ul>
@@ -484,7 +550,7 @@ export default function DiagnosticsClient() {
             ].map((step, idx) => (
               <div key={idx} className="relative">
                 {/* Dot */}
-                <div className="absolute -left-[41px] md:-left-[57px] top-1.5 h-6 w-6 rounded-full border-4 border-[#100000] bg-[#81D8D0] flex items-center justify-center">
+                <div className="absolute -left-[41px] md:-left-[57px] top-1.5 h-6 w-6 rounded-full border-4 border-[#100000] bg-[#81D8D0] flex items-center justify-center" aria-hidden="true">
                   <span className="text-[10px] font-black text-[#4E0000]">{idx + 1}</span>
                 </div>
                 <h3 className="font-montserrat font-bold text-lg md:text-xl text-white mb-2">
@@ -500,7 +566,7 @@ export default function DiagnosticsClient() {
           <div className="text-center">
             <button
               onClick={openLeadModal}
-              className="font-montserrat rounded-xl bg-[#81D8D0] px-12 py-5 text-base md:text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)]"
+              className="font-montserrat rounded-xl bg-[#81D8D0] px-12 py-5 text-base md:text-lg font-bold uppercase tracking-wide text-[#4E0000] transition-all hover:scale-105 shadow-[0_0_30px_rgba(129,216,208,0.3)] focus:outline-none focus:ring-4 focus:ring-[#81D8D0]"
             >
               Хочу аудит фінансів
             </button>
@@ -533,7 +599,7 @@ export default function DiagnosticsClient() {
                 className="bg-white/5 border border-white/5 rounded-2xl p-6 flex flex-col justify-between hover:border-[#81D8D0]/30 transition-colors"
               >
                 <div>
-                  <div className="h-10 w-10 rounded-full bg-[#81D8D0]/10 border border-[#81D8D0]/20 flex items-center justify-center text-[#81D8D0] mb-4">
+                  <div className="h-10 w-10 rounded-full bg-[#81D8D0]/10 border border-[#81D8D0]/20 flex items-center justify-center text-[#81D8D0] mb-4" aria-hidden="true">
                     <Target className="w-5 h-5" />
                   </div>
                   <p className="font-montserrat font-bold text-sm md:text-base leading-relaxed text-gray-200">
@@ -566,12 +632,13 @@ export default function DiagnosticsClient() {
                 >
                   <button
                     onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full text-left p-6 flex justify-between items-center gap-4 hover:bg-white/10 transition-colors"
+                    aria-expanded={isOpen}
+                    className="w-full text-left p-6 flex justify-between items-center gap-4 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#81D8D0] rounded-2xl"
                   >
                     <span className="font-montserrat font-bold text-sm md:text-base text-white">
                       {faq.q}
                     </span>
-                    <ChevronDown className={`w-5 h-5 text-[#81D8D0] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-185' : ''}`} />
+                    <ChevronDown className={`w-5 h-5 text-[#81D8D0] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   <AnimatePresence initial={false}>
@@ -609,7 +676,7 @@ export default function DiagnosticsClient() {
 
           <button
             onClick={openLeadModal}
-            className="font-montserrat rounded-xl bg-[#81D8D0] px-16 py-6 text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-transform hover:scale-105 shadow-[0_0_45px_rgba(129,216,208,0.4)]"
+            className="font-montserrat rounded-xl bg-[#81D8D0] px-16 py-6 text-lg font-bold uppercase tracking-wider text-[#4E0000] transition-all hover:scale-105 shadow-[0_0_45px_rgba(129,216,208,0.4)] focus:outline-none focus:ring-4 focus:ring-[#81D8D0]"
           >
             Хочу аудит фінансів
           </button>
