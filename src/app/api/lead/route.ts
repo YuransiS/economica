@@ -452,12 +452,12 @@ export async function POST(req: Request) {
 
     // Support for 1 UAH test payment or custom currency
     let currency = inputCurrency || 'USD';
-    let amount = Number(price).toFixed(2);
+    let amount = Number(price) % 1 === 0 ? Number(price).toString() : Number(price).toFixed(2);
     let productName = `Практикум: Тариф ${tariff}`;
 
     if (isTest) {
       currency = 'UAH';
-      amount = '1.00';
+      amount = '1';
       productName = `[TEST] ${productName}`;
     }
 
@@ -521,11 +521,11 @@ export async function POST(req: Request) {
     // Use clean English name for Diagnostics product to avoid Cyrillic encoding signature mismatches
     if (tariff?.includes('Діагностика')) {
       const offerNum = tariff.includes('2') ? '2' : (tariff.includes('3') ? '3' : '1');
-      finalProductName = `Financial Diagnostics (Offer ${offerNum})`;
+      finalProductName = `Financial Diagnostics Offer ${offerNum}`;
     }
 
     if (isUpgrade && upgradeAmount) {
-      finalAmount = Number(upgradeAmount).toFixed(2);
+      finalAmount = Number(upgradeAmount) % 1 === 0 ? Number(upgradeAmount).toString() : Number(upgradeAmount).toFixed(2);
       finalProductName = `Апгрейд: ${body.paidTariff} -> ${tariff}`;
     }
 
