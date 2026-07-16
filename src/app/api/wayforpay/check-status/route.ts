@@ -157,7 +157,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ 
       success: true, 
       status: status,
-      reason: data.reason || ''
+      reason: data.reason || '',
+      reasonCode: data.reasonCode || null,
+      raw: data
     });
 
   } catch (error: any) {

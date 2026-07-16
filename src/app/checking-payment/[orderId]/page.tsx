@@ -53,11 +53,30 @@ export default function CheckingPaymentPage() {
     
     const savedTelegram = typeof window !== 'undefined' ? (localStorage.getItem('user_telegram') || '') : '';
     const savedPhone = typeof window !== 'undefined' ? (localStorage.getItem('user_phone') || '') : '';
-
     const checkStatus = async () => {
       try {
         const response = await fetch(`/api/wayforpay/check-status?orderId=${orderId}&phone=${encodeURIComponent(savedPhone)}&telegram=${encodeURIComponent(savedTelegram)}`);
         const data = await response.json();
+
+        // Developer Console Diagnostic Report
+        console.group("%c💳 WayForPay Developer Report", "color: #ff3b30; font-weight: bold; font-size: 14px;");
+        console.log("%cOrder Reference:", "font-weight: bold; color: #0076ff;", orderId);
+        console.log("%cTariff:", "font-weight: bold; color: #0076ff;", tariff);
+        console.log("%cPayment Status:", "font-weight: bold; color: #0076ff;", data.status);
+        console.log("%cReason/Error:", "font-weight: bold; color: #0076ff;", data.reason);
+        console.log("%cRaw Response Payload:", "font-weight: bold; color: #0076ff;", data.raw);
+
+        if (data.reasonCode === 1127 || (data.reason && data.reason.includes("Order Not Found"))) {
+          console.warn(
+            "%c⚠️ DIAGNOSTIC ERROR 1127 (Order Not Found):\n" +
+            "This means WayForPay has no record of this order reference. The user's transaction was rejected at initialization.\n" +
+            "If the user was immediately redirected back from WayForPay, this is caused by:\n" +
+            "1. The merchant account ('sofi_finsight') does not have the selected currency ('UAH') enabled in their settings.\n" +
+            "2. Missing required parameters in the client checkout form submission (such as approveUrl or declineUrl).",
+            "font-family: monospace; font-size: 12px; line-height: 1.4;"
+          );
+        }
+        console.groupEnd();
 
         if (data.success) {
           const status = data.status.toLowerCase();
