@@ -559,7 +559,7 @@ export async function POST(req: Request) {
         returnUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariff)}`,
         approveUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariff)}`,
         declineUrl: `${siteUrl}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariff)}`,
-        serviceUrl: `${siteUrl}/api/wayforpay/webhook?orderId=${orderReference}&phone=${encodeURIComponent(phone || '')}&telegram=${encodeURIComponent(telegram || '')}&targetSheet=${encodeURIComponent(sheetName)}` // For the S2S callback with fallback param
+        serviceUrl: `${siteUrl}/api/wayforpay/webhook`
       }
     });
 

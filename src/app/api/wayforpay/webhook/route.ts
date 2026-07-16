@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     }
     const url = new URL(req.url);
     const urlOrderId = url.searchParams.get('orderId');
-    const targetSheet = url.searchParams.get('targetSheet') || 'Заявки на практикум';
+    let targetSheet = url.searchParams.get('targetSheet') || '';
     const rawBody = await req.text();
 
     // Support URL-encoded form data or JSON
@@ -26,8 +26,8 @@ export async function POST(req: Request) {
       data = Object.fromEntries(params.entries());
     }
 
-    const phone = url.searchParams.get('phone') || data.phone || data.clientPhone || data.client_phone || '';
-    const telegram = url.searchParams.get('telegram') || '';
+    let phone = url.searchParams.get('phone') || data.phone || data.clientPhone || data.client_phone || '';
+    let telegram = url.searchParams.get('telegram') || '';
 
     // WayForPay keys can sometimes be case-sensitive or different
     const status = (data.transactionStatus || data.transaction_status || data.status || '') + '';
@@ -37,6 +37,29 @@ export async function POST(req: Request) {
     if (!orderId) {
       console.warn("Webhook missing orderId:", { urlOrderId, body: data });
       return NextResponse.json({ success: false, message: 'Missing order reference' }, { status: 400 });
+    }
+
+    // Database fallback for missing phone, telegram or targetSheet
+    if (supabase && (!phone || !telegram || !targetSheet)) {
+      try {
+        const { data: dbLead } = await supabase
+          .from('leads')
+          .select('phone, telegram, target_sheet')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        if (dbLead) {
+          if (!phone) phone = dbLead.phone || '';
+          if (!telegram) telegram = dbLead.telegram || '';
+          if (!targetSheet) targetSheet = dbLead.target_sheet || '';
+        }
+      } catch (dbLeadErr) {
+        console.error("Failed to fetch lead fallback details in webhook:", dbLeadErr);
+      }
+    }
+
+    if (!targetSheet) {
+      targetSheet = 'Заявки на практикум';
     }
 
     // Map statuses

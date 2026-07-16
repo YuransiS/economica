@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       productPrice: [parseFloat(amount)],
       clientName: customerName,
       clientPhone: customerPhone,
-      serviceUrl: `${currentDomain}/api/wayforpay/webhook?orderId=${orderReference}&phone=${encodeURIComponent(customerPhone || '')}&targetSheet=${encodeURIComponent('Заявки на практикум')}`,
+      serviceUrl: `${currentDomain}/api/wayforpay/webhook`,
       returnUrl: `${currentDomain}/api/wayforpay/return?order=${orderReference}&tariff=${encodeURIComponent(tariffName)}`,
     };
 
