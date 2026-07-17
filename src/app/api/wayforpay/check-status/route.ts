@@ -45,19 +45,6 @@ export async function GET(req: Request) {
     // 2. Direct database update: mark user as paid in Supabase ONLY if status is Approved!
     if (status.toLowerCase() === 'approved' && supabase) {
       try {
-        // A. Update status in leads table
-        const { error: leadDbErr } = await supabase
-          .from('leads')
-          .update({ status: 'approved' })
-          .eq('order_id', orderReference);
-
-        if (leadDbErr) {
-          console.error("Failed to update lead status in Supabase leads table via check-status:", leadDbErr);
-        } else {
-          console.log(`Successfully updated lead status to approved for order ${orderReference} in Supabase via check-status`);
-        }
-
-        // B. Update minicourse_users access
         const tgClean = (telegram || '').replace(/^@/, '').trim().toLowerCase();
         const phoneClean = (phone || '').trim().replace(/\D/g, '');
 
@@ -104,7 +91,7 @@ export async function GET(req: Request) {
 
         // Send status update webhook to Google Sheets
         const targetSheet = lead?.target_sheet || 'Заявки на практикум';
-        if (GOOGLE_SHEET_WEBHOOK_URL && targetSheet !== 'Заявки на діагностику') {
+        if (GOOGLE_SHEET_WEBHOOK_URL) {
           try {
             await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
               method: 'POST',
@@ -157,9 +144,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ 
       success: true, 
       status: status,
-      reason: data.reason || '',
-      reasonCode: data.reasonCode || null,
-      raw: data
+      reason: data.reason || ''
     });
 
   } catch (error: any) {

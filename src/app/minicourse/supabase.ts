@@ -563,6 +563,8 @@ export interface AdminSubmissionItem {
   userName: string;
   userEmail: string;
   userTelegram?: string;
+  userCreatedAt?: string;
+  userAccessOpenedAt?: string;
   lessonId: 1 | 2 | 3;
   hwUrl: string;
   hwStatus: HomeworkStatus;
@@ -588,6 +590,8 @@ export async function getAdminSubmissions(): Promise<AdminSubmissionItem[]> {
             userName: user.name,
             userEmail: user.email || '',
             userTelegram: user.telegram,
+            userCreatedAt: user.created_at,
+            userAccessOpenedAt: user.access_opened_at,
             lessonId,
             hwUrl: lesson.hwUrl,
             hwStatus: lesson.hwStatus,
@@ -602,7 +606,7 @@ export async function getAdminSubmissions(): Promise<AdminSubmissionItem[]> {
   } else {
     const { data: users, error: uErr } = await supabase!
       .from('minicourse_users')
-      .select('id, name, email, telegram')
+      .select('id, name, email, telegram, created_at, access_opened_at')
       .eq('role', 'student');
     
     if (uErr) throw uErr;
@@ -626,6 +630,8 @@ export async function getAdminSubmissions(): Promise<AdminSubmissionItem[]> {
             userName: u.name,
             userEmail: u.email || '',
             userTelegram: u.telegram || undefined,
+            userCreatedAt: u.created_at,
+            userAccessOpenedAt: u.access_opened_at,
             lessonId,
             hwUrl: lesson.hwUrl,
             hwStatus: lesson.hwStatus,
@@ -735,12 +741,14 @@ export async function getLessonsConfig(): Promise<MinicourseLessonConfig[]> {
       title: item.title,
       description: item.description,
       youtube_id: item.youtube_id,
+      youtube_id_new: item.youtube_id_new,
       mindmap_url: item.mindmap_url,
       hw_spreadsheet_url: item.hw_spreadsheet_url,
       notion_url: item.notion_url,
       hw_instructions: item.hw_instructions,
       bonus_video_title: item.bonus_video_title,
       bonus_video_youtube_id: item.bonus_video_youtube_id,
+      bonus_video_youtube_id_new: item.bonus_video_youtube_id_new,
       updated_at: item.updated_at
     }));
   }
@@ -767,12 +775,14 @@ export async function updateLessonConfig(lessonId: number, updates: Partial<Mini
         title: updates.title,
         description: updates.description,
         youtube_id: updates.youtube_id,
+        youtube_id_new: updates.youtube_id_new,
         mindmap_url: updates.mindmap_url,
         hw_spreadsheet_url: updates.hw_spreadsheet_url,
         notion_url: updates.notion_url,
         hw_instructions: updates.hw_instructions,
         bonus_video_title: updates.bonus_video_title,
         bonus_video_youtube_id: updates.bonus_video_youtube_id,
+        bonus_video_youtube_id_new: updates.bonus_video_youtube_id_new,
         updated_at: new Date().toISOString()
       })
       .eq('lesson_id', lessonId)
@@ -788,12 +798,14 @@ export async function updateLessonConfig(lessonId: number, updates: Partial<Mini
           title: updates.title,
           description: updates.description,
           youtube_id: updates.youtube_id,
+          youtube_id_new: updates.youtube_id_new,
           mindmap_url: updates.mindmap_url,
           hw_spreadsheet_url: updates.hw_spreadsheet_url,
           notion_url: updates.notion_url,
           hw_instructions: updates.hw_instructions,
           bonus_video_title: updates.bonus_video_title,
           bonus_video_youtube_id: updates.bonus_video_youtube_id,
+          bonus_video_youtube_id_new: updates.bonus_video_youtube_id_new,
           updated_at: new Date().toISOString()
         })
         .select()
@@ -1650,4 +1662,53 @@ export async function claimPrizeCode(
     progress: targetProgress!
   };
 }
+
+export interface GiftTokenItem {
+  token: string;
+  created_at: string;
+  is_used: boolean;
+  used_by_chat_id: number | null;
+  used_at: string | null;
+}
+
+export async function getGiftTokens(): Promise<GiftTokenItem[]> {
+  if (IS_MOCK_MODE) {
+    if (typeof window === 'undefined') return [];
+    return JSON.parse(localStorage.getItem('minicourse_gift_tokens') || '[]');
+  } else {
+    const { data, error } = await supabase!
+      .from('minicourse_gift_tokens')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as GiftTokenItem[];
+  }
+}
+
+export async function generateGiftToken(): Promise<GiftTokenItem> {
+  const randPart = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const token = `GIFT-${randPart}`;
+  
+  if (IS_MOCK_MODE) {
+    if (typeof window === 'undefined') {
+      return { token, created_at: new Date().toISOString(), is_used: false, used_by_chat_id: null, used_at: null };
+    }
+    const tokens = JSON.parse(localStorage.getItem('minicourse_gift_tokens') || '[]');
+    const newItem = { token, created_at: new Date().toISOString(), is_used: false, used_by_chat_id: null, used_at: null };
+    tokens.unshift(newItem);
+    localStorage.setItem('minicourse_gift_tokens', JSON.stringify(tokens));
+    return newItem;
+  } else {
+    const { data, error } = await supabase!
+      .from('minicourse_gift_tokens')
+      .insert({ token })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as GiftTokenItem;
+  }
+}
+
 

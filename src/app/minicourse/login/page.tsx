@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../useAuth';
 import { Sparkles, Loader2, AlertTriangle, Send } from 'lucide-react';
-import { loginUser } from '../actions';
+import { loginUser } from '../supabase';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 
 function LoginContent() {
@@ -14,13 +14,13 @@ function LoginContent() {
   const router = useRouter();
 
   const tokenParam = searchParams.get('token');
-  const tgIdParam = searchParams.get('tg_id');
+  const tgIdParam = searchParams.get('tg_id') || searchParams.get('username') || searchParams.get('telegram');
   const redirectParam = searchParams.get('redirect') || '/minicourse';
   const warningParam = searchParams.get('warning');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tokenVerifying, setTokenVerifying] = useState(!!tokenParam);
+  const [tokenVerifying, setTokenVerifying] = useState(!!(tokenParam || tgIdParam));
   const [deviceUuid, setDeviceUuid] = useState('');
   const [isUnpaid, setIsUnpaid] = useState(false);
   const [telegramInput, setTelegramInput] = useState('');
@@ -34,20 +34,14 @@ function LoginContent() {
     setIsUnpaid(false);
     try {
       const result = await loginUser(telegramInput.trim(), undefined, deviceUuid);
-      if (!result.success) {
-        const errMsg = result.error || 'Не вдалося авторизуватися.';
-        if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
-          setIsUnpaid(true);
-        }
-        setError(errMsg);
-        return;
-      }
-      if (result.user) {
-        login(result.user, result.progress);
-      }
+      login(result.user, result.progress);
     } catch (err: any) {
       console.error("Manual login failed:", err);
-      setError("Не вдалося авторизуватися. Будь ласка, спробуйте пізніше.");
+      const errMsg = err.message || '';
+      if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
+        setIsUnpaid(true);
+      }
+      setError(errMsg || "Не вдалося авторизуватися. Будь ласка, перевірте свій нікнейм.");
     } finally {
       setLoading(false);
     }
@@ -79,9 +73,9 @@ function LoginContent() {
     }
   }, [warningParam]);
 
-  // 3. Auto-authenticate when coming from bot with autologin token
+  // 3. Auto-authenticate when coming from bot with autologin token or tg_id
   useEffect(() => {
-    if (tokenParam && deviceUuid) {
+    if ((tokenParam || tgIdParam) && deviceUuid) {
       const performTokenAuth = async () => {
         setLoading(true);
         setTokenVerifying(true);
@@ -91,7 +85,7 @@ function LoginContent() {
           const res = await fetch('/api/minicourse/token-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: tokenParam, deviceUuid })
+            body: JSON.stringify({ token: tokenParam, tgId: tgIdParam, deviceUuid })
           });
           const result = await res.json();
 
@@ -102,7 +96,7 @@ function LoginContent() {
               setIsUnpaid(true);
               setError('Доступ обмежено. Оплата практикуму не підтверджена або профіль не знайдено.');
             } else {
-              setError(result.message || result.error || 'Не вдалося авторизуватися. Будь ласка, перейдіть за свіжим посиланням з бота.');
+              setError(result.error || 'Не вдалося авторизуватися. Будь ласка, перейдіть за свіжим посиланням з бота.');
             }
             return;
           }
@@ -120,7 +114,7 @@ function LoginContent() {
       };
       performTokenAuth();
     }
-  }, [tokenParam, deviceUuid, login, redirectParam, router]);
+  }, [tokenParam, tgIdParam, deviceUuid, login, redirectParam, router]);
 
   if (authLoading) {
     return (
@@ -201,7 +195,7 @@ function LoginContent() {
               <div className="pt-2 text-center border-t border-white/5">
                 <p className="text-[10px] text-gray-400 font-arimo">
                   Вже оплатили і виникла помилка? Напишіть у техпідтримку:{" "}
-                  <a href="https://telegram.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
+                  <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
                     @YuransiS
                   </a>
                 </p>
@@ -268,7 +262,7 @@ function LoginContent() {
                 <div className="pt-2 text-center border-t border-white/5 w-full">
                   <p className="text-[10px] text-gray-400 font-arimo">
                     Виникли проблеми з доступом? Напишіть у техпідтримку:{" "}
-                    <a href="https://telegram.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
+                    <a href="https://t.me/YuransiS" target="_blank" rel="noopener noreferrer" className="text-[#81D8D0] hover:underline font-bold font-montserrat">
                       @YuransiS
                     </a>
                   </p>

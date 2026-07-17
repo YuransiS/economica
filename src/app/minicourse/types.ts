@@ -66,6 +66,7 @@ export interface MinicourseLessonConfig {
   title: string;
   description: string;
   youtube_id: string;
+  youtube_id_new?: string;
   mindmap_url?: string;
   hw_spreadsheet_url?: string;
   notion_url?: string;
@@ -73,6 +74,7 @@ export interface MinicourseLessonConfig {
   updated_at: string;
   bonus_video_title?: string;
   bonus_video_youtube_id?: string;
+  bonus_video_youtube_id_new?: string;
 }
 
 export interface StudentWithProgress extends MinicourseUser {

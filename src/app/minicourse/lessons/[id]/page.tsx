@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../useAuth';
-import { getLessonsConfig, updateProgress } from '../../actions';
+import { updateProgress, getLessonsConfig, uploadHomeworkFile } from '../../supabase';
 import { HomeworkStatus, MinicourseLessonConfig } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -20,9 +20,9 @@ export default function LessonPage() {
   
   const { user, progress, loading, refreshProgress } = useAuth();
   
-  const hwAccessStart = user?.homework_access_opened_at || user?.access_opened_at || user?.created_at;
-  const feedbackElapsedDays = hwAccessStart 
-    ? (Date.now() - new Date(hwAccessStart).getTime()) / (1000 * 60 * 60 * 24) 
+  const accessStart = user?.access_opened_at || user?.created_at;
+  const feedbackElapsedDays = accessStart 
+    ? (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24) 
     : 0;
   const isFeedbackExpired = user?.role === 'student' && feedbackElapsedDays > 7;
 
@@ -44,16 +44,24 @@ export default function LessonPage() {
   // Lesson Metadata Config loaded dynamically
   const currentConfig = lessonConfigs.find(c => c.lesson_id === lessonId);
   
+  const isNewCohort = accessStart 
+    ? new Date(accessStart) >= new Date('2026-07-18T00:00:00Z')
+    : true; // Default to new if no date yet
+  
   const currentLesson = currentConfig ? {
     title: currentConfig.title,
     description: currentConfig.description,
-    youtubeId: currentConfig.youtube_id,
+    youtubeId: (isNewCohort && currentConfig.youtube_id_new) 
+      ? currentConfig.youtube_id_new 
+      : currentConfig.youtube_id,
     mindmapUrl: currentConfig.mindmap_url,
     hwSpreadsheetUrl: currentConfig.hw_spreadsheet_url,
     notionUrl: currentConfig.notion_url,
     hwInstructions: currentConfig.hw_instructions,
     bonusVideoTitle: currentConfig.bonus_video_title,
-    bonusVideoYoutubeId: currentConfig.bonus_video_youtube_id
+    bonusVideoYoutubeId: (isNewCohort && currentConfig.bonus_video_youtube_id_new) 
+      ? currentConfig.bonus_video_youtube_id_new 
+      : currentConfig.bonus_video_youtube_id
   } : {
     // Fallback if not loaded yet
     title: lessonId === 1 ? "Перший ефір" : lessonId === 2 ? "Другий ефір" : "Третій ефір",
@@ -280,9 +288,7 @@ export default function LessonPage() {
     };
 
     if (!loading && user && progress) {
-      if (user.role === 'student' && !user.terms_accepted) {
-        router.push('/minicourse');
-      } else if (!lessonProgress || !lessonProgress.unlocked) {
+      if (!lessonProgress || !lessonProgress.unlocked) {
         // Redirect if trying to access a locked lesson
         router.push('/minicourse');
       } else {
@@ -350,7 +356,7 @@ export default function LessonPage() {
         setTelegramCountdown((prev) => prev - 1);
       }, 1000);
     } else if (isTelegramModalOpen && telegramCountdown === 0) {
-      window.location.href = "https://telegram.me/+gKmEEjeNar02NDIy";
+      window.location.href = "https://t.me/+gKmEEjeNar02NDIy";
     }
     return () => clearInterval(interval);
   }, [isTelegramModalOpen, telegramCountdown]);
@@ -779,7 +785,7 @@ export default function LessonPage() {
 
           {/* Permanent Help Telegram Button */}
           <a 
-            href="https://telegram.me/YuransiS" 
+            href="https://t.me/YuransiS" 
             target="_blank" 
             rel="noopener noreferrer"
             className="w-full py-3.5 bg-white/5 border border-white/10 hover:border-[#81D8D0]/30 text-gray-300 hover:text-white text-center font-montserrat font-bold text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center space-x-2 transition-all bg-black/20"
@@ -827,7 +833,7 @@ export default function LessonPage() {
               </div>
 
               <a 
-                href="https://telegram.me/sofi_finsight"
+                href="https://t.me/sofi_finsight"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)]"
@@ -882,18 +888,18 @@ export default function LessonPage() {
                   Посилання на канал
                 </span>
                 <a 
-                  href="https://telegram.me/+gKmEEjeNar02NDIy" 
+                  href="https://t.me/+gKmEEjeNar02NDIy" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-xs sm:text-sm font-semibold text-[#81D8D0] hover:underline font-arimo break-all"
                 >
-                  https://telegram.me/+gKmEEjeNar02NDIy
+                  https://t.me/+gKmEEjeNar02NDIy
                 </a>
               </div>
 
               {/* Action Button */}
               <a 
-                href="https://telegram.me/+gKmEEjeNar02NDIy"
+                href="https://t.me/+gKmEEjeNar02NDIy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-[#81D8D0] hover:bg-[#97e3db] text-[#1A0000] font-montserrat font-bold uppercase text-xs tracking-wider rounded-xl flex items-center justify-center space-x-2 transition-all shadow-[0_0_20px_rgba(129,216,208,0.3)] hover:scale-[1.02] mb-6 inline-flex"
