@@ -116,3 +116,15 @@ export async function claimPrizeCode(code: string, name: string, telegram: strin
   }
 }
 
+export async function getGiftTokens() {
+  return db.getGiftTokens();
+}
+
+export async function generateGiftToken() {
+  return db.generateGiftToken();
+}
+
+export type { AdminSubmissionItem, GiftTokenItem } from './supabase';
+
+
+

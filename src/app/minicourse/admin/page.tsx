@@ -14,7 +14,7 @@ import {
   getGiftTokens,
   generateGiftToken,
   GiftTokenItem
-} from '../supabase';
+} from '../actions';
 import { HomeworkStatus, MinicourseUser, MinicourseLessonConfig, StudentWithProgress } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -27,7 +27,7 @@ import Link from 'next/link';
 const isNewCohortUser = (userObj: { created_at?: string; access_opened_at?: string; userCreatedAt?: string; userAccessOpenedAt?: string }) => {
   const dateStr = userObj.access_opened_at || userObj.created_at || userObj.userAccessOpenedAt || userObj.userCreatedAt;
   if (!dateStr) return true;
-  return new Date(dateStr) >= new Date('2026-07-18T00:00:00Z');
+  return new Date(dateStr) >= new Date('2026-07-17T00:00:00Z');
 };
 
 export default function AdminDashboard() {
@@ -1296,14 +1296,12 @@ function LessonFormCard({ lesson, saveStatus, onSave }: LessonFormCardProps) {
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description);
   const [youtubeId, setYoutubeId] = useState(lesson.youtube_id);
-  const [youtubeIdNew, setYoutubeIdNew] = useState(lesson.youtube_id_new || '');
   const [mindmapUrl, setMindmapUrl] = useState(lesson.mindmap_url || '');
   const [hwSpreadsheetUrl, setHwSpreadsheetUrl] = useState(lesson.hw_spreadsheet_url || '');
   const [notionUrl, setNotionUrl] = useState(lesson.notion_url || '');
   const [hwInstructions, setHwInstructions] = useState(lesson.hw_instructions);
   const [bonusVideoTitle, setBonusVideoTitle] = useState(lesson.bonus_video_title || '');
   const [bonusVideoYoutubeId, setBonusVideoYoutubeId] = useState(lesson.bonus_video_youtube_id || '');
-  const [bonusVideoYoutubeIdNew, setBonusVideoYoutubeIdNew] = useState(lesson.bonus_video_youtube_id_new || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1311,14 +1309,12 @@ function LessonFormCard({ lesson, saveStatus, onSave }: LessonFormCardProps) {
       title: title.trim(),
       description: description.trim(),
       youtube_id: youtubeId.trim(),
-      youtube_id_new: youtubeIdNew.trim() || undefined,
       mindmap_url: mindmapUrl.trim() || undefined,
       hw_spreadsheet_url: hwSpreadsheetUrl.trim() || undefined,
       notion_url: notionUrl.trim() || undefined,
       hw_instructions: hwInstructions.trim(),
       bonus_video_title: bonusVideoTitle.trim() || undefined,
-      bonus_video_youtube_id: bonusVideoYoutubeId.trim() || undefined,
-      bonus_video_youtube_id_new: bonusVideoYoutubeIdNew.trim() || undefined
+      bonus_video_youtube_id: bonusVideoYoutubeId.trim() || undefined
     });
   };
 

@@ -39,10 +39,15 @@ CREATE TABLE IF NOT EXISTS public.minicourse_lessons_config (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 4. Disable RLS to allow seamless Anon/Public client operations matching your codebase
-ALTER TABLE public.minicourse_users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.minicourse_progress DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.minicourse_lessons_config DISABLE ROW LEVEL SECURITY;
+-- 4. Enable RLS and set strict SELECT-only policies for client operations
+ALTER TABLE public.minicourse_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.minicourse_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.minicourse_lessons_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY allow_anon_select_minicourse_users ON public.minicourse_users FOR SELECT USING (true);
+CREATE POLICY allow_anon_select_minicourse_progress ON public.minicourse_progress FOR SELECT USING (true);
+CREATE POLICY allow_anon_select_minicourse_lessons_config ON public.minicourse_lessons_config FOR SELECT USING (true);
+
 
 -- 5. Seed default Admin users (if they don't already exist)
 INSERT INTO public.minicourse_users (id, name, email, telegram, role, is_paid, payment_status, status)

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../useAuth';
 import { Sparkles, Loader2, AlertTriangle, Send } from 'lucide-react';
-import { loginUser } from '../supabase';
+import { loginUser } from '../actions';
 import InAppBrowserOverlay from '@/components/InAppBrowserOverlay';
 
 function LoginContent() {
@@ -33,15 +33,20 @@ function LoginContent() {
     setError('');
     setIsUnpaid(false);
     try {
-      const result = await loginUser(telegramInput.trim(), undefined, deviceUuid);
-      login(result.user, result.progress);
+      const res = await loginUser(telegramInput.trim(), undefined, deviceUuid);
+      if (!res.success || !res.user || !res.progress) {
+        const errMsg = res.error || '';
+        if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
+          setIsUnpaid(true);
+        }
+        setError(errMsg || "Не вдалося авторизуватися. Будь ласка, перевірте свій нікнейм.");
+        return;
+      }
+      login(res.user, res.progress);
+      router.push(redirectParam);
     } catch (err: any) {
       console.error("Manual login failed:", err);
-      const errMsg = err.message || '';
-      if (errMsg.includes('ще не сплачено') || errMsg.includes('не сплачено')) {
-        setIsUnpaid(true);
-      }
-      setError(errMsg || "Не вдалося авторизуватися. Будь ласка, перевірте свій нікнейм.");
+      setError("Помилка авторизації. Будь ласка, спробуйте пізніше.");
     } finally {
       setLoading(false);
     }

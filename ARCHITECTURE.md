@@ -7,7 +7,7 @@ This document describes the project structure, routing, data schema, and key com
 ## 1. Project Overview & Stack
 - **Core Stack:** Next.js (App Router, React 19, TypeScript), Tailwind CSS, Framer Motion, Supabase (PostgreSQL).
 - **Hosting / Deploy:** Vercel.
-- **Database / Storage:** Supabase Database (RLS disabled for seamless client integration), Supabase Storage for files.
+- **Database / Storage:** Supabase Database (RLS enabled with strict SELECT-only policies; all data mutations run via Next.js Server Actions with `SUPABASE_SERVICE_ROLE_KEY`), Supabase Storage for files.
 - **Integrations:** Google Sheets API via Google Apps Script (GAS Webhooks).
 
 ---
