@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   description: "Практичний курс. Як почати інвестувати і накопичити перші 100 000$ капіталу у 2026 році навіть під час кризи.",
 };
 
+import Script from "next/script";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import FacebookPixel from "@/components/FacebookPixel";
 
@@ -43,6 +44,19 @@ export default function RootLayout({
   return (
     <html lang="uk" className="scroll-smooth">
       <head>
+        <Script
+          id="microsoft-clarity"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "xqclp4h7i3");
+            `,
+          }}
+        />
       </head>
       <body
         className={`${fontMontserrat.variable} ${fontArimo.variable} ${fontNarrow.variable} ${fontScript.variable} font-montserrat antialiased bg-[#1A0000] text-gray-100 min-h-screen flex flex-col overflow-x-hidden`}
