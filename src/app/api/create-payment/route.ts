@@ -136,9 +136,9 @@ export async function POST(request: Request) {
         console.error("Failed to insert lead locally:", leadErr);
       }
 
-      // 3. Forward to B&W Analytics Gateway
+      // 3. Forward to B&W Analytics Gateway asynchronously
       try {
-        await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+        fetch('https://bnw-prod.vercel.app/api/v1/leads/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -162,33 +162,11 @@ export async function POST(request: Request) {
               currency: currency || 'USD'
             }
           })
-        });
-      } catch (gateErr) {
-        console.error("Analytics gateway sync error:", gateErr);
+        }).catch(gateErr => console.error("Analytics gateway sync error:", gateErr));
+      } catch (err) {
+        console.error("Failed to launch background analytics sync:", err);
       }
 
-      // 4. Log to Google Sheets
-      const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL;
-      if (GOOGLE_SHEET_WEBHOOK_URL) {
-        try {
-          await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'create_lead',
-              targetSheet: 'Заявки на практикум',
-              name: customerName,
-              phone: customerPhone,
-              tariff: tariffName,
-              price: amount,
-              orderId: orderReference,
-              utm_source: 'crm_admin'
-            })
-          });
-        } catch (sheetErr) {
-          console.error("Google sheets logging failed:", sheetErr);
-        }
-      }
     }
 
     return NextResponse.json({ ...paymentData, visitor_uuid: visitor_id });

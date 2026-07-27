@@ -2,8 +2,7 @@ import { NextResponse, after } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/app/minicourse/supabase';
 
-// Google Sheets Webhook URL from environment variables
-const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
+
 
 const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
 
@@ -172,7 +171,7 @@ export async function POST(req: Request) {
 
         // B&W Analytics Gateway
         try {
-          await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+          await fetch('https://bnw-prod.vercel.app/api/v1/leads/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -207,50 +206,7 @@ export async function POST(req: Request) {
           console.error("Failed to forward free lead to B&W Analytics:", err);
         }
 
-        // Google Sheets
-        if (GOOGLE_SHEET_WEBHOOK_URL) {
-          try {
-            await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'create_lead',
-                targetSheet: sheetName,
-                name,
-                phone,
-                telegram,
-                tariff,
-                price: 0,
-                currency: 'USD',
-                orderId: orderReference,
-                visitorId: analytics?.visitorId,
-                journey: analytics?.journey?.join(' -> '),
-                utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
-                utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
-                utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
-                utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
-                utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
-                first_utm_source: analytics?.firstUtms?.utm_source,
-                first_utm_medium: analytics?.firstUtms?.utm_medium,
-                first_utm_campaign: analytics?.firstUtms?.utm_campaign,
-              })
-            });
 
-            // Mark as Paid immediately in Sheets
-            await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'update_status',
-                targetSheet: sheetName,
-                orderId: orderReference,
-                status: 'Оплачено'
-              })
-            });
-          } catch (err) {
-            console.error("Failed to send free lead to Google Sheets:", err);
-          }
-        }
       });
 
       return NextResponse.json({
@@ -411,7 +367,7 @@ export async function POST(req: Request) {
           }
 
           // Дополнительно отправляем лид в Единую Сквозную Аналитику B&W Analytics
-          await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+          await fetch('https://bnw-prod.vercel.app/api/v1/leads/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -461,55 +417,7 @@ export async function POST(req: Request) {
       productName = `[TEST] ${productName}`;
     }
 
-    // 1. Send to Google Sheets (if URL configured)
-    if (GOOGLE_SHEET_WEBHOOK_URL) {
-      const payload = {
-        action: 'create_lead',
-        targetSheet: sheetName, // Identifier for Apps Script
-        name,
-        phone,
-        telegram,
-        tariff,
-        price, // Pass current price for reference
-        currency,
-        orderId: orderReference,
-        visitorId: analytics?.visitorId,
-        journey: analytics?.journey?.join(' -> '),
-        utm_source: analytics?.lastUtms?.utm_source || utms?.utm_source,
-        utm_medium: analytics?.lastUtms?.utm_medium || utms?.utm_medium,
-        utm_campaign: analytics?.lastUtms?.utm_campaign || utms?.utm_campaign,
-        utm_content: analytics?.lastUtms?.utm_content || utms?.utm_content,
-        utm_term: analytics?.lastUtms?.utm_term || utms?.utm_term,
-        first_utm_source: analytics?.firstUtms?.utm_source,
-        first_utm_medium: analytics?.firstUtms?.utm_medium,
-        first_utm_campaign: analytics?.firstUtms?.utm_campaign,
-      };
 
-      if (tariff?.includes('Діагностика')) {
-        // Google Sheets integration is cut out for diagnostics leads (only DB and Pixel)
-      } else {
-        // Run synchronously to check for duplicate/pre-existing payment status (other pages)
-        try {
-          const sheetResponse = await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          const sheetResult = await sheetResponse.json();
-          if (sheetResult.status === 'already_paid' && !body.isUpgrade) {
-            return NextResponse.json({
-              success: true,
-              alreadyPaid: true,
-              paidTariff: sheetResult.paidTariff,
-              paidAmount: sheetResult.paidAmount
-            });
-          }
-        } catch (err) {
-          console.error("Failed to send lead to Google Sheets:", err);
-        }
-      }
-    }
 
     // 2. Prepare WayForPay Signature
     const isUpgrade = body.isUpgrade;

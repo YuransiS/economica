@@ -1,34 +1,48 @@
 import { NextResponse } from 'next/server';
-
-const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
+import { supabase } from '@/app/minicourse/supabase';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { action, targetSheet, orderId, status, comment } = body;
-
-    if (!GOOGLE_SHEET_WEBHOOK_URL) {
-      throw new Error("Webhook URL not configured");
+    if (!supabase) {
+      throw new Error("Supabase client not initialized");
     }
 
-    const payload: any = { 
-      action,
-      _sheet: targetSheet,
-      orderId: orderId
-    };
+    const body = await req.json();
+    const { action, orderId, status, comment } = body;
 
-    if (action === 'update_status') payload.status = status;
-    if (action === 'update_comment') payload.comment = comment;
+    let updatePayload: any = {};
+    if (action === 'update_status') {
+      updatePayload = { status: status };
+    } else if (action === 'update_comment') {
+      updatePayload = { comment: comment };
+    } else {
+      throw new Error(`Unsupported action: ${action}`);
+    }
 
-    const response = await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // Try to update by order_id first, fallback to visitor_uuid
+    let { data, error } = await supabase
+      .from('leads')
+      .update(updatePayload)
+      .eq('order_id', orderId)
+      .select();
 
-    const result = await response.json();
-    return NextResponse.json(result);
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      // Fallback: try by visitor_uuid
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('leads')
+        .update(updatePayload)
+        .eq('visitor_uuid', orderId)
+        .select();
+
+      if (fallbackError) throw fallbackError;
+      data = fallbackData;
+    }
+
+    return NextResponse.json({ result: 'success', data });
   } catch (error: any) {
+    console.error("Admin update error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

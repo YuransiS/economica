@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/app/minicourse/supabase';
 
-const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
+
 
 const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
 
@@ -10,23 +10,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { visitorId, path, utms } = body;
 
-    // 1. Log to Google Sheets
-    if (GOOGLE_SHEET_WEBHOOK_URL) {
-      await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'log_traffic',
-          visitorId,
-          path,
-          utm_source: utms?.utm_source,
-          utm_medium: utms?.utm_medium,
-          utm_campaign: utms?.utm_campaign,
-          ip: req.headers.get('x-forwarded-for') || 'unknown',
-          userAgent: req.headers.get('user-agent') || 'unknown'
-        })
-      });
-    }
+
 
     // 2. Dual-Write to Supabase leads table
     if (supabase && visitorId && isUuid(visitorId)) {
@@ -74,8 +58,8 @@ export async function POST(req: Request) {
             });
         }
 
-        // Forward click/traffic session to B&W Analytics Gateway
-        await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+        // Forward click/traffic session to B&W Analytics Gateway asynchronously
+        fetch('https://bnw-prod.vercel.app/api/v1/leads/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

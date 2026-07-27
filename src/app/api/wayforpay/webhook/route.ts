@@ -4,7 +4,7 @@ import { supabase } from '@/app/minicourse/supabase';
 
 const MERCHANT_ACCOUNT = (process.env.WAYFORPAY_MERCHANT_ACCOUNT || '').trim();
 const MERCHANT_SECRET_KEY = (process.env.WAYFORPAY_SECRET_KEY || '').trim();
-const GOOGLE_SHEET_WEBHOOK_URL = process.env.GOOGLE_SHEET_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxx7guPyybvHxUAn91xg0uwzrFbXDqj9eJPESVQKjOx34GwvdoKE6-pSPOv4HNKLj5Y/exec';
+
 
 export async function POST(req: Request) {
   try {
@@ -123,9 +123,9 @@ export async function POST(req: Request) {
           }
         }
 
-        // 3. Sync payment status with central B&W Analytics
+        // 3. Sync payment status with central B&W Analytics asynchronously
         const gatewayStatus = (sLower === 'approved' || sLower === 'settled') ? 'closed_won' : (sLower === 'declined' || sLower === 'expired' ? 'declined' : 'pending');
-        await fetch('https://victoria-mc.vercel.app/api/v1/leads/register', {
+        fetch('https://bnw-prod.vercel.app/api/v1/leads/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -154,23 +154,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Send webhook to Google Sheets (always log for debugging)
-    if (GOOGLE_SHEET_WEBHOOK_URL && targetSheet !== 'Заявки на діагностику') {
-      try {
-        await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'update_status',
-            targetSheet: targetSheet,
-            orderId: orderId,
-            status: finalStatus
-          })
-        });
-      } catch (fetchErr) {
-        console.error("Google Sheets update failed:", fetchErr);
-      }
-    }
+
 
     // Acknowledge WayForPay Request
     // It's important to use the orderId from the payload
