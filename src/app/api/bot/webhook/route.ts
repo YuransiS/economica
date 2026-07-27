@@ -3,6 +3,43 @@ import { supabase } from '@/app/minicourse/supabase';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
+function extractToken(text: string): { type: 'pay' | 'gift' | 'prize' | 'none'; token: string } {
+  const cleanText = text.trim();
+  
+  let param = cleanText;
+  if (cleanText.toLowerCase().startsWith('/start')) {
+    param = cleanText.replace(/^\/start[=\s_]*/i, '').trim();
+  } else if (cleanText.toLowerCase().includes('start=')) {
+    const match = cleanText.match(/start=([^&\s]+)/i);
+    if (match) param = match[1].trim();
+  }
+
+  if (!param) return { type: 'none', token: '' };
+
+  // Pay Token
+  if (param.toLowerCase().startsWith('pay_')) {
+    return { type: 'pay', token: param.substring(4).trim() };
+  }
+
+  // Gift Token
+  if (param.toLowerCase().startsWith('gift_')) {
+    return { type: 'gift', token: param.substring(5).trim() };
+  }
+  if (/^GIFT-[A-Z0-9]+$/i.test(param)) {
+    return { type: 'gift', token: param.trim() };
+  }
+  if (param.toLowerCase().startsWith('gift')) {
+    return { type: 'gift', token: param.replace(/^gift[-_]?/i, '').trim() };
+  }
+
+  // Prize Code
+  if (/^prize[-_]/i.test(param)) {
+    return { type: 'prize', token: param.trim() };
+  }
+
+  return { type: 'none', token: '' };
+}
+
 export async function POST(req: Request) {
   try {
     if (!BOT_TOKEN) {
@@ -21,388 +58,405 @@ export async function POST(req: Request) {
     const username = payload.message.from.username || '';
     const firstName = payload.message.from.first_name || 'Учасник';
 
-    // Check for the start command: /start pay_[phone_or_order]
-    if (text.startsWith('/start')) {
-      const parts = text.split(' ');
-      const startParam = parts.length > 1 ? parts[1] : '';
-      const isPay = startParam.startsWith('pay_');
-      const isGift = startParam.startsWith('gift_') || startParam === 'gift';
+    const { type: tokenType, token: rawToken } = extractToken(text);
 
-      if (isPay || isGift) {
-        const token = isPay ? startParam.substring(4) : (startParam.startsWith('gift_') ? startParam.substring(5).trim() : '');
-        
-        if (supabase) {
-          let user = null;
-          let phoneToMatch = null;
-          let leadName = 'Учасник';
+    if (tokenType !== 'none' && rawToken && supabase) {
+      let user = null;
 
-          if (isPay) {
-            // 1. If token is phone number, match directly
-            const isPhone = /^\d+$/.test(token);
-            if (isPhone) {
-              phoneToMatch = token;
-            } else {
-              // 2. Otherwise, look up the lead by order_id
-              const { data: leadData } = await supabase
-                .from('leads')
-                .select('*')
-                .eq('order_id', token)
-                .maybeSingle();
+      if (tokenType === 'pay') {
+        let phoneToMatch: string | null = null;
+        let leadName = 'Учасник';
 
-              if (leadData) {
-                phoneToMatch = leadData.phone;
-                leadName = leadData.name || 'Учасник';
-              }
-            }
+        const isPhone = /^\d+$/.test(rawToken);
+        if (isPhone) {
+          phoneToMatch = rawToken;
+        } else {
+          const { data: leadData } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('order_id', rawToken)
+            .maybeSingle();
 
-            if (phoneToMatch) {
-              const phoneClean = phoneToMatch.trim().replace(/\D/g, '');
-              const { data: existingUser } = await supabase
-                .from('minicourse_users')
-                .select('*')
-                .eq('phone', phoneClean)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              if (existingUser) {
-                // Update existing user, mark paid, set access open time
-                const { data: updatedUser } = await supabase
-                  .from('minicourse_users')
-                  .update({
-                    telegram: username || existingUser.telegram,
-                    telegram_chat_id: chatId,
-                    is_paid: true,
-                    payment_status: 'paid',
-                    access_opened_at: existingUser.access_opened_at || new Date().toISOString()
-                  })
-                  .eq('id', existingUser.id)
-                  .select()
-                  .single();
-                
-                user = updatedUser;
-              } else {
-                // Register new user on the fly
-                const { data: newUser } = await supabase
-                  .from('minicourse_users')
-                  .insert({
-                    name: leadName,
-                    email: `${phoneClean}@economica.edu`,
-                    phone: phoneClean,
-                    role: 'student',
-                    is_paid: true,
-                    payment_status: 'paid',
-                    access_opened_at: new Date().toISOString(),
-                    telegram: username || null,
-                    telegram_chat_id: chatId,
-                    status: 'active'
-                  })
-                  .select()
-                  .single();
-                
-                user = newUser;
-              }
-            }
-          } else {
-            // SECURE GIFT TOKEN FLOW
-            // 1. Verify the gift token in minicourse_gift_tokens
-            const { data: giftTokenData, error: giftTokenErr } = await supabase
-              .from('minicourse_gift_tokens')
-              .select('*')
-              .eq('token', token)
-              .maybeSingle();
-
-            if (giftTokenErr) {
-              console.error('[Bot Webhook] Error fetching gift token:', giftTokenErr);
-            }
-
-            if (giftTokenData) {
-              if (giftTokenData.is_used) {
-                // Token already burned
-                const alreadyUsedText = `⚠️ *Цей подарунковий код уже був використаний.*\n\nКожен подарунковий код можна активувати лише один раз. Якщо у Вас виникли запитання, зверніться в підтримку: @YuransiS`;
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    chat_id: chatId,
-                    text: alreadyUsedText,
-                    parse_mode: 'Markdown',
-                    protect_content: true
-                  })
-                });
-                return NextResponse.json({ ok: true });
-              }
-
-              // Burn the token immediately
-              await supabase
-                .from('minicourse_gift_tokens')
-                .update({
-                  is_used: true,
-                  used_by_chat_id: chatId,
-                  used_at: new Date().toISOString()
-                })
-                .eq('token', token);
-
-              // Find or create user in minicourse_users
-              let existingUser = null;
-              if (username) {
-                const { data } = await supabase
-                  .from('minicourse_users')
-                  .select('*')
-                  .ilike('telegram', username.trim().replace(/^@/, ''))
-                  .order('created_at', { ascending: false })
-                  .limit(1)
-                  .maybeSingle();
-                existingUser = data;
-              }
-
-              if (!existingUser) {
-                const { data } = await supabase
-                  .from('minicourse_users')
-                  .select('*')
-                  .eq('telegram_chat_id', chatId)
-                  .order('created_at', { ascending: false })
-                  .limit(1)
-                  .maybeSingle();
-                existingUser = data;
-              }
-
-              if (existingUser) {
-                const { data: updatedUser } = await supabase
-                  .from('minicourse_users')
-                  .update({
-                    telegram: username || existingUser.telegram,
-                    telegram_chat_id: chatId,
-                    is_paid: true,
-                    payment_status: 'paid',
-                    access_opened_at: existingUser.access_opened_at || new Date().toISOString()
-                  })
-                  .eq('id', existingUser.id)
-                  .select()
-                  .single();
-                user = updatedUser;
-              } else {
-                const emailPlaceholder = `${username || `gift_user_${Math.floor(Math.random() * 10000)}`}@economica.edu`;
-                const { data: newUser } = await supabase
-                  .from('minicourse_users')
-                  .insert({
-                    name: firstName || 'Учасник',
-                    email: emailPlaceholder,
-                    role: 'student',
-                    is_paid: true,
-                    payment_status: 'paid',
-                    access_opened_at: new Date().toISOString(),
-                    telegram: username || null,
-                    telegram_chat_id: chatId,
-                    status: 'active'
-                  })
-                  .select()
-                  .single();
-                user = newUser;
-              }
-            } else {
-              // Invalid gift token
-              const invalidTokenText = `⚠️ *Невірний подарунковий код.*\n\nБудь ласка, переконайтеся, що Ви перейшли за коректним посиланням. Якщо у Вас виникли запитання, зверніться в підтримку: @YuransiS`;
-              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: invalidTokenText,
-                  parse_mode: 'Markdown',
-                  protect_content: true
-                })
-              });
-              return NextResponse.json({ ok: true });
-            }
-          }
-
-          if (user) {
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
-
-            // Message copy based on access type
-            const welcomeText = isGift
-              ? `🎁 **Вітаємо! Вам активовано подарунковий доступ до міні-курсу!** 🎉\n\nВітаємо на курсі Софії, ${firstName}! Вашу участь успішно активовано за подарунковим доступом.\n\nЯ — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`
-              : `Дякуємо за купівлю! 🎉\n\nВітаємо на курсі, ${firstName}! Ваш доступ до кабінету міні-курсу успішно активовано. Я — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`;
-            
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: welcomeText,
-                parse_mode: 'Markdown',
-                protect_content: true,
-                reply_markup: {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: isGift ? '🎁 Почати навчання (Урок 1)' : '👉 Почати навчання (Урок 1)',
-                        url: autologinUrl
-                      }
-                    ]
-                  ]
-                }
-              })
-            });
-
-            // Message 2: Warning Message
-            const warningText = `⚠️ *Зверніть увагу!*\n\nДоступ до міні-курсу відкрито на 2 тижні. Перевірка зі зворотнім зв’язком від куратора доступна протягом 7 днів.\n\nТому не відкладайте перегляд уроків та починайте прямо зараз!`;
-            
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: warningText,
-                parse_mode: 'Markdown',
-                protect_content: true
-              })
-            });
-
-            return NextResponse.json({ ok: true });
-          } else {
-            // User not found and could not be linked (e.g. order not found)
-            const notFoundText = `⚠️ *Замовлення не знайдено.*\n\nШановний(а) ${firstName}, ми не змогли знайти оплату за цим посиланням. Будь ласка, переконайтеся, що оплату завершено.\n\nЯкщо виникли запитання, зверніться в підтримку: @YuransiS`;
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: notFoundText,
-                parse_mode: 'Markdown',
-                protect_content: true
-              })
-            });
-            return NextResponse.json({ ok: true });
+          if (leadData) {
+            phoneToMatch = leadData.phone;
+            leadName = leadData.name || 'Учасник';
           }
         }
-      }
 
-      if (supabase) {
-        try {
-          let linkedUser = null;
-          const { data: byChatId } = await supabase
+        if (phoneToMatch) {
+          const phoneClean = phoneToMatch.trim().replace(/\D/g, '');
+          const { data: existingUser } = await supabase
             .from('minicourse_users')
             .select('*')
-            .eq('telegram_chat_id', chatId)
+            .eq('phone', phoneClean)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          if (byChatId) {
-            linkedUser = byChatId;
-          } else if (username) {
-            const cleanUsername = username.trim().replace(/^@/, '');
-            const { data: byUsername } = await supabase
+          if (existingUser) {
+            const { data: updatedUser } = await supabase
               .from('minicourse_users')
-              .select('*')
-              .ilike('telegram', cleanUsername)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (byUsername) {
-              const { data: updatedUser } = await supabase
-                .from('minicourse_users')
-                .update({ telegram_chat_id: chatId })
-                .eq('id', byUsername.id)
-                .select()
-                .single();
-              
-              linkedUser = updatedUser;
-            }
+              .update({
+                telegram: username || existingUser.telegram,
+                telegram_chat_id: chatId,
+                is_paid: true,
+                payment_status: 'paid',
+                access_opened_at: existingUser.access_opened_at || new Date().toISOString()
+              })
+              .eq('id', existingUser.id)
+              .select()
+              .single();
+            
+            user = updatedUser;
+          } else {
+            const { data: newUser } = await supabase
+              .from('minicourse_users')
+              .insert({
+                name: leadName,
+                email: `${phoneClean}@economica.edu`,
+                phone: phoneClean,
+                role: 'student',
+                is_paid: true,
+                payment_status: 'paid',
+                access_opened_at: new Date().toISOString(),
+                telegram: username || null,
+                telegram_chat_id: chatId,
+                status: 'active'
+              })
+              .select()
+              .single();
+            
+            user = newUser;
           }
+        }
+      } else if (tokenType === 'gift') {
+        const upperToken = rawToken.toUpperCase();
+        const normalizedToken = upperToken.startsWith('GIFT-') ? upperToken : `GIFT-${upperToken}`;
 
-          if (linkedUser) {
-            if (linkedUser.role === 'student' && !linkedUser.is_paid) {
-              const unpaidText = `⚠️ *Оплата не підтверджена.*\n\nШановний(а) ${firstName}, оплату за Вашою участю в практикумі ще не підтверджено платіжною системою. Будь ласка, завершіть оплату на нашому сайті для активації доступу.\n\nЯкщо у Вас виникли питання чи проблеми з доступом, зверніться до нашої техпідтримки: @YuransiS`;
-              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: unpaidText,
-                  parse_mode: 'Markdown',
-                  protect_content: true
-                })
-              });
-              return NextResponse.json({ ok: true });
-            }
+        // 1. Fetch gift token flexible search
+        const { data: giftTokenData, error: giftTokenErr } = await supabase
+          .from('minicourse_gift_tokens')
+          .select('*')
+          .or(`token.eq.${normalizedToken},token.ilike.${rawToken}`)
+          .limit(1)
+          .maybeSingle();
 
-            // Enforce 14-day limit
-            const accessStart = linkedUser.access_opened_at || linkedUser.created_at;
-            const elapsedDays = (Date.now() - new Date(accessStart).getTime()) / (1000 * 60 * 60 * 24);
-            if (linkedUser.role === 'student' && elapsedDays > 14) {
-              const expiredText = `⏳ *Термін дії доступу закінчився.*\n\nШановний(а) ${firstName}, термін дії Вашого доступу до міні-курсу закінчився (доступ надається на 14 днів з моменту оплати).\n\nЯкщо у Вас виникли питання, зверніться до підтримки: @YuransiS`;
-              await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: expiredText,
-                  parse_mode: 'Markdown',
-                  protect_content: true
-                })
-              });
-              return NextResponse.json({ ok: true });
-            }
+        if (giftTokenErr) {
+          console.error('[Bot Webhook] Error fetching gift token:', giftTokenErr);
+        }
 
-            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-            const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse')}`;
-
-            const welcomeBackText = `Вітаємо, ${firstName}! 👋\n\nРаді бачити Вас знову. Ви можете увійти у свій кабінет практикуму за кнопкою нижче (авторизація відбудеться автоматично):`;
+        if (giftTokenData) {
+          if (giftTokenData.is_used) {
+            const alreadyUsedText = `⚠️ *Цей подарунковий код уже був використаний.*\n\nКожен подарунковий код можна активувати лише один раз. Якщо у Вас виникли запитання, зверніться в підтримку: @YuransiS`;
             await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: welcomeBackText,
-                protect_content: true,
-                reply_markup: {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: '🌐 Увійти в кабінет',
-                        url: autologinUrl
-                      }
-                    ]
-                  ]
-                }
+                text: alreadyUsedText,
+                parse_mode: 'Markdown',
+                protect_content: true
               })
             });
             return NextResponse.json({ ok: true });
           }
-        } catch (err) {
-          console.error('[Bot Webhook] Error looking up linked user on fallback:', err);
+
+          // Burn the token immediately
+          await supabase
+            .from('minicourse_gift_tokens')
+            .update({
+              is_used: true,
+              used_by_chat_id: chatId,
+              used_at: new Date().toISOString()
+            })
+            .eq('token', giftTokenData.token);
+
+          // Find or create user
+          let existingUser = null;
+          if (username) {
+            const { data } = await supabase
+              .from('minicourse_users')
+              .select('*')
+              .ilike('telegram', username.trim().replace(/^@/, ''))
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            existingUser = data;
+          }
+
+          if (!existingUser) {
+            const { data } = await supabase
+              .from('minicourse_users')
+              .select('*')
+              .eq('telegram_chat_id', chatId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            existingUser = data;
+          }
+
+          if (existingUser) {
+            const { data: updatedUser } = await supabase
+              .from('minicourse_users')
+              .update({
+                telegram: username || existingUser.telegram,
+                telegram_chat_id: chatId,
+                is_paid: true,
+                payment_status: 'paid',
+                access_opened_at: existingUser.access_opened_at || new Date().toISOString()
+              })
+              .eq('id', existingUser.id)
+              .select()
+              .single();
+            user = updatedUser;
+          } else {
+            const emailPlaceholder = `${username || `gift_user_${Math.floor(Math.random() * 10000)}`}@economica.edu`;
+            const { data: newUser } = await supabase
+              .from('minicourse_users')
+              .insert({
+                name: firstName || 'Учасник',
+                email: emailPlaceholder,
+                role: 'student',
+                is_paid: true,
+                payment_status: 'paid',
+                access_opened_at: new Date().toISOString(),
+                telegram: username || null,
+                telegram_chat_id: chatId,
+                status: 'active'
+              })
+              .select()
+              .single();
+            user = newUser;
+          }
+        } else {
+          const invalidTokenText = `⚠️ *Невірний подарунковий код.*\n\nБудь ласка, переконайтеся, що Ви перейшли за коректним посиланням або ввели правильний код. Якщо виникли запитання, зверніться в підтримку: @YuransiS`;
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: invalidTokenText,
+              parse_mode: 'Markdown',
+              protect_content: true
+            })
+          });
+          return NextResponse.json({ ok: true });
+        }
+      } else if (tokenType === 'prize') {
+        const lowerCode = rawToken.toLowerCase().trim();
+        const { data: prizeData } = await supabase
+          .from('minicourse_prize_codes')
+          .select('*')
+          .eq('code', lowerCode)
+          .maybeSingle();
+
+        if (prizeData && prizeData.status === 'active') {
+          let existingUser = null;
+          if (username) {
+            const { data } = await supabase
+              .from('minicourse_users')
+              .select('*')
+              .ilike('telegram', username.trim().replace(/^@/, ''))
+              .limit(1)
+              .maybeSingle();
+            existingUser = data;
+          }
+
+          if (existingUser) {
+            const { data: updatedUser } = await supabase
+              .from('minicourse_users')
+              .update({
+                telegram_chat_id: chatId,
+                is_paid: true,
+                payment_status: 'paid',
+                access_opened_at: existingUser.access_opened_at || new Date().toISOString()
+              })
+              .eq('id', existingUser.id)
+              .select()
+              .single();
+            user = updatedUser;
+          } else {
+            const { data: newUser } = await supabase
+              .from('minicourse_users')
+              .insert({
+                name: firstName || 'Учасник',
+                email: `${username || `prize_${Math.floor(Math.random() * 10000)}`}@economica.edu`,
+                role: 'student',
+                is_paid: true,
+                payment_status: 'paid',
+                access_opened_at: new Date().toISOString(),
+                telegram: username || null,
+                telegram_chat_id: chatId,
+                status: 'active'
+              })
+              .select()
+              .single();
+            user = newUser;
+          }
+
+          await supabase
+            .from('minicourse_prize_codes')
+            .update({
+              status: 'used',
+              used_at: new Date().toISOString(),
+              used_by_id: user.id
+            })
+            .eq('code', lowerCode);
         }
       }
 
-      // Default welcome fallback if start param doesn't match or user not found
-      const defaultWelcome = `Вітаємо, ${firstName}! 👋\n\nЯ ваш персональний помічник на міні-курсі Софії.\n\nЯкщо Ви вже оплатили курс, будь ласка, активуйте цього бота за посиланням, отриманим після оплати на сайті, або перейдіть до кабінету практикуму за кнопкою нижче:`;
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
-      
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: defaultWelcome,
-          protect_content: true,
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: '🌐 Відкрити кабінет',
-                  url: `${siteUrl}/minicourse/login?tg_id=${chatId}`
-                }
+      if (user) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
+        const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse/lessons/1')}`;
+
+        const welcomeText = tokenType === 'gift' || tokenType === 'prize'
+          ? `🎁 **Вітаємо! Вам активовано подарунковий доступ до міні-курсу!** 🎉\n\nВітаємо на курсі Софії, ${firstName}! Вашу участь успішно активовано за подарунковим доступом.\n\nЯ — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`
+          : `Дякуємо за купівлю! 🎉\n\nВітаємо на курсі, ${firstName}! Ваш доступ до кабінету міні-курсу успішно активовано. Я — Ваш особистий Telegram-помічник, де Ви будете отримувати нагадування та результати перевірки домашніх завдань.\n\n👉 Почніть навчання за кнопкою нижче:`;
+        
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: welcomeText,
+            parse_mode: 'Markdown',
+            protect_content: true,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: tokenType === 'gift' || tokenType === 'prize' ? '🎁 Почати навчання (Урок 1)' : '👉 Почати навчання (Урок 1)',
+                    url: autologinUrl
+                  }
+                ]
               ]
-            ]
-          }
-        })
-      });
+            }
+          })
+        });
+
+        const warningText = `⚠️ *Зверніть увагу!*\n\nДоступ до міні-курсу відкрито на 2 тижні. Перевірка зі зворотнім зв’язком від куратора доступна протягом 7 днів.\n\nТому не відкладайте перегляд уроків та починайте прямо зараз!`;
+        
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: warningText,
+            parse_mode: 'Markdown',
+            protect_content: true
+          })
+        });
+
+        return NextResponse.json({ ok: true });
+      }
     }
+
+    // Default fallback when user sends plain /start or any other text
+    if (supabase) {
+      try {
+        let linkedUser = null;
+        const { data: byChatId } = await supabase
+          .from('minicourse_users')
+          .select('*')
+          .eq('telegram_chat_id', chatId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (byChatId) {
+          linkedUser = byChatId;
+        } else if (username) {
+          const cleanUsername = username.trim().replace(/^@/, '');
+          const { data: byUsername } = await supabase
+            .from('minicourse_users')
+            .select('*')
+            .ilike('telegram', cleanUsername)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (byUsername) {
+            const { data: updatedUser } = await supabase
+              .from('minicourse_users')
+              .update({ telegram_chat_id: chatId })
+              .eq('id', byUsername.id)
+              .select()
+              .single();
+            
+            linkedUser = updatedUser;
+          }
+        }
+
+        if (linkedUser) {
+          if (linkedUser.role === 'student' && !linkedUser.is_paid) {
+            const unpaidText = `⚠️ *Оплата не підтверджена.*\n\nШановний(а) ${firstName}, оплату за Вашою участю в практикумі ще не підтверджено. Будь ласка, завершіть оплату на нашому сайті.\n\nЯкщо у Вас є подарунковий код, просто надішліть його сюди (наприклад: GIFT-XXXXXX).`;
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: unpaidText,
+                parse_mode: 'Markdown',
+                protect_content: true
+              })
+            });
+            return NextResponse.json({ ok: true });
+          }
+
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
+          const autologinUrl = `${siteUrl}/minicourse/login?tg_id=${chatId}&redirect=${encodeURIComponent('/minicourse')}`;
+
+          const welcomeBackText = `Вітаємо, ${firstName}! 👋\n\nРаді бачити Вас знову. Ви можете увійти у свій кабінет практикуму за кнопкою нижче (авторизація відбудеться автоматично):`;
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: welcomeBackText,
+              protect_content: true,
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: '🌐 Увійти в кабінет',
+                      url: autologinUrl
+                    }
+                  ]
+                ]
+              }
+            })
+          });
+          return NextResponse.json({ ok: true });
+        }
+      } catch (err) {
+        console.error('[Bot Webhook] Error looking up linked user on fallback:', err);
+      }
+    }
+
+    // Default welcome fallback if user not found in DB
+    const defaultWelcome = `Вітаємо, ${firstName}! 👋\n\nЯ ваш персональний помічник на міні-курсі Софії.\n\n🎁 Якщо у Вас є подарунковий код або посилання (наприклад: \`GIFT-...\` або \`prize-...\`), **надішліть його сюди прямо у відповідь на це повідомлення**, і бот миттєво активує Ваш доступ!\n\nАбо відкрийте кабінет за кнопкою нижче:`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sofifinsight.vercel.app';
+    
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: defaultWelcome,
+        parse_mode: 'Markdown',
+        protect_content: true,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '🌐 Відкрити кабінет',
+                url: `${siteUrl}/minicourse/login?tg_id=${chatId}`
+              }
+            ]
+          ]
+        }
+      })
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
