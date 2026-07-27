@@ -1121,7 +1121,7 @@ export default function AdminDashboard() {
                       </tr>
                     ) : (
                       gifts.map(g => {
-                        const botLink = `https://t.me/SofiaFeduniak_bot?start=gift_${g.token}`;
+                        const botLink = `https://t.me/sofifmc_bot?start=gift_${g.token}`;
                         return (
                           <tr key={g.token} className="hover:bg-white/[0.02] transition-colors">
                             <td className="p-4 pl-6 font-mono text-[11px] text-gray-300 select-all max-w-xs truncate">
