@@ -14,11 +14,19 @@ export async function POST(req: Request) {
 async function handleReminders(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
+    const customHeader = req.headers.get('x-cron-secret');
+    const { searchParams } = new URL(req.url);
+    const querySecret = searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET;
     const isDev = process.env.NODE_ENV === 'development';
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}` && !isDev) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    if (cronSecret) {
+      const isHeaderValid = authHeader === `Bearer ${cronSecret}` || authHeader === cronSecret;
+      const isCustomValid = customHeader === cronSecret;
+      const isQueryValid = querySecret === cronSecret;
+      if (!isHeaderValid && !isCustomValid && !isQueryValid && !isDev) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     if (!supabase) {
