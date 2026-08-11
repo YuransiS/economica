@@ -33,10 +33,12 @@ economica/
     │   │   ├── supabase.ts        # Database operations & mock mode fallback
     │   │   ├── types.ts           # Shared TypeScript interfaces
     │   │   └── useAuth.ts         # Authentication context and helper hooks
+    │   ├── restricted/            # Access Restricted Wall page ("Доступ до цього ресурсу тимчасово обмежено")
     │   ├── page.tsx               # Landing page for Minicourse / Main Portal
     │   └── globals.css            # Stylesheets
     ├── components/                # Reusable UI components
-    └── hooks/                     # Custom React hooks
+    ├── hooks/                     # Custom React hooks
+    └── middleware.ts              # Middleware intercepting all public landings & rewriting to /restricted
 ```
 
 ---

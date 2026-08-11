@@ -8,28 +8,54 @@ export function middleware(request: NextRequest) {
     session?.value === 'authenticated_yuransis' || 
     session?.value === 'authenticated_anya_koorator';
 
-  // 1. If trying to access admin login page while already authenticated
-  if (pathname === '/admin/login' && isAuthenticated) {
-    return NextResponse.redirect(new URL('/admin', request.url));
-  }
+  // 1. Admin route protection & auth logic
+  const isAdminRoute = 
+    pathname.startsWith('/admin') || 
+    pathname.startsWith('/minicourse/admin') || 
+    pathname.startsWith('/api/admin');
 
-  // 2. Protect all /admin and /api/admin routes except login and link generation
-  const isProtectedRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
-  const isExemptedRoute = 
+  const isAdminExempted = 
     pathname === '/admin/login' || 
+    pathname === '/minicourse/admin/login' || 
     pathname === '/api/admin/login' || 
     pathname === '/api/admin/generate-link';
 
-  if (isProtectedRoute && !isExemptedRoute && !isAuthenticated) {
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (isAdminRoute) {
+    if (pathname === '/admin/login' && isAuthenticated) {
+      return NextResponse.redirect(new URL('/admin', request.url));
     }
-    return NextResponse.redirect(new URL('/admin/login', request.url));
+    if (!isAdminExempted && !isAuthenticated) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // 2. Allow API routes, static assets, and the /restricted page itself
+  const isApiRoute = pathname.startsWith('/api/');
+  const isRestrictedPage = pathname === '/restricted';
+
+  if (isApiRoute || isRestrictedPage) {
+    return NextResponse.next();
+  }
+
+  // 3. For ALL other landing pages & subpages (including /, /intensive, /minicourse, /web, /checkout, /price, etc.),
+  // rewrite to the /restricted wall.
+  return NextResponse.rewrite(new URL('/restricted', request.url));
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*', '/api/admin', '/api/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - static asset extensions (.svg, .png, .jpg, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+  ],
 };
+
