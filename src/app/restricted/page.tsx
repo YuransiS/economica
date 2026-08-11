@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Lock, ShieldAlert } from "lucide-react";
+import { Lock } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Доступ обмежено | Economica",
+  title: "Доступ обмежено",
   description: "Доступ до цього ресурсу тимчасово обмежено.",
   robots: {
     index: false,
@@ -19,24 +19,20 @@ export default function RestrictedPage() {
         </div>
 
         <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-400">
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Технічна пауза</span>
-          </div>
-
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-snug">
             Доступ до цього ресурсу тимчасово обмежено
           </h1>
 
           <p className="text-sm text-zinc-400 leading-relaxed pt-1">
-            На даний момент сторінки матеріалів та навчальної платформи знаходяться на технічному обслуговуванні або доступ до них обмежено адміністратором.
+            На даний момент сторінка недоступна. Спробуйте, будь-ласка, пізніше
           </p>
         </div>
 
         <div className="pt-4 border-t border-zinc-800/80 text-xs text-zinc-500">
-          <p>© {new Date().getFullYear()} CRM Economica / Sofia Platform. Всі права захищені.</p>
+          <p>© 2026 B&W Prod. | Sofiya Fedinyak. Всі права захищені.</p>
         </div>
       </div>
     </main>
   );
 }
+
