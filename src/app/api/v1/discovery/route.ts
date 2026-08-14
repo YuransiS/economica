@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    project_slug: 'economica',
-    project_name: 'Economica',
+    project_slug: 'sofia',
+    project_name: 'Софія (Economica)',
     domain: 'https://economica.vercel.app',
     version: '1.0.0',
     ping_timestamp: new Date().toISOString(),
